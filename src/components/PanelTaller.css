@@ -1,0 +1,497 @@
+/*==================================================
+=            PANEL TALLER - ESTILOS               =
+==================================================*/
+
+.panel-taller-container {
+  min-height: 100vh;
+  width: 100%;
+  background: linear-gradient(135deg, #eef2f7, #dde8f5);
+  padding: 40px 20px;
+}
+
+.panel-taller-contenido {
+  max-width: 768px;
+  margin: 0 auto;
+}
+
+/*==================================================
+=                    LOGO                          =
+==================================================*/
+
+.panel-logo {
+  margin-bottom: 40px;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #ff6b00;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-wrench {
+  width: 20px;
+  height: 20px;
+  color: white;
+}
+
+.logo-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: #16233a;
+  letter-spacing: -0.5px;
+}
+
+.logo-naranja {
+  color: #ff6b00;
+}
+
+/*==================================================
+=                   HEADER                         =
+==================================================*/
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  gap: 20px;
+}
+
+.panel-titulo {
+  font-size: 28px;
+  font-weight: 700;
+  color: #16233a;
+  margin: 0;
+}
+
+.panel-subtitulo {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 6px 0 0 0;
+}
+
+.panel-btn-actualizar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: #ff6b00;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s;
+  white-space: nowrap;
+}
+
+.panel-btn-actualizar:hover:not(:disabled) {
+  background: #ea5e00;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(255, 107, 0, 0.3);
+}
+
+.panel-btn-actualizar:disabled {
+  background: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.panel-btn-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.panel-btn-icon.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/*==================================================
+=                   ESTADOS                        =
+==================================================*/
+
+.panel-estado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 60px 20px;
+  text-align: center;
+  color: #8a8478;
+}
+
+.panel-cargando {
+  color: #8a8478;
+}
+
+.panel-vacio {
+  color: #8a8478;
+}
+
+.panel-estado-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.panel-estado-icon.spin {
+  animation: spin 1s linear infinite;
+}
+
+.panel-estado p {
+  font-size: 14px;
+  margin: 0;
+}
+
+/*==================================================
+=                    ERROR                         =
+==================================================*/
+
+.panel-error {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: #f8e6e5;
+  border-radius: 12px;
+  color: #8a3230;
+  margin-bottom: 20px;
+}
+
+.panel-error-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.panel-error-titulo {
+  font-weight: 700;
+  margin: 0 0 6px 0;
+  font-size: 14px;
+}
+
+.panel-error-texto {
+  font-size: 13px;
+  margin: 0;
+  opacity: 0.9;
+}
+
+/*==================================================
+=                   GRUPOS                         =
+==================================================*/
+
+.panel-grupos {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.panel-grupo {
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-grupo-titulo {
+  font-size: 13px;
+  font-weight: 700;
+  color: #8a8478;
+  text-transform: capitalize;
+  margin: 0 0 16px 0;
+  letter-spacing: 0.5px;
+}
+
+.panel-grupo-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/*==================================================
+=                  TARJETA RESERVA                 =
+==================================================*/
+
+.tarjeta-reserva {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0f0f0;
+  transition: all 0.2s;
+}
+
+.tarjeta-reserva:hover {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+}
+
+.tarjeta-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.tarjeta-hora {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tarjeta-icon {
+  width: 16px;
+  height: 16px;
+  color: #ff6b00;
+  flex-shrink: 0;
+}
+
+.tarjeta-hora-texto {
+  font-size: 20px;
+  font-weight: 700;
+  color: #16233a;
+}
+
+/*==================================================
+=                  ESTADO BADGE                    =
+==================================================*/
+
+.estado-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Punto */
+
+.estado-punto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* PENDIENTE */
+
+.estado-pendiente {
+  background: #fff3e8;
+  color: #ea580c;
+}
+
+.estado-pendiente .estado-punto {
+  background: #f97316;
+}
+
+/* CONFIRMADA */
+
+.estado-confirmada {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.estado-confirmada .estado-punto {
+  background: #22c55e;
+}
+
+/* CANCELADA */
+
+.estado-cancelada {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.estado-cancelada .estado-punto {
+  background: #ef4444;
+}
+
+/*==================================================
+=                  GRID CAMPOS                     =
+==================================================*/
+
+.tarjeta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px 16px;
+}
+
+.campo-item {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.campo-icon {
+  width: 16px;
+  height: 16px;
+  color: #ff6b00;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.campo-contenido {
+  min-width: 0;
+  flex: 1;
+}
+
+.campo-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #a6a093;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 4px 0;
+}
+
+.campo-valor {
+  font-size: 15px;
+  font-weight: 600;
+  color: #16233a;
+  margin: 0;
+  word-break: break-word;
+}
+
+/*==================================================
+=                 RESPONSIVE                       =
+==================================================*/
+
+@media (max-width: 768px) {
+  .panel-taller-contenido {
+    max-width: 100%;
+  }
+
+  .panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .panel-btn-actualizar {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .panel-titulo {
+    font-size: 24px;
+  }
+
+  .tarjeta-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .panel-logo {
+    margin-bottom: 24px;
+  }
+
+  .panel-titulo {
+    font-size: 20px;
+  }
+
+  .tarjeta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tarjeta-header {
+    flex-wrap: wrap;
+  }
+
+  .panel-header {
+    margin-bottom: 24px;
+  }
+}
+/* BOTÓN HISTORIAL */
+.panel-btn-historial {
+  margin-top: 12px;
+  margin-bottom: 32px;
+}
+.tarjeta-acciones {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.tarjeta-acciones button {
+  flex: 1;
+  height: 42px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.btn-confirmar {
+  background: #22c55e;
+  color: white;
+}
+
+.btn-confirmar:hover {
+  background: #16a34a;
+  transform: translateY(-1px);
+}
+
+.btn-cancelar {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.btn-cancelar:hover {
+  background: #fecaca;
+  transform: translateY(-1px);
+}
+/* DESCRIPCIÓN DE LA RESERVA */
+
+.descripcion-reserva {
+  margin-top: 18px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #eef0f3;
+}
+
+.descripcion-reserva-titulo {
+  margin: 0 0 5px 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #a6a093;
+  letter-spacing: 0.5px;
+}
+
+.descripcion-reserva-texto {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: #16233a;
+  word-break: break-word;
+}

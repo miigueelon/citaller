@@ -1,0 +1,924 @@
+/*==================================================
+=                 RESET GENERAL                    =
+==================================================*/
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #eef2f7, #dde8f5);
+    color: #1f2937;
+}
+
+/*==================================================
+=                    LAYOUT                        =
+==================================================*/
+
+.container {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 80px 20px;
+}
+
+.app {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/*==================================================
+=                     CARD                         =
+==================================================*/
+
+.card {
+    position: relative;
+    width: 560px;
+    max-width: 95%;
+    margin: auto;
+    background: white;
+    border-radius: 22px;
+    padding: 40px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, .12);
+}
+
+/*==================================================
+=                     LOGO                         =
+==================================================*/
+
+.logo {
+    width: 235px;
+    display: block;
+    margin: 0 auto -8px;
+}
+
+/*==================================================
+=                   TITULOS                        =
+==================================================*/
+
+h1 {
+    font-size: 46px;
+    font-weight: 650;
+    color: #16233a;
+    text-align: center;
+    line-height: 1.05;
+    margin-bottom: 14px;
+}
+
+.subtitulo {
+    text-align: center;
+    color: #6b7280;
+    font-size: 18px;
+    margin-bottom: 18px;
+}
+
+/*==================================================
+=                  TRUST BAR                       =
+==================================================*/
+
+.trust-bar {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+}
+
+.trust-item {
+    background: #f5f7fb;
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #374151;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
+}
+
+/*==================================================
+=                 TALLER INFO                      =
+==================================================*/
+
+.taller-info {
+    background: linear-gradient(180deg, #ffffff, #f8fafc);
+    border: 1px solid #e6ebf2;
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .05);
+    padding: 20px;
+    margin-bottom: 22px;
+}
+
+.badge {
+    display: inline-block;
+    background: #ff6b00;
+    color: white;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 14px;
+}
+
+.taller-info h2 {
+    color: #16233a;
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.taller-info p {
+    color: #6b7280;
+    margin: 5px 0;
+}
+
+/*==================================================
+=                 FORMULARIO                       =
+==================================================*/
+
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+.fila {
+    display: flex;
+    gap: 18px;
+    margin-bottom: 18px;
+}
+
+.campo {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/*==================================================
+=              INPUTS FLOTANTES                    =
+==================================================*/
+
+.campo-input {
+    position: relative;
+    width: 100%;
+}
+
+.campo-input input {
+    width: 100%;
+    height: 68px;
+    padding: 30px 18px 10px;
+
+    border: 2px solid #e5e7eb;
+    border-radius: 16px;
+
+    background: #f8fafc;
+    color: #16233a;
+
+    font-size: 18px;
+    font-weight: 600;
+
+    transition: .25s;
+}
+
+.campo-input input:hover {
+    border-color: #ffb067;
+}
+
+.campo-input input:focus {
+    outline: none;
+    border-color: #ff6b00;
+    background: #f8fafc;
+    box-shadow: 0 0 0 4px rgba(255, 107, 0, .12);
+}
+
+.campo-input label {
+    position: absolute;
+    left: 18px;
+    top: 23px;
+
+    background: #f8fafc;
+    padding: 0;
+
+    color: #6b7280;
+    font-size: 17px;
+    font-weight: 500;
+
+    pointer-events: none;
+    transition: .22s ease;
+}
+
+.campo-input input:focus + label,
+.campo-input input:not(:placeholder-shown) + label {
+    top: 2px;
+    left: 18px;
+
+    font-size: 14px;
+    font-weight: 700;
+    color: #ff6b00;
+
+    background: #f8fafc;
+}
+
+/*==================================================
+=                    LABELS                        =
+==================================================*/
+
+label {
+    margin: 8px 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #374151;
+}
+
+/*==================================================
+=                    SELECT                        =
+==================================================*/
+
+select {
+    width: 100%;
+    height: 68px;
+
+    padding: 0 18px;
+
+    border: 2px solid #e5e7eb;
+    border-radius: 16px;
+
+    background: #fafbfc;
+
+    font-size: 16px;
+    color: #16233a;
+
+    transition: .25s;
+}
+
+select:hover {
+    border-color: #ff8a33;
+}
+
+select:focus {
+    outline: none;
+    background: white;
+    border-color: #ff6b00;
+    box-shadow: 0 0 0 4px rgba(255, 107, 0, .12);
+}
+
+/*==================================================
+=                    BOTONES                       =
+==================================================*/
+
+button {
+    width: 100%;
+    height: 64px;
+
+    margin-top: 30px;
+
+    border: none;
+    border-radius: 16px;
+
+    background: #ff6b00;
+    color: white;
+
+    font-size: 18px;
+    font-weight: 700;
+
+    cursor: pointer;
+    transition: .25s;
+}
+
+button:hover:not(:disabled) {
+    background: #ea5e00;
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(255, 107, 0, .30);
+}
+
+button:disabled {
+    background: #d1d5db;
+    color: #9ca3af;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.volver {
+    margin-top: 14px;
+    background: #6b7280;
+}
+
+.volver:hover {
+    background: #4b5563;
+}
+
+/*==================================================
+=                BARRA PROGRESO                    =
+==================================================*/
+
+.progreso {
+    display: flex;
+    align-items: center;
+    margin-bottom: 28px;
+}
+
+.progreso div {
+    width: 42px;
+    height: 42px;
+
+    border-radius: 50%;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background: #d1d5db;
+    color: white;
+
+    font-weight: 700;
+}
+
+.progreso div.activo {
+    background: #ff6b00;
+}
+
+.progreso span {
+    width: 80px;
+    height: 4px;
+    background: #d1d5db;
+}
+
+.progreso div.activo + span {
+    background: #ff6b00;
+}
+
+/*==================================================
+=                  CALENDARIO                      =
+==================================================*/
+
+.react-calendar {
+    width: 100%;
+    max-width: 760px;
+
+    margin: 20px auto 8px;
+    padding: 22px 30px;
+
+    background: #fff;
+
+    border: none;
+    border-radius: 24px;
+
+    box-shadow: 0 15px 40px rgba(15, 23, 42, .08);
+}
+
+/*------------------ CABECERA ------------------*/
+
+.react-calendar__navigation {
+    height: 55px;
+    margin-bottom: 18px;
+}
+
+.react-calendar__navigation button {
+    width: 52px;
+    height: 52px;
+
+    border: none;
+    background: transparent;
+
+    color: #16233a;
+
+    font-size: 24px;
+    font-weight: 700;
+
+    cursor: pointer;
+    border-radius: 12px;
+
+    transition: .2s;
+}
+
+.react-calendar__navigation button:hover {
+    background: #fff3eb;
+    color: #ff6b00;
+}
+
+.react-calendar__navigation__label {
+    font-size: 28px;
+    font-weight: 700;
+}
+
+/*------------------ DIAS SEMANA ------------------*/
+
+.react-calendar__month-view__weekdays {
+    margin-bottom: 8px;
+}
+
+.react-calendar__month-view__weekdays__weekday {
+    padding: 12px 0;
+
+    color: #94a3b8;
+
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.react-calendar__month-view__weekdays abbr {
+    text-decoration: none;
+}
+
+/*------------------ CELDAS ------------------*/
+
+.react-calendar__tile {
+    height: 56px;
+
+    border: none;
+    border-radius: 14px;
+
+    background: white;
+    color: #16233a;
+
+    font-size: 22px;
+    font-weight: 600;
+
+    transition: .20s;
+}
+
+/*------------------ HOVER ------------------*/
+
+.react-calendar__tile:hover {
+    background: #fff3eb;
+    color: #ff6b00;
+}
+
+/*------------------ DIA ACTUAL ------------------*/
+
+.react-calendar__tile--now {
+    background: white;
+
+    border: 2px solid #ff6b00;
+
+    color: #ff6b00;
+    font-weight: 700;
+}
+
+/*------------------ DIA SELECCIONADO ------------------*/
+
+.react-calendar__tile--active {
+    background: #ff6b00 !important;
+    color: white !important;
+    font-weight: 700;
+}
+
+/*------------------ FINES DE SEMANA ------------------*/
+
+.react-calendar__month-view__days__day--weekend {
+    color: #cbd5e1;
+}
+
+/*------------------ OTRO MES ------------------*/
+
+.react-calendar__month-view__days__day--neighboringMonth {
+    color: #d1d5db;
+}
+
+/*------------------ DIAS DESHABILITADOS ------------------*/
+
+.react-calendar__tile:disabled {
+    background: white;
+    color: #d1d5db;
+    cursor: not-allowed;
+}
+
+/*==================================================
+=                HORAS DISPONIBLES                 =
+==================================================*/
+
+.titulo-horas {
+    margin-top: 40px;
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.horas-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+
+    column-gap: 8px;
+    row-gap: 8px;
+
+    margin-top: 8px;
+}
+
+.horas-grid .hora {
+    margin: 0;
+}
+
+.horas-grid .hora.seleccionada {
+    margin: 0;
+}
+
+.hora {
+    width: 100%;
+    height: 38px;
+
+    padding: 0;
+
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+
+    background: #fff;
+    color: #16233a;
+
+    font-size: 16px;
+    font-weight: 500;
+
+    cursor: pointer;
+    transition: .20s;
+}
+
+.hora:hover {
+    background: #fff3eb;
+    border-color: #ff6b00;
+}
+
+.hora.seleccionada {
+    background: #ff6b00;
+    color: #fff;
+
+    border-color: #ff6b00;
+
+    box-shadow: 0 6px 16px rgba(255, 107, 0, .18);
+}
+
+/*==================================================
+=                CONFIRMACION                      =
+==================================================*/
+
+.confirmacion {
+    text-align: center;
+}
+
+.confirmacion h2 {
+    color: #16233a;
+    font-size: 34px;
+    margin-bottom: 16px;
+}
+
+.confirmacion p {
+    color: #6b7280;
+    font-size: 18px;
+    line-height: 1.7;
+    margin-bottom: 10px;
+}
+
+.confirmacion strong {
+    color: #16233a;
+}
+
+/*==================================================
+=              ICONO CONFIRMACION                  =
+==================================================*/
+
+.confirmacion-icono {
+    width: 90px;
+    height: 90px;
+
+    margin: 0 auto 22px;
+
+    border-radius: 50%;
+
+    background: #22c55e;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    color: white;
+    font-size: 48px;
+    font-weight: 700;
+
+    box-shadow: 0 12px 30px rgba(34, 197, 94, .25);
+}
+
+/*==================================================
+=             RESUMEN DE RESERVA                   =
+==================================================*/
+
+.resumen-reserva {
+    width: 100%;
+    max-width: 390px;
+
+    margin: 26px auto;
+    padding: 10px 18px;
+
+    background: #fafafa;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+}
+
+.resumen-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 11px 0;
+
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.resumen-item:last-child {
+    border-bottom: none;
+}
+
+.resumen-item span {
+    text-align: right;
+
+    font-size: 15px;
+    font-weight: 600;
+
+    color: #111827;
+}
+
+.resumen-item strong {
+    min-width: 115px;
+
+    color: #16233a;
+
+    font-size: 15px;
+    font-weight: 700;
+}
+
+/*==================================================
+=                MENU PRINCIPAL                    =
+==================================================*/
+
+.inicio-demo {
+    min-height: 100vh;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background: linear-gradient(135deg, #eef2f7, #dfe8f5);
+
+    padding: 30px;
+}
+
+.inicio-card {
+    width: 520px;
+    max-width: 95%;
+
+    background: #fff;
+
+    border-radius: 22px;
+
+    padding: 50px 40px;
+
+    box-shadow: 0 20px 50px rgba(0, 0, 0, .12);
+
+    text-align: center;
+}
+
+.inicio-card h1 {
+    font-size: 52px;
+    font-weight: 800;
+
+    color: #16233a;
+
+    margin-bottom: 10px;
+}
+
+.inicio-card p {
+    font-size: 18px;
+    color: #6b7280;
+
+    margin-bottom: 40px;
+}
+
+.inicio-card button {
+    width: 100%;
+    height: 78px;
+
+    border: 2px solid #e5e7eb;
+    border-radius: 18px;
+
+    margin-bottom: 18px;
+
+    background: white;
+    color: #16233a;
+
+    font-size: 22px;
+    font-weight: 700;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+
+    cursor: pointer;
+    transition: .25s;
+}
+
+.inicio-card button:hover {
+    background: #ff6b00;
+    color: white;
+
+    border-color: #ff6b00;
+
+    transform: translateY(-3px);
+
+    box-shadow: 0 12px 30px rgba(255, 107, 0, .20);
+}
+
+/*==================================================
+=                  VOLVER MENU                     =
+==================================================*/
+
+.volver-card {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 18px;
+}
+
+.volver-menu {
+    width: 110px !important;
+    height: 34px !important;
+
+    padding: 0 !important;
+    margin: 0 !important;
+
+    border: none;
+
+    border-radius: 10px;
+
+    background: #ff6b00;
+    color: white;
+
+    font-size: 14px;
+    font-weight: 700;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: none;
+
+    box-shadow: 0 8px 18px rgba(255, 107, 0, .25);
+
+    cursor: pointer;
+}
+
+.volver-menu:hover {
+    background: #eb5f00;
+}
+
+/*==================================================
+=              DESCRIPCION SERVICIO                =
+==================================================*/
+
+.descripcion-servicio {
+    margin-top: 18px;
+}
+
+.descripcion-servicio label {
+    display: block;
+
+    margin-bottom: 8px;
+
+    font-size: 15px;
+    font-weight: 700;
+
+    color: #16233a;
+}
+
+.texto-opcional {
+    color: #8a8f98;
+
+    font-weight: 500;
+    font-style: italic;
+}
+
+.descripcion-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.descripcion-wrapper textarea {
+    width: 100%;
+    min-height: 120px;
+
+    padding: 16px 18px 30px;
+
+    box-sizing: border-box;
+
+    background: #fff;
+
+    border: 2px solid #e1e5ea;
+    border-radius: 16px;
+
+    font-family: inherit;
+    font-size: 15px;
+    line-height: 1.5;
+
+    color: #16233a;
+
+    resize: vertical;
+    outline: none;
+
+    transition: border-color .2s, box-shadow .2s;
+}
+
+.descripcion-wrapper textarea::placeholder {
+    color: #8a8f98;
+    opacity: 1;
+}
+
+.descripcion-wrapper textarea:focus {
+    border-color: #ff6b00;
+
+    box-shadow: 0 0 0 3px rgba(255, 107, 0, .12);
+}
+
+.contador-descripcion {
+    position: absolute;
+
+    right: 16px;
+    bottom: 12px;
+
+    font-size: 12px;
+    color: #8a8f98;
+
+    pointer-events: none;
+}
+
+.ayuda-descripcion {
+    margin: 8px 2px 0;
+
+    font-size: 13px;
+    color: #6b7280;
+
+    line-height: 1.4;
+}
+
+/*==================================================
+=                  RESPONSIVE                      =
+==================================================*/
+
+@media (max-width: 768px) {
+
+    .card {
+        width: 100%;
+        padding: 26px;
+    }
+
+    .fila {
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .logo {
+        width: 190px;
+    }
+
+    h1 {
+        font-size: 36px;
+    }
+
+    .trust-bar {
+        gap: 8px;
+    }
+
+    .trust-item {
+        font-size: 13px;
+        padding: 8px 14px;
+    }
+
+    .react-calendar {
+        padding: 16px;
+    }
+
+    .react-calendar__navigation__label {
+        font-size: 22px;
+    }
+
+    .react-calendar__tile {
+        height: 48px;
+        font-size: 18px;
+    }
+
+    .horas-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+
+    .horas-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .progreso span {
+        width: 45px;
+    }
+
+    h1 {
+        font-size: 30px;
+    }
+}

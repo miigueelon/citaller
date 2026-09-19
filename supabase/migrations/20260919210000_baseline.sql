@@ -29,7 +29,7 @@ create table public.talleres (
   capacidad_simultanea          integer not null default 1,
   ciudad                        text,
   horario_texto                 text,
-  valoracion                    numeric,
+  valoracion                    numeric(2,1),
   numero_resenas                integer default 0,
   user_id                       uuid,
   calendar_provider             text,
@@ -202,6 +202,10 @@ begin
 end;
 $function$;
 
+-- Estado real en la nube: PUBLIC no tiene EXECUTE sobre la RPC pública (SECURITY DEFINER);
+-- anon, authenticated y service_role lo conservan por los privilegios por defecto del esquema public.
+revoke execute on function public.crear_reserva_publica(bigint, text, text, text, text, text, text, date, time without time zone, integer) from public;
+
 -- ----------------------------------------------------------------------------
 -- RLS
 -- ----------------------------------------------------------------------------
@@ -264,6 +268,9 @@ create policy "taller puede confirmar o cancelar sus reservas" on public.reserva
 
 revoke all on public.reservas from anon, authenticated;
 grant insert on public.reservas to anon;
+-- Restos históricos de la nube: grants INSERT por columna para anon, redundantes con el INSERT de tabla
+-- (se reproducen por fidelidad; un REVOKE a nivel de tabla también retira los de columna).
+grant insert (taller_id, matricula, nombre, telefono, vehiculo, servicio, dia, hora, estado, descripcion) on public.reservas to anon;
 grant select (taller_id, dia, hora, estado) on public.reservas to anon;
 grant insert, select on public.reservas to authenticated;
 grant update (estado) on public.reservas to authenticated;

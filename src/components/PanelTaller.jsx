@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "../lib/supabaseClient";
 import {
   Wrench,
   Clock,
@@ -12,15 +11,26 @@ import {
   AlertCircle,
   History,
   ArrowLeft,
+  Search,
+  Gauge,
 } from "lucide-react";
 
 import "./PanelTaller.css";
 
-export default function PanelTaller({ volver }) {
+export default function PanelTaller({
+  supabaseClient,
+  tallerId,
+}) {
+  const supabase = supabaseClient;
+
   const [reservas, setReservas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [mostrarHistorial, setMostrarHistorial] = useState(false);
+const [taller, setTaller] = useState(null);
+const [filtroEstado, setFiltroEstado] = useState("Pendiente");
+const [busqueda, setBusqueda] = useState("");
+const [filtroFecha, setFiltroFecha] = useState("todas");
 
   // --------------------------------------------------
   // CARGAR RESERVAS
@@ -31,20 +41,23 @@ export default function PanelTaller({ volver }) {
     setError("");
 
     const { data, error } = await supabase
-      .from("reservas")
-      .select(`
-        id,
-        nombre,
-        matricula,
-        vehiculo,
-        servicio,
-        descripcion,
-        estado,
-        dia,
-        hora
-      `)
-      .order("dia", { ascending: true })
-      .order("hora", { ascending: true });
+  .from("reservas")
+  .select(`
+    id,
+    taller_id,
+    nombre,
+    matricula,
+    vehiculo,
+    servicio,
+    descripcion,
+    kilometros,
+    estado,
+    dia,
+    hora
+  `)
+  .eq("taller_id", tallerId)
+  .order("dia", { ascending: true })
+  .order("hora", { ascending: true });
 
     if (error) {
       console.error("Error cargando reservas:", error);
@@ -62,12 +75,57 @@ export default function PanelTaller({ volver }) {
   // --------------------------------------------------
 
   async function cambiarEstadoReserva(id, nuevoEstado) {
+    const reservaActual = reservas.find((reserva) => reserva.id === id);
+
+    // Si una cita ya confirmada de un taller con Google se cancela,
+    // primero eliminamos su evento de Google Calendar.
+    if (
+      nuevoEstado === "Cancelada" &&
+      reservaActual?.estado === "Confirmada" &&
+      (tallerId === 1 || tallerId === 2)
+    ) {
+      try {
+        const { data: cancelarData, error: cancelarError } =
+          await supabase.functions.invoke("cancelar-evento-google", {
+            body: {
+              reserva_id: id,
+            },
+          });
+
+        if (cancelarError || !cancelarData?.ok) {
+          console.error(
+            "No se pudo cancelar el evento de Google Calendar:",
+            cancelarError || cancelarData
+          );
+          alert(
+            "No se pudo cancelar la cita porque Google Calendar no respondió correctamente."
+          );
+          return;
+        }
+
+        console.log(
+          "Respuesta cancelación Google Calendar:",
+          cancelarData
+        );
+      } catch (cancelarError) {
+        console.error(
+          "Error cancelando el evento de Google Calendar:",
+          cancelarError
+        );
+        alert(
+          "No se pudo cancelar la cita porque ocurrió un error con Google Calendar."
+        );
+        return;
+      }
+    }
+
     const { error } = await supabase
       .from("reservas")
       .update({
         estado: nuevoEstado,
       })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("taller_id", tallerId);
 
     if (error) {
       console.error("Error actualizando reserva:", error);
@@ -75,7 +133,94 @@ export default function PanelTaller({ volver }) {
       return;
     }
 
+    if (nuevoEstado === "Confirmada") {
+      try {
+        const { data: whatsappData, error: whatsappError } =
+          await supabase.functions.invoke("bright-processor", {
+            body: {
+              reserva_id: id,
+            },
+          });
+
+        if (whatsappError) {
+          console.error(
+            "La reserva se confirmó, pero falló la llamada a WhatsApp:",
+            whatsappError
+          );
+        } else {
+          console.log("Respuesta WhatsApp:", whatsappData);
+        }
+      } catch (whatsappError) {
+        console.error(
+          "La reserva se confirmó, pero ocurrió un error con WhatsApp:",
+          whatsappError
+        );
+      }
+    }
+
+    if (nuevoEstado === "Confirmada" && (tallerId === 1 || tallerId === 2)) {
+      try {
+        const { data: calendarData, error: calendarError } =
+          await supabase.functions.invoke("quick-worker", {
+            body: {
+              reserva_id: id,
+            },
+          });
+
+        if (calendarError) {
+          console.error(
+            "La reserva se confirmó, pero falló Google Calendar:",
+            calendarError
+          );
+        } else {
+          console.log(
+            "Respuesta Google Calendar:",
+            calendarData
+          );
+        }
+      } catch (calendarError) {
+        console.error(
+          "La reserva se confirmó, pero ocurrió un error con Google Calendar:",
+          calendarError
+        );
+      }
+    }
+
     await cargarReservas();
+  }
+
+  // --------------------------------------------------
+  // CONECTAR GOOGLE CALENDAR
+  // --------------------------------------------------
+
+  async function conectarGoogleCalendar() {
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "dynamic-function",
+        {
+          body: {
+            taller_id: tallerId,
+          },
+        }
+      );
+
+      if (error) {
+        console.error("Error conectando Google Calendar:", error);
+        alert("No se pudo iniciar la conexión con Google Calendar.");
+        return;
+      }
+
+      if (!data?.ok || !data?.auth_url) {
+        console.error("Respuesta inesperada de Google Calendar:", data);
+        alert("No se pudo obtener el enlace de autorización de Google.");
+        return;
+      }
+
+      window.location.href = data.auth_url;
+    } catch (error) {
+      console.error("Error conectando Google Calendar:", error);
+      alert("Ocurrió un error al conectar Google Calendar.");
+    }
   }
 
   // --------------------------------------------------
@@ -85,6 +230,32 @@ export default function PanelTaller({ volver }) {
   useEffect(() => {
     cargarReservas();
   }, []);
+  useEffect(() => {
+  async function cargarDatosTaller() {
+    const { data, error } = await supabase
+      .from("talleres")
+      .select(`
+        id,
+        nombre,
+        direccion,
+        telefono,
+        horario_texto,
+        valoracion,
+        numero_resenas
+      `)
+      .eq("id", tallerId)
+      .single();
+
+    if (error) {
+      console.error("Error cargando taller:", error);
+      setTaller(null);
+    } else {
+      setTaller(data);
+    }
+  }
+
+  cargarDatosTaller();
+}, [tallerId]);
 
   // --------------------------------------------------
   // FECHA DE HOY
@@ -130,6 +301,33 @@ export default function PanelTaller({ volver }) {
       return true;
     });
   }, [reservas]);
+  const reservasPendientes = useMemo(() => {
+  return reservasFuturas.filter(
+    (reserva) => reserva.estado === "Pendiente"
+  );
+}, [reservasFuturas]);
+
+const reservasConfirmadas = useMemo(() => {
+  return reservasFuturas.filter(
+    (reserva) => reserva.estado === "Confirmada"
+  );
+}, [reservasFuturas]);
+
+
+const reservasCanceladas = useMemo(() => {
+  return reservasFuturas.filter(
+    (reserva) => reserva.estado === "Cancelada"
+  );
+}, [reservasFuturas]);
+
+// Total histórico de reservas válidas:
+// pendientes + confirmadas + reservas pasadas.
+// Las canceladas NO cuentan.
+const totalReservasValidas = useMemo(() => {
+  return reservas.filter(
+    (reserva) => reserva.estado !== "Cancelada"
+  ).length;
+}, [reservas]);
 
   // --------------------------------------------------
   // HISTORIAL
@@ -159,19 +357,77 @@ export default function PanelTaller({ volver }) {
   // AGRUPAR RESERVAS
   // --------------------------------------------------
 
-  const reservasAgrupadas = useMemo(() => {
-    const grupos = {};
+  function agruparPorFecha(lista) {
+  const grupos = {};
 
-    reservasFuturas.forEach((reserva) => {
-      if (!grupos[reserva.dia]) {
-        grupos[reserva.dia] = [];
-      }
+  lista.forEach((reserva) => {
+    if (!grupos[reserva.dia]) {
+      grupos[reserva.dia] = [];
+    }
 
-      grupos[reserva.dia].push(reserva);
-    });
+    grupos[reserva.dia].push(reserva);
+  });
 
-    return Object.entries(grupos);
-  }, [reservasFuturas]);
+  return Object.entries(grupos);
+}
+
+const reservasSegunEstado = useMemo(() => {
+  if (filtroEstado === "Pendiente") return reservasPendientes;
+  if (filtroEstado === "Confirmada") return reservasConfirmadas;
+  return reservasCanceladas;
+}, [
+  filtroEstado,
+  reservasPendientes,
+  reservasConfirmadas,
+  reservasCanceladas,
+]);
+
+const reservasFiltradas = useMemo(() => {
+  const texto = busqueda.trim().toLowerCase();
+
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  const manana = new Date(hoy);
+  manana.setDate(manana.getDate() + 1);
+
+  const dentroDe7Dias = new Date(hoy);
+  dentroDe7Dias.setDate(dentroDe7Dias.getDate() + 7);
+
+  return reservasSegunEstado.filter((reserva) => {
+    const nombre = (reserva.nombre || "").toLowerCase();
+    const matricula = (reserva.matricula || "").toLowerCase();
+    const vehiculo = (reserva.vehiculo || "").toLowerCase();
+
+    const coincideBusqueda =
+      !texto ||
+      nombre.includes(texto) ||
+      matricula.includes(texto) ||
+      vehiculo.includes(texto);
+
+    const fechaReserva = new Date(`${reserva.dia}T00:00:00`);
+
+    let coincideFecha = true;
+
+    if (filtroFecha === "hoy") {
+      coincideFecha = fechaReserva.getTime() === hoy.getTime();
+    } else if (filtroFecha === "manana") {
+      coincideFecha = fechaReserva.getTime() === manana.getTime();
+    } else if (filtroFecha === "7dias") {
+      coincideFecha =
+        fechaReserva >= hoy &&
+        fechaReserva < dentroDe7Dias;
+    }
+
+    return coincideBusqueda && coincideFecha;
+  });
+}, [reservasSegunEstado, busqueda, filtroFecha]);
+
+const reservasMostradas = useMemo(
+  () => agruparPorFecha(reservasFiltradas),
+  [reservasFiltradas]
+);
+
 
   // --------------------------------------------------
   // TÍTULO DE FECHA
@@ -315,6 +571,31 @@ export default function PanelTaller({ volver }) {
 
           </div>
 
+          {tallerId === 1 &&
+            reserva.kilometros !== null &&
+            reserva.kilometros !== undefined && (
+              <div className="campo-item">
+
+                <Gauge
+                  className="campo-icon"
+                  size={16}
+                />
+
+                <div className="campo-contenido">
+
+                  <p className="campo-label">
+                    Kilómetros
+                  </p>
+
+                  <p className="campo-valor">
+                    {Number(reserva.kilometros).toLocaleString("es-ES")} km
+                  </p>
+
+                </div>
+
+              </div>
+            )}
+
           <div className="campo-item">
 
             <Wrench
@@ -358,35 +639,64 @@ export default function PanelTaller({ volver }) {
 
         {reserva.estado === "Pendiente" && (
 
-          <div className="tarjeta-acciones">
+  <div className="tarjeta-acciones">
 
-            <button
-              className="btn-confirmar"
-              onClick={() =>
-                cambiarEstadoReserva(
-                  reserva.id,
-                  "Confirmada"
-                )
-              }
-            >
-              ✓ Confirmar
-            </button>
+    <button
+      className="btn-confirmar"
+      onClick={() =>
+        cambiarEstadoReserva(
+          reserva.id,
+          "Confirmada"
+        )
+      }
+    >
+      ✓ Confirmar
+    </button>
 
-            <button
-              className="btn-cancelar"
-              onClick={() =>
-                cambiarEstadoReserva(
-                  reserva.id,
-                  "Cancelada"
-                )
-              }
-            >
-              ✕ Cancelar
-            </button>
+    
 
-          </div>
+    <button
+      className="btn-cancelar"
+      onClick={() =>
+        cambiarEstadoReserva(
+          reserva.id,
+          "Cancelada"
+        )
+      }
+    >
+      ✕ Cancelar
+    </button>
 
-        )}
+  </div>
+
+)}
+
+        {reserva.estado === "Confirmada" && (
+
+  <div className="tarjeta-acciones">
+
+    <button
+      className="btn-cancelar"
+      onClick={() => {
+        const confirmarCancelacion = window.confirm(
+          "¿Seguro que quieres cancelar esta cita? Se liberará el hueco y se eliminará su evento de Google Calendar si existe."
+        );
+
+        if (confirmarCancelacion) {
+          cambiarEstadoReserva(
+            reserva.id,
+            "Cancelada"
+          );
+        }
+      }}
+    >
+      ✕ Cancelar cita
+    </button>
+
+  </div>
+
+)}
+
 
       </div>
     );
@@ -401,19 +711,7 @@ export default function PanelTaller({ volver }) {
 
       <div className="panel-taller-contenido">
 
-        {/* VOLVER */}
-
-        <div className="volver-card">
-
-          <button
-            className="volver-menu"
-            onClick={volver}
-          >
-            ← Menú
-          </button>
-
-        </div>
-
+        
         {/* LOGO */}
 
         <div className="panel-logo">
@@ -440,11 +738,11 @@ export default function PanelTaller({ volver }) {
 
             <h1 className="panel-titulo">
 
-              {mostrarHistorial
-                ? "Historial de reservas"
-                : "Panel del Taller"}
+  {mostrarHistorial
+    ? `Historial · ${taller?.nombre || "Taller"}`
+    : `Panel · ${taller?.nombre || "Taller"}`}
 
-            </h1>
+</h1>
 
             <p className="panel-subtitulo">
 
@@ -454,8 +752,8 @@ export default function PanelTaller({ volver }) {
                       ? "reserva pasada"
                       : "reservas pasadas"
                   }`
-                : `${reservasFuturas.length} ${
-                    reservasFuturas.length === 1
+                : `${totalReservasValidas} ${
+                    totalReservasValidas === 1
                       ? "reserva"
                       : "reservas"
                   }`}
@@ -464,22 +762,140 @@ export default function PanelTaller({ volver }) {
 
           </div>
 
-          <button
-            className="panel-btn-actualizar"
-            onClick={cargarReservas}
-            disabled={cargando}
+          <div
+            style={{
+              display: "flex",
+              gap: "12px",
+              width: "100%",
+            }}
           >
+            <button
+              className="panel-btn-actualizar"
+              onClick={cargarReservas}
+              disabled={cargando}
+              style={{ flex: 1 }}
+            >
+              <RefreshCw
+                className={`panel-btn-icon ${
+                  cargando ? "spin" : ""
+                }`}
+              />
 
-            <RefreshCw
-              className={`panel-btn-icon ${
-                cargando ? "spin" : ""
-              }`}
-            />
+              Actualizar
+            </button>
 
-            Actualizar
+            <button
+              className="panel-btn-actualizar"
+              onClick={() => {
+                window.location.href = `/?taller=${tallerId}`;
+              }}
+              style={{ flex: 1 }}
+            >
+              + Nueva cita
+            </button>
 
+            {(tallerId === 1 || tallerId === 2) && (
+              <button
+                className="panel-btn-actualizar"
+                onClick={conectarGoogleCalendar}
+                style={{ flex: 1 }}
+              >
+                Conectar Google Calendar
+              </button>
+            )}
+
+            <button
+              className="panel-btn-actualizar"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                window.location.href = `/?taller=${tallerId}&modo=taller`;
+              }}
+              style={{ flex: 1 }}
+            >
+              Cerrar sesión
+            </button>
+          </div>
+
+        </div>
+        <div className="filtros-reservas">
+
+  <button
+    className={filtroEstado === "Pendiente" ? "filtro-activo" : ""}
+    onClick={() => setFiltroEstado("Pendiente")}
+  >
+    Pendientes ({reservasPendientes.length})
+  </button>
+
+  <button
+    className={filtroEstado === "Confirmada" ? "filtro-activo" : ""}
+    onClick={() => setFiltroEstado("Confirmada")}
+  >
+    Confirmadas ({reservasConfirmadas.length})
+  </button>
+
+  <button
+    className={filtroEstado === "Cancelada" ? "filtro-activo" : ""}
+    onClick={() => setFiltroEstado("Cancelada")}
+  >
+    Canceladas ({reservasCanceladas.length})
+  </button>
+
+</div>
+
+        <div className="buscador-reservas">
+          <Search className="buscador-reservas-icono" size={18} />
+
+          <input
+            type="text"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar por nombre, matrícula o vehículo..."
+            aria-label="Buscar reservas"
+          />
+
+          {busqueda && (
+            <button
+              type="button"
+              className="buscador-reservas-limpiar"
+              onClick={() => setBusqueda("")}
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
+
+        <div className="filtro-fecha-rapido">
+          <button
+            type="button"
+            className={filtroFecha === "todas" ? "activo" : ""}
+            onClick={() => setFiltroFecha("todas")}
+          >
+            Todas
           </button>
 
+          <button
+            type="button"
+            className={filtroFecha === "hoy" ? "activo" : ""}
+            onClick={() => setFiltroFecha("hoy")}
+          >
+            Hoy
+          </button>
+
+          <button
+            type="button"
+            className={filtroFecha === "manana" ? "activo" : ""}
+            onClick={() => setFiltroFecha("manana")}
+          >
+            Mañana
+          </button>
+
+          <button
+            type="button"
+            className={filtroFecha === "7dias" ? "activo" : ""}
+            onClick={() => setFiltroFecha("7dias")}
+          >
+            Próximos 7 días
+          </button>
         </div>
 
         {/* HISTORIAL / VOLVER */}
@@ -560,14 +976,16 @@ export default function PanelTaller({ volver }) {
 
           <>
 
-            {reservasAgrupadas.length === 0 ? (
+            {reservasMostradas.length === 0 ? (
 
               <div className="panel-estado panel-vacio">
 
                 <Inbox className="panel-estado-icon" />
 
                 <p>
-                  No hay reservas próximas.
+                  {busqueda || filtroFecha !== "todas"
+                    ? "No hay reservas que coincidan con los filtros."
+                    : "No hay reservas próximas."}
                 </p>
 
               </div>
@@ -576,7 +994,7 @@ export default function PanelTaller({ volver }) {
 
               <div className="panel-grupos">
 
-                {reservasAgrupadas.map(
+                {reservasMostradas.map(
                   ([fecha, items]) => (
 
                     <div

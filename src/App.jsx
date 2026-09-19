@@ -1,164 +1,266 @@
-import { useState } from "react";
-import { supabase } from "./lib/supabaseClient";
-import logo from "./assets/logo.png";
+import { useEffect, useMemo, useState } from "react";
+
+import {
+  crearSupabaseTaller,
+  supabasePublic,
+} from "./lib/supabaseClient";
 
 import ReservaForm from "./components/ReservaForm";
 import FechaHora from "./components/FechaHora";
 import Confirmacion from "./components/Confirmacion";
 import PanelTaller from "./components/PanelTaller";
+import LoginTaller from "./components/LoginTaller";
 
 import "./App.css";
 
 function App() {
+  const params = new URLSearchParams(window.location.search);
 
-  const [vista, setVista] = useState("inicio");
+  const tallerId = Number(params.get("taller")) || 1;
+  const modo = params.get("modo");
+
+  const esModoTaller = modo === "taller";
+
+  // Cada taller utiliza su propio cliente de Supabase
+  // y por tanto su propia sesión.
+  const supabaseTaller = useMemo(
+    () => crearSupabaseTaller(tallerId),
+    [tallerId]
+  );
+
   const [pantallaCliente, setPantallaCliente] = useState(1);
 
+  const [usuarioTaller, setUsuarioTaller] = useState(null);
+  const [cargandoSesion, setCargandoSesion] = useState(true);
+
   const [reserva, setReserva] = useState({
-  matricula: "",
-  nombre: "",
-  telefono: "",
-  vehiculo: "",
-  servicio: "",
-  descripcion: "",
-  dia: "",
-  hora: "",
-});
-  function limpiarReserva() {
-  setReserva({
+    taller_id: tallerId,
     matricula: "",
     nombre: "",
     telefono: "",
     vehiculo: "",
     servicio: "",
+    descripcion: "",
+    kilometros: "",
+    cantidad_neumaticos: "",
     dia: "",
     hora: "",
-    descripcion: "",
   });
-}
-  async function guardarReserva() {
 
-  const { error } = await supabase
-    .from("reservas")
-    .insert([
-      {
-        taller_id: 1,
-        matricula: reserva.matricula,
-        nombre: reserva.nombre,
-        telefono: reserva.telefono,
-        vehiculo: reserva.vehiculo,
-        servicio: reserva.servicio,
-descripcion: reserva.descripcion,
-dia: reserva.dia,
-        hora: reserva.hora,
-        estado: "Pendiente",
+  // ========================================
+  // COMPROBAR SESIÓN DEL TALLER
+  // ========================================
+
+  useEffect(() => {
+    setUsuarioTaller(null);
+    setCargandoSesion(true);
+
+    async function comprobarSesion() {
+      const {
+        data: { session },
+      } = await supabaseTaller.auth.getSession();
+
+      setUsuarioTaller(session?.user || null);
+      setCargandoSesion(false);
+    }
+
+    comprobarSesion();
+
+    const {
+      data: { subscription },
+    } = supabaseTaller.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === "SIGNED_OUT") {
+          setUsuarioTaller(null);
+        }
+
+        if (
+          event === "TOKEN_REFRESHED" &&
+          session?.user
+        ) {
+          setUsuarioTaller(session.user);
+        }
+
+        setCargandoSesion(false);
       }
-    ]);
+    );
 
-  if (error) {
-    console.error("Error guardando reserva:", error);
-    alert("No se pudo guardar la reserva");
-    return false;
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [supabaseTaller]);
+
+  // ========================================
+  // REINICIAR RESERVA SI CAMBIA DE TALLER
+  // ========================================
+
+  useEffect(() => {
+    setReserva({
+      taller_id: tallerId,
+      matricula: "",
+      nombre: "",
+      telefono: "",
+      vehiculo: "",
+      servicio: "",
+      descripcion: "",
+      kilometros: "",
+      dia: "",
+      hora: "",
+    });
+
+    setPantallaCliente(1);
+  }, [tallerId]);
+
+  // ========================================
+  // LIMPIAR RESERVA
+  // ========================================
+
+  function limpiarReserva() {
+    setReserva({
+      taller_id: tallerId,
+      matricula: "",
+      nombre: "",
+      telefono: "",
+      vehiculo: "",
+      servicio: "",
+      descripcion: "",
+      kilometros: "",
+      dia: "",
+      hora: "",
+    });
   }
 
-  return true;
-}
+  // ========================================
+  // GUARDAR RESERVA
+  // ========================================
 
-  // ======================
-  // MENÚ PRINCIPAL
-  // ======================
+  async function guardarReserva() {
+    const kilometrosNormalizados =
+      Number(reserva.taller_id) === 1 &&
+      String(reserva.kilometros ?? "").trim() !== ""
+        ? Number(reserva.kilometros)
+        : null;
 
-  if (vista === "inicio") {
-    return (
-      <div className="inicio-demo">
+    const descripcionFinal =
+      Number(reserva.taller_id) === 2 &&
+      reserva.servicio === "Neumáticos"
+        ? `${reserva.cantidad_neumaticos || ""} neumático${
+            String(reserva.cantidad_neumaticos) === "1" ? "" : "s"
+          } · Medidas: ${
+            reserva.descripcion?.trim() || "No indicadas"
+          }`
+        : reserva.descripcion || null;
 
-        <div className="inicio-card">
+    const { error } = await supabasePublic.rpc(
+      "crear_reserva_publica",
+      {
+        p_taller_id: reserva.taller_id,
+        p_matricula: reserva.matricula,
+        p_nombre: reserva.nombre,
+        p_telefono: reserva.telefono,
+        p_vehiculo: reserva.vehiculo,
+        p_servicio: reserva.servicio,
+        p_descripcion: descripcionFinal,
+        p_dia: reserva.dia,
+        p_hora: reserva.hora,
+        p_kilometros: kilometrosNormalizados,
+      }
+    );
 
-          <img src={logo} alt="CiTaller" className="logo" />
+    if (error) {
+      console.error("Error guardando reserva:", {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      });
 
-          <h2 className="inicio-titulo">
-            Bienvenido a CiTaller
-          </h2>
+      alert(error.message);
+      return false;
+    }
 
-          <p className="inicio-subtitulo">
-            Selecciona cómo deseas acceder
-          </p>
+    return true;
+  }
 
-          <button
-            onClick={() => {
-              setVista("cliente");
-              setPantallaCliente(1);
-            }}
-          >
-            👤 Demo Cliente
-          </button>
+  // ========================================
+  // MODO TALLER
+  // ========================================
 
-          <button
-            onClick={() => setVista("taller")}
-          >
-            🔧 Panel del Taller
-          </button>
-
+  if (esModoTaller) {
+    if (cargandoSesion) {
+      return (
+        <div
+          style={{
+            padding: "40px",
+            textAlign: "center",
+          }}
+        >
+          Cargando...
         </div>
+      );
+    }
 
-      </div>
-    );
-  }
+    if (!usuarioTaller) {
+      return (
+        <LoginTaller
+          supabaseClient={supabaseTaller}
+          tallerId={tallerId}
+          onLogin={setUsuarioTaller}
+        />
+      );
+    }
 
-  // ======================
-  // PANEL TALLER
-  // ======================
-
-  if (vista === "taller") {
     return (
-      <PanelTaller volver={() => setVista("inicio")} />
+  <PanelTaller
+    supabaseClient={supabaseTaller}
+    tallerId={tallerId}
+  />
+);
+  }
+
+  // ========================================
+  // CLIENTE - PASO 1
+  // ========================================
+
+  if (pantallaCliente === 1) {
+    return (
+      <ReservaForm
+        reserva={reserva}
+        setReserva={setReserva}
+        continuar={() => setPantallaCliente(2)}
+      />
     );
   }
 
-  // ======================
-  // CLIENTE PASO 1
-  // ======================
-
- if (pantallaCliente === 1) {
-  return (
-    <ReservaForm
-      reserva={reserva}
-      setReserva={setReserva}
-      continuar={() => setPantallaCliente(2)}
-      volver={() => setVista("inicio")}
-    />
-  );
-}
-  // ======================
-  // CLIENTE PASO 2
-  // ======================
+  // ========================================
+  // CLIENTE - PASO 2
+  // ========================================
 
   if (pantallaCliente === 2) {
     return (
       <FechaHora
-  reserva={reserva}
-  setReserva={setReserva}
-  volver={() => setPantallaCliente(1)}
-  continuar={() => setPantallaCliente(3)}
-/>
+        reserva={reserva}
+        setReserva={setReserva}
+        volver={() => setPantallaCliente(1)}
+        continuar={() => setPantallaCliente(3)}
+      />
     );
   }
 
-  // ======================
-  // CLIENTE PASO 3
-  // ======================
+  // ========================================
+  // CLIENTE - PASO 3
+  // ========================================
 
   return (
-  <Confirmacion
-    reserva={reserva}
-    guardarReserva={guardarReserva}
-    volverMenu={() => {
-      limpiarReserva();
-      setVista("inicio");
-      setPantallaCliente(1);
-    }}
-  />
-);
+    <Confirmacion
+      reserva={reserva}
+      guardarReserva={guardarReserva}
+      volverMenu={() => {
+        limpiarReserva();
+        setPantallaCliente(1);
+      }}
+    />
+  );
 }
 
 export default App;

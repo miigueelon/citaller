@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import { supabase } from "../lib/supabaseClient";
+import { supabasePublic } from "../lib/supabaseClient";
 
 export default function FechaHora({
   reserva,
@@ -9,64 +9,148 @@ export default function FechaHora({
   volver,
   continuar,
 }) {
-
   // ==========================================
-  // HORAS OCUPADAS DESDE SUPABASE
+  // ESTADOS
   // ==========================================
 
-  const [horasOcupadas, setHorasOcupadas] = useState([]);
+  const [horariosTaller, setHorariosTaller] = useState([]);
+  const [reservasPorHora, setReservasPorHora] = useState({});
+  const [totalReservasDia, setTotalReservasDia] = useState(0);
+  const [festivos, setFestivos] = useState([]);
+  const [capacidad, setCapacidad] = useState(1);
+
+  const [cargandoHorarios, setCargandoHorarios] = useState(true);
   const [cargandoHoras, setCargandoHoras] = useState(false);
-
-  // ==========================================
-  // HORA ACTUAL
-  // ==========================================
 
   const [ahora, setAhora] = useState(new Date());
 
-  useEffect(() => {
+  // ==========================================
+  // TALLER ACTUAL
+  // ==========================================
 
+  const tallerId = reserva.taller_id;
+
+  // ==========================================
+  // ACTUALIZAR HORA ACTUAL
+  // ==========================================
+
+  useEffect(() => {
     const intervalo = setInterval(() => {
       setAhora(new Date());
     }, 30000);
 
     return () => clearInterval(intervalo);
-
   }, []);
 
   // ==========================================
-  // HORARIO DEL TALLER
+  // CARGAR CAPACIDAD DEL TALLER
   // ==========================================
 
-  const horas = useMemo(() => {
-    return [
-      "08:00",
-      "08:30",
-      "09:00",
-      "09:30",
-      "10:00",
-      "10:30",
-      "11:00",
-      "11:30",
-      "12:00",
-      "12:30",
-      "13:00",
+  useEffect(() => {
+    async function cargarTaller() {
+      if (!tallerId) {
+        setCapacidad(1);
+        return;
+      }
 
-      "15:00",
-      "15:30",
-      "16:00",
-      "16:30",
-      "17:00",
-      "17:30",
-      "18:00",
-    ];
-  }, []);
+      const { data, error } = await supabasePublic
+        .from("talleres")
+        .select("capacidad_simultanea")
+        .eq("id", tallerId)
+        .single();
+
+      if (error) {
+        console.error(
+          "Error cargando capacidad del taller:",
+          error
+        );
+
+        setCapacidad(1);
+        return;
+      }
+
+      setCapacidad(
+        Number(data?.capacidad_simultanea) || 1
+      );
+    }
+
+    cargarTaller();
+  }, [tallerId]);
+
+  // ==========================================
+  // CARGAR HORARIOS DEL TALLER
+  // ==========================================
+
+  useEffect(() => {
+    async function cargarHorarios() {
+      if (!tallerId) {
+        setHorariosTaller([]);
+        setCargandoHorarios(false);
+        return;
+      }
+
+      setCargandoHorarios(true);
+
+      const { data, error } = await supabasePublic
+        .from("horarios_taller")
+        .select("dia_semana, hora, aviso_tarde")
+        .eq("taller_id", tallerId)
+        .order("hora");
+
+      if (error) {
+        console.error(
+          "Error cargando horarios:",
+          error
+        );
+
+        setHorariosTaller([]);
+      } else {
+        setHorariosTaller(data || []);
+      }
+
+      setCargandoHorarios(false);
+    }
+
+    cargarHorarios();
+  }, [tallerId]);
+
+  // ==========================================
+  // CARGAR FESTIVOS DEL TALLER
+  // ==========================================
+
+  useEffect(() => {
+    async function cargarFestivos() {
+      if (!tallerId) {
+        setFestivos([]);
+        return;
+      }
+
+      const { data, error } = await supabasePublic
+        .from("festivos_taller")
+        .select("fecha, nombre")
+        .eq("taller_id", tallerId)
+        .order("fecha");
+
+      if (error) {
+        console.error(
+          "Error cargando festivos:",
+          error
+        );
+
+        setFestivos([]);
+      } else {
+        setFestivos(data || []);
+      }
+    }
+
+    cargarFestivos();
+  }, [tallerId]);
 
   // ==========================================
   // FORMATEAR FECHA
   // ==========================================
 
   const formatearFecha = (fecha) => {
-
     const año = fecha.getFullYear();
 
     const mes = String(
@@ -81,23 +165,35 @@ export default function FechaHora({
   };
 
   // ==========================================
-  // COMPROBAR SI UNA HORA YA HA PASADO HOY
+  // BUSCAR FESTIVO
+  // ==========================================
+
+  const obtenerFestivo = (fecha) => {
+    const fechaFormateada =
+      formatearFecha(fecha);
+
+    return festivos.find(
+      (festivo) =>
+        festivo.fecha === fechaFormateada
+    );
+  };
+
+  // ==========================================
+  // COMPROBAR SI UNA HORA YA HA PASADO
   // ==========================================
 
   const horaYaPasada = (hora) => {
-
     if (!reserva.dia) {
       return false;
     }
 
     const hoy = formatearFecha(ahora);
 
-    // Si no es hoy, la hora no está pasada
     if (reserva.dia !== hoy) {
       return false;
     }
 
-    const [horaReserva, minutosReserva] =
+    const [horaReserva, minutoReserva] =
       hora.split(":").map(Number);
 
     const minutosActuales =
@@ -106,31 +202,29 @@ export default function FechaHora({
 
     const minutosDeLaReserva =
       horaReserva * 60 +
-      minutosReserva;
+      minutoReserva;
 
     return minutosDeLaReserva <= minutosActuales;
   };
 
   // ==========================================
-  // CARGAR HORAS OCUPADAS
+  // CARGAR RESERVAS DEL DÍA
   // ==========================================
 
   useEffect(() => {
-
-    async function cargarHorasOcupadas() {
-
-      if (!reserva.dia) {
-
-        setHorasOcupadas([]);
-
+    async function cargarReservasDelDia() {
+      if (!reserva.dia || !tallerId) {
+        setReservasPorHora({});
+        setTotalReservasDia(0);
         return;
       }
 
       setCargandoHoras(true);
 
-      const { data, error } = await supabase
+      const { data, error } = await supabasePublic
         .from("reservas")
         .select("hora, estado")
+        .eq("taller_id", tallerId)
         .eq("dia", reserva.dia)
         .in("estado", [
           "Pendiente",
@@ -138,44 +232,58 @@ export default function FechaHora({
         ]);
 
       if (error) {
-
         console.error(
-          "Error cargando horas ocupadas:",
+          "Error cargando reservas:",
           error
         );
 
-        setHorasOcupadas([]);
-
+        setReservasPorHora({});
       } else {
+        const contador = {};
 
-        const horas = (data || [])
-          .map((reserva) =>
-            reserva.hora?.substring(0, 5)
-          )
-          .filter(Boolean);
+        (data || []).forEach((item) => {
+          const hora =
+            item.hora?.substring(0, 5);
 
-        setHorasOcupadas(horas);
+          if (!hora) return;
+
+          contador[hora] =
+            (contador[hora] || 0) + 1;
+        });
+
+        setReservasPorHora(contador);
+        setTotalReservasDia((data || []).length);
       }
 
       setCargandoHoras(false);
     }
 
-    cargarHorasOcupadas();
-
-  }, [reserva.dia]);
+    cargarReservasDelDia();
+  }, [reserva.dia, tallerId]);
 
   // ==========================================
   // CAMBIAR FECHA
   // ==========================================
 
   const cambiarFecha = (fecha) => {
-
     if (!fecha) return;
+
+    // Seguridad: no permitir fines de semana
+    if (
+      fecha.getDay() === 0 ||
+      fecha.getDay() === 6
+    ) {
+      return;
+    }
+
+    // Seguridad: no permitir festivos
+    if (obtenerFestivo(fecha)) {
+      return;
+    }
 
     const valor = formatearFecha(fecha);
 
     if (reserva.dia === valor) {
-
       setReserva({
         ...reserva,
         dia: "",
@@ -190,54 +298,101 @@ export default function FechaHora({
       dia: valor,
       hora: "",
     });
-
   };
 
   // ==========================================
   // HORAS DISPONIBLES
   // ==========================================
 
-  const horasDisponibles = horas.filter(
-    (hora) =>
-      !horasOcupadas.includes(hora) &&
-      !horaYaPasada(hora)
-  );
+  const horasDisponibles = horariosTaller
+    .filter((horario) => {
+      if (!reserva.dia) {
+        return false;
+      }
+
+      const fecha = new Date(
+        reserva.dia + "T00:00:00"
+      );
+
+      const diaSemana = fecha.getDay();
+
+      return (
+        Number(horario.dia_semana) ===
+        diaSemana
+      );
+    })
+    .map((horario) => ({
+      hora: horario.hora.substring(0, 5),
+      aviso_tarde: horario.aviso_tarde,
+    }))
+    .filter((slot) => {
+      const reservasActuales =
+        reservasPorHora[slot.hora] || 0;
+
+      const completa =
+        Number(tallerId) === 1
+          ? totalReservasDia >= capacidad
+          : reservasActuales >= capacidad;
+
+      return (
+        !completa &&
+        !horaYaPasada(slot.hora)
+      );
+    });
 
   // ==========================================
-  // LIMPIAR HORA SI PASA MIENTRAS ESTÁ SELECCIONADA
+  // LIMPIAR HORA SI DEJA DE ESTAR DISPONIBLE
   // ==========================================
 
   useEffect(() => {
+    if (!reserva.hora) return;
+
+    const reservasActuales =
+      reservasPorHora[reserva.hora] || 0;
+
+    const completa =
+      Number(tallerId) === 1
+        ? totalReservasDia >= capacidad
+        : reservasActuales >= capacidad;
 
     if (
-      reserva.hora &&
-      horaYaPasada(reserva.hora)
+      horaYaPasada(reserva.hora) ||
+      completa
     ) {
-
       setReserva({
         ...reserva,
         hora: "",
       });
-
     }
-
-  }, [ahora]);
+  }, [
+    ahora,
+    reservasPorHora,
+    capacidad,
+    totalReservasDia,
+  ]);
 
   // ==========================================
   // SELECCIONAR HORA
   // ==========================================
 
   const seleccionarHora = (hora) => {
-
-    // Seguridad adicional:
-    // no permitir seleccionar una hora pasada
-
     if (horaYaPasada(hora)) {
       return;
     }
 
-    if (reserva.hora === hora) {
+    const reservasActuales =
+      reservasPorHora[hora] || 0;
 
+    const completa =
+      Number(tallerId) === 1
+        ? totalReservasDia >= capacidad
+        : reservasActuales >= capacidad;
+
+    if (completa) {
+      return;
+    }
+
+    if (reserva.hora === hora) {
       setReserva({
         ...reserva,
         hora: "",
@@ -250,21 +405,42 @@ export default function FechaHora({
       ...reserva,
       hora,
     });
-
   };
+
+  // ==========================================
+  // COMPROBAR SI EL TALLER ABRE ESE DÍA
+  // ==========================================
+
+  const tallerAbreEseDia = (date) => {
+    const diaSemana = date.getDay();
+
+    return horariosTaller.some(
+      (horario) =>
+        Number(horario.dia_semana) ===
+        diaSemana
+    );
+  };
+
+  // ==========================================
+  // AVISO DE ÚLTIMA HORA
+  // ==========================================
+
+  const mostrarAvisoTarde =
+    reserva.hora &&
+    horasDisponibles.some(
+      (slot) =>
+        slot.hora === reserva.hora &&
+        slot.aviso_tarde === true
+    );
 
   // ==========================================
   // RENDER
   // ==========================================
 
   return (
-
     <div className="card card-fecha">
 
-      {/* VOLVER */}
-
       <div className="volver-card">
-
         <button
           type="button"
           className="volver-menu"
@@ -272,23 +448,20 @@ export default function FechaHora({
         >
           ← Volver
         </button>
-
       </div>
-
-      {/* TÍTULO */}
 
       <h1>
         Elige fecha y hora
       </h1>
-
-      {/* CALENDARIO */}
 
       <Calendar
         locale="es-ES"
         onChange={cambiarFecha}
         value={
           reserva.dia
-            ? new Date(reserva.dia)
+            ? new Date(
+                reserva.dia + "T00:00:00"
+              )
             : null
         }
         minDate={new Date()}
@@ -296,35 +469,78 @@ export default function FechaHora({
         next2Label={null}
         showNeighboringMonth={false}
 
-        tileDisabled={({
-          date,
-          view
-        }) => {
+        // ======================================
+        // BLOQUEAR DÍAS
+        // ======================================
 
-          if (view === "month") {
-
-            return (
-              date.getDay() === 0 ||
-              date.getDay() === 6
-            );
-
+        tileDisabled={({ date, view }) => {
+          if (view !== "month") {
+            return false;
           }
 
-          return false;
+          // Sábado o domingo
+          if (
+            date.getDay() === 0 ||
+            date.getDay() === 6
+          ) {
+            return true;
+          }
+
+          // Festivo
+          if (obtenerFestivo(date)) {
+            return true;
+          }
+
+          // Mientras carga horarios
+          if (cargandoHorarios) {
+            return true;
+          }
+
+          // Día sin horario para ese taller
+          return !tallerAbreEseDia(date);
+        }}
+
+        // ======================================
+        // MARCAR FESTIVOS
+        // ======================================
+
+        tileContent={({ date, view }) => {
+          if (view !== "month") {
+            return null;
+          }
+
+          const festivo =
+            obtenerFestivo(date);
+
+          if (!festivo) {
+            return null;
+          }
+
+          return (
+            <div
+              title={festivo.nombre}
+              style={{
+                fontSize: "9px",
+                lineHeight: "10px",
+                marginTop: "2px",
+                color: "#dc2626",
+                fontWeight: "700",
+              }}
+            >
+              FESTIVO
+            </div>
+          );
         }}
       />
 
-      {/* HORAS */}
-
       {reserva.dia && (
-
         <>
-
           <h3 className="titulo-horas">
             Horas disponibles
           </h3>
 
-          {cargandoHoras ? (
+          {cargandoHorarios ||
+          cargandoHoras ? (
 
             <p
               style={{
@@ -336,40 +552,67 @@ export default function FechaHora({
               Comprobando disponibilidad...
             </p>
 
+          ) : horasDisponibles.length > 0 ? (
+
+            <>
+              <div className="horas-grid">
+
+                {horasDisponibles.map(
+                  (slot) => (
+                    <button
+                      key={slot.hora}
+                      type="button"
+                      className={
+                        reserva.hora === slot.hora
+                          ? "hora seleccionada"
+                          : "hora"
+                      }
+                      onClick={() =>
+                        seleccionarHora(slot.hora)
+                      }
+                    >
+                      {slot.hora}
+                    </button>
+                  )
+                )}
+
+              </div>
+
+              {mostrarAvisoTarde && (
+                <p
+                  style={{
+                    textAlign: "center",
+                    color: "#b45309",
+                    background: "#fff7ed",
+                    border: "1px solid #fed7aa",
+                    borderRadius: "10px",
+                    padding: "12px",
+                    marginTop: "16px",
+                    fontWeight: "600",
+                  }}
+                >
+                  ⚠️ Al seleccionar esta última hora de
+                  recepción, el vehículo podría quedar en
+                  el taller y entregarse al día siguiente.
+                </p>
+              )}
+            </>
+
           ) : (
 
-            <div className="horas-grid">
-
-              {horasDisponibles.map(
-                (hora) => (
-
-                  <button
-                    key={hora}
-                    type="button"
-                    className={
-                      reserva.hora === hora
-                        ? "hora seleccionada"
-                        : "hora"
-                    }
-                    onClick={() =>
-                      seleccionarHora(hora)
-                    }
-                  >
-                    {hora}
-                  </button>
-
-                )
-              )}
-
-            </div>
+            <p
+              style={{
+                textAlign: "center",
+                color: "#6b7280",
+                margin: "20px 0",
+              }}
+            >
+              No hay horas disponibles para este día.
+            </p>
 
           )}
-
         </>
-
       )}
-
-      {/* CONTINUAR */}
 
       <button
         type="button"
@@ -380,7 +623,5 @@ export default function FechaHora({
       </button>
 
     </div>
-
   );
-
 }

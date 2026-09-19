@@ -921,4 +921,14 @@ button:disabled {
     h1 {
         font-size: 30px;
     }
+}.descripcion-servicio textarea {
+  min-height: 0;
+}
+
+.descripcion-servicio textarea[rows="1"] {
+  height: 52px;
+  resize: none;
+}.descripcion-servicio textarea[rows="1"] {
+  resize: none !important;
+  overflow: hidden;
 }

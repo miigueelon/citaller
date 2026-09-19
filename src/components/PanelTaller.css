@@ -495,3 +495,201 @@
   color: #16233a;
   word-break: break-word;
 }
+/*==================================================
+=              FILTROS DE RESERVAS                =
+==================================================*/
+
+.filtros-reservas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin: 18px 0 22px 0;
+}
+
+.filtros-reservas button {
+  width: auto;
+  min-width: 0;
+  padding: 8px 14px;
+  background: white;
+  color: #ff6b00;
+  border: 2px solid #ff6b00;
+  border-radius: 9px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.filtros-reservas button:hover {
+  background: #fff3e8;
+}
+
+.filtros-reservas button.filtro-activo {
+  background: #ff6b00;
+  color: white;
+}
+
+@media (max-width: 480px) {
+  .filtros-reservas {
+    gap: 6px;
+  }
+
+  .filtros-reservas button {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+}
+
+/*==================================================
+=                 BUSCADOR RESERVAS                 =
+==================================================*/
+
+.buscador-reservas {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 0 0 20px 0;
+}
+
+.buscador-reservas-icono {
+  position: absolute;
+  left: 14px;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.buscador-reservas input {
+  width: 100%;
+  height: 44px;
+  padding: 0 84px 0 42px;
+  background: #ffffff;
+  color: #16233a;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  outline: none;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.buscador-reservas input::placeholder {
+  color: #9ca3af;
+}
+
+.buscador-reservas input:focus {
+  border-color: #ff6b00;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.10);
+}
+
+.buscador-reservas-limpiar {
+  position: absolute;
+  right: 8px;
+  border: 0;
+  background: transparent;
+  color: #ff6b00;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 7px 8px;
+  border-radius: 8px;
+}
+
+.buscador-reservas-limpiar:hover {
+  background: #fff3e8;
+}
+
+@media (max-width: 480px) {
+  .buscador-reservas input {
+    font-size: 13px;
+  }
+}
+
+/*==================================================
+=               FILTRO RÁPIDO POR FECHA            =
+==================================================*/
+
+.filtro-fecha-rapido {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -8px 0 22px 0;
+}
+
+.filtro-fecha-rapido button {
+  width: auto !important;
+  min-width: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 7px 11px !important;
+  background: #ffffff !important;
+  color: #6b7280 !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.filtro-fecha-rapido button:hover {
+  border-color: #ffb477 !important;
+  color: #ff6b00 !important;
+  background: #fffaf5 !important;
+}
+
+.filtro-fecha-rapido button.activo {
+  background: #ff6b00 !important;
+  color: #ffffff !important;
+  border-color: #ff6b00 !important;
+}
+
+/*==================================================
+=        CORRECCIÓN BOTÓN LIMPIAR BUSCADOR          =
+==================================================*/
+
+.buscador-reservas {
+  position: relative !important;
+}
+
+.buscador-reservas input {
+  width: 100% !important;
+  height: 44px !important;
+  background: #ffffff !important;
+  color: #16233a !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 12px !important;
+  padding: 0 82px 0 42px !important;
+}
+
+.buscador-reservas .buscador-reservas-limpiar {
+  position: absolute !important;
+  right: 8px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+
+  padding: 6px 8px !important;
+  margin: 0 !important;
+
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+
+  color: #ff6b00 !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+}
+
+.buscador-reservas .buscador-reservas-limpiar:hover {
+  background: #fff3e8 !important;
+  transform: translateY(-50%) !important;
+}
+

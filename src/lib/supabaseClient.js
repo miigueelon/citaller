@@ -1,10 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
+import { env } from "../config/env";
 
-const SUPABASE_URL =
-  "https://zrrqqqbgwwovmglhqxwn.supabase.co";
-
-const SUPABASE_ANON_KEY =
-  "sb_publishable_lI2UNnTiAxmRVW3GtQehAw_0QDJsvIj";
+const SUPABASE_URL = env.supabaseUrl;
+const SUPABASE_ANON_KEY = env.supabaseAnonKey;
 
 // ========================================
 // CACHE DE CLIENTES POR TALLER

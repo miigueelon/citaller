@@ -30,10 +30,22 @@
 - `main` despliega a producción automáticamente. Solo se mezcla a `main` una fase verificada (Playwright + checklist) y aprobada.
 - Rollback: Vercel → Deployments → Promote de un deploy anterior; en BD, restaurar desde `backups/`.
 
+## Secretos y Vault
+- Secretos de Edge Functions (`npx supabase secrets list` / `set`): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `CITALLER_APP_URL`, `CITALLER_CRON_SECRET`, y `WHATSAPP_TOKEN_TALLER_<id>` cuando se active WhatsApp.
+- Dentro de la base de datos, en Vault (`vault.secrets`, cifrado): `citaller_cron_secret` (cabecera `x-cron-secret` del job de recordatorios, igual que el secreto de Edge Functions), `citaller_project_url` (URL del proyecto que usan los jobs) y un `citaller_calendario_google_taller_<id>` por taller con Google conectado.
+- Solo `service_role` y el rol `postgres` pueden leerlos: `anon` y `authenticated` no tienen acceso ni a `vault.decrypted_secrets` ni a las funciones `leer_token_calendario` / `guardar_token_calendario`.
+- Ver los nombres (nunca los valores): `select name, description, updated_at from vault.secrets order by name;`.
+
+## Cron de recordatorios
+- Job `citaller-recordatorios-whatsapp` (`0 8 * * *` UTC), creado por migración; lee el secreto de Vault y llama a la Edge Function `enviar-whatsapp-recordatorios`.
+- Estado: `select jobname, schedule, active from cron.job;` y últimas ejecuciones: `select status_code, created from net._http_response order by created desc limit 5;`.
+- Prueba manual (no envía nada si ningún taller tiene WhatsApp activo): ejecutar el mismo `net.http_post` del job y consultar `net._http_response`.
+
 ## Tareas que se hacen a mano en el dashboard de Supabase (no se pueden versionar)
-- Auth: activar la protección de contraseñas filtradas (no está en `config.toml`). El registro público se desactiva con `config push` en la fase 1.4.
-- Secretos de Edge Functions.
+- **Protección de contraseñas filtradas**: el aviso del linter no se puede quitar porque la organización está en el **plan gratuito** (esa función requiere plan Pro). Queda aceptado y documentado; revisarlo si algún día se sube de plan.
+- Secretos de Edge Functions (o `npx supabase secrets set`).
 - Contraseña de la base de datos (Project Settings → Database): solo hace falta para `npm run backup`.
+- Borrar Edge Functions antiguas (la CLI no lo hace): Dashboard → Edge Functions → la función → Delete.
 
 ## Tareas que se hacen a mano en Google Cloud
 - Publicar la pantalla de consentimiento (hoy en "Testing"; ver `integraciones.md`).

@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { EDGE_FUNCTIONS } from "../features/integraciones/edgeFunctions";
+import {
+  EDGE_FUNCTIONS,
+  esUrlDeGoogle,
+} from "../features/integraciones/edgeFunctions";
 import {
   Wrench,
   Clock,
@@ -78,13 +81,37 @@ const [filtroFecha, setFiltroFecha] = useState("todas");
   async function cambiarEstadoReserva(id, nuevoEstado) {
     const reservaActual = reservas.find((reserva) => reserva.id === id);
 
-    // Si una cita ya confirmada de un taller con Google se cancela,
-    // primero eliminamos su evento de Google Calendar.
-    if (
-      nuevoEstado === "Cancelada" &&
-      reservaActual?.estado === "Confirmada" &&
-      (tallerId === 1 || tallerId === 2)
-    ) {
+    // Primero el cambio de estado. `select` devuelve las filas afectadas: si no hay ninguna,
+    // la base de datos ha rechazado el cambio (por ejemplo, una cita ya cancelada no se
+    // reabre) y no hay que disparar WhatsApp ni Google Calendar.
+    const { data: actualizadas, error } = await supabase
+      .from("reservas")
+      .update({
+        estado: nuevoEstado,
+      })
+      .eq("id", id)
+      .eq("taller_id", tallerId)
+      .select("id");
+
+    if (error) {
+      console.error("Error actualizando reserva:", error);
+      alert("No se pudo actualizar la reserva");
+      return;
+    }
+
+    if (!actualizadas || actualizadas.length === 0) {
+      console.warn("El cambio de estado no afectó a ninguna reserva:", id, nuevoEstado);
+      alert(
+        "Esta cita ya no se puede cambiar. Si estaba cancelada, hay que crear una cita nueva."
+      );
+      await cargarReservas();
+      return;
+    }
+
+    // Si la cita estaba confirmada y se cancela, se borra su evento de Google Calendar.
+    // Es el mejor esfuerzo: la cita ya está cancelada, así que un fallo de Google solo se
+    // avisa (la Edge Function responde ok con un aviso).
+    if (nuevoEstado === "Cancelada" && reservaActual?.estado === "Confirmada") {
       try {
         const { data: cancelarData, error: cancelarError } =
           await supabase.functions.invoke(EDGE_FUNCTIONS.cancelarEventoGoogle, {
@@ -95,43 +122,19 @@ const [filtroFecha, setFiltroFecha] = useState("todas");
 
         if (cancelarError || !cancelarData?.ok) {
           console.error(
-            "No se pudo cancelar el evento de Google Calendar:",
+            "La cita se canceló, pero falló la llamada a Google Calendar:",
             cancelarError || cancelarData
           );
-          alert(
-            "No se pudo cancelar la cita porque Google Calendar no respondió correctamente."
-          );
-          return;
+        } else if (cancelarData.aviso) {
+          console.warn("Google Calendar:", cancelarData.aviso);
+          alert(`La cita está cancelada. ${cancelarData.aviso}.`);
         }
-
-        console.log(
-          "Respuesta cancelación Google Calendar:",
-          cancelarData
-        );
       } catch (cancelarError) {
         console.error(
-          "Error cancelando el evento de Google Calendar:",
+          "La cita se canceló, pero ocurrió un error con Google Calendar:",
           cancelarError
         );
-        alert(
-          "No se pudo cancelar la cita porque ocurrió un error con Google Calendar."
-        );
-        return;
       }
-    }
-
-    const { error } = await supabase
-      .from("reservas")
-      .update({
-        estado: nuevoEstado,
-      })
-      .eq("id", id)
-      .eq("taller_id", tallerId);
-
-    if (error) {
-      console.error("Error actualizando reserva:", error);
-      alert("No se pudo actualizar la reserva");
-      return;
     }
 
     if (nuevoEstado === "Confirmada") {
@@ -159,7 +162,8 @@ const [filtroFecha, setFiltroFecha] = useState("todas");
       }
     }
 
-    if (nuevoEstado === "Confirmada" && (tallerId === 1 || tallerId === 2)) {
+    // La función responde con un error claro si el taller no tiene Google conectado.
+    if (nuevoEstado === "Confirmada") {
       try {
         const { data: calendarData, error: calendarError } =
           await supabase.functions.invoke(EDGE_FUNCTIONS.crearEventoGoogle, {
@@ -201,6 +205,8 @@ const [filtroFecha, setFiltroFecha] = useState("todas");
         {
           body: {
             taller_id: tallerId,
+            // A dónde debe devolvernos Google al terminar (la función valida el origen).
+            volver_a: `${window.location.origin}${window.location.pathname}?taller=${tallerId}&modo=taller`,
           },
         }
       );
@@ -217,6 +223,13 @@ const [filtroFecha, setFiltroFecha] = useState("todas");
         return;
       }
 
+      // Nunca seguir un enlace de autorización que no sea de Google.
+      if (!esUrlDeGoogle(data.auth_url)) {
+        console.error("auth_url inesperada:", data.auth_url);
+        alert("El enlace de autorización recibido no es de Google.");
+        return;
+      }
+
       window.location.href = data.auth_url;
     } catch (error) {
       console.error("Error conectando Google Calendar:", error);
@@ -230,6 +243,41 @@ const [filtroFecha, setFiltroFecha] = useState("todas");
 
   useEffect(() => {
     cargarReservas();
+  }, []);
+
+  // --------------------------------------------------
+  // VUELTA DE GOOGLE CALENDAR (?calendar=connected|error)
+  // --------------------------------------------------
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const resultado = params.get("calendar");
+
+    if (!resultado) return;
+
+    if (resultado === "connected") {
+      alert("Google Calendar conectado correctamente.");
+    } else {
+      const motivo = params.get("motivo");
+      console.error("Google Calendar no se conectó:", motivo);
+      alert(
+        motivo === "access_denied"
+          ? "No se conectó Google Calendar: no diste permiso a CiTaller."
+          : "No se pudo conectar Google Calendar. Vuelve a intentarlo."
+      );
+    }
+
+    // Quitar los parámetros para que el aviso no se repita al recargar.
+    params.delete("calendar");
+    params.delete("motivo");
+
+    const consulta = params.toString();
+
+    window.history.replaceState(
+      {},
+      "",
+      `${window.location.pathname}${consulta ? `?${consulta}` : ""}`
+    );
   }, []);
   useEffect(() => {
   async function cargarDatosTaller() {

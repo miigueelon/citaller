@@ -54,7 +54,7 @@ export default function FechaHora({
       }
 
       const { data, error } = await supabasePublic
-        .from("talleres")
+        .from("talleres_publicos")
         .select("capacidad_simultanea")
         .eq("id", tallerId)
         .single();
@@ -221,25 +221,27 @@ export default function FechaHora({
 
       setCargandoHoras(true);
 
-      const { data, error } = await supabasePublic
-        .from("reservas")
-        .select("hora, estado")
-        .eq("taller_id", tallerId)
-        .eq("dia", reserva.dia)
-        .in("estado", [
-          "Pendiente",
-          "Confirmada",
-        ]);
+      // Solo recuentos por hora: la ocupación del taller es pública, los datos de las
+      // reservas no. La RPC los agrega en la base de datos.
+      const { data, error } = await supabasePublic.rpc(
+        "ocupacion_dia",
+        {
+          p_taller_id: tallerId,
+          p_dia: reserva.dia,
+        }
+      );
 
       if (error) {
         console.error(
-          "Error cargando reservas:",
+          "Error cargando la ocupación del día:",
           error
         );
 
         setReservasPorHora({});
+        setTotalReservasDia(0);
       } else {
         const contador = {};
+        let total = 0;
 
         (data || []).forEach((item) => {
           const hora =
@@ -247,12 +249,15 @@ export default function FechaHora({
 
           if (!hora) return;
 
+          const cuantas = Number(item.total) || 0;
+
           contador[hora] =
-            (contador[hora] || 0) + 1;
+            (contador[hora] || 0) + cuantas;
+          total += cuantas;
         });
 
         setReservasPorHora(contador);
-        setTotalReservasDia((data || []).length);
+        setTotalReservasDia(total);
       }
 
       setCargandoHoras(false);

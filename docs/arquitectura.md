@@ -6,7 +6,7 @@
 - **Integraciones**: Google Calendar (OAuth por taller), WhatsApp Cloud API de Meta (plantillas). Ver `integraciones.md`.
 
 ## Flujos (cadena completa)
-1. **Reservar**: navegador → lectura pública de `talleres`, `horarios_taller`, `festivos_taller` y ocupación de `reservas` (solo `dia, hora, estado`) → RPC `crear_reserva_publica` (SECURITY DEFINER) → fila en `reservas` con `estado='Pendiente'`.
+1. **Reservar**: navegador → vista pública `talleres_publicos`, `horarios_taller`, `festivos_taller` y RPC `ocupacion_dia` (solo recuentos por hora, ningún dato personal) → RPC `crear_reserva_publica` (SECURITY DEFINER) → fila en `reservas` con `estado='Pendiente'`.
 2. **Panel**: navegador → Supabase Auth → `reservas` del taller (política por pertenencia) → `update estado` (solo esa columna).
 3. **Confirmar**: panel → Edge `enviar-whatsapp-confirmacion` (Meta) y Edge `crear-evento-google` (Google Calendar). En la fase 3 pasa a una única Edge `confirmar-reserva` que hace todo en servidor y lo registra en `eventos_reserva`.
 4. **Cancelar**: panel → Edge `cancelar-evento-google` → `update estado`. En la fase 3, `cancelar-reserva`.
@@ -18,7 +18,7 @@
 - `reservas`: `taller_id`, datos del cliente, `servicio`, `dia date`, `hora time`, `estado`, flags de WhatsApp y Calendar. Objetivo: `datos_extra jsonb`, `cliente_id`, `vehiculo_id`, `confirmada_por`, `cancelada_por`.
 - `horarios_taller` (`dia_semana` 0-6, `hora`, `aviso_tarde`), `festivos_taller` (`fecha`, `nombre`).
 - `configuracion_taller` (`max_citas_dia`, `aviso_tarde` texto): se absorbe en `talleres`.
-- `integraciones_calendario` (`proveedor`, `calendar_id`, `refresh_token` → Vault, `conectado`), `google_oauth_states`.
+- `integraciones_calendario` (`proveedor`, `calendar_id`, `refresh_token_secret_id` → secreto cifrado en Vault; `refresh_token` en claro solo en conexiones anteriores al 19-sep-2026, `conectado`), `google_oauth_states` (`state` de un solo uso, `user_id`, `volver_a`, `expires_at`).
 - Objetivo: `servicios_taller`, `campos_formulario_taller`, `miembros_taller`, `eventos_reserva`, `clientes`, `vehiculos`. Detalle en `docs/plan.md`, sección 6.
 
 ## Decisiones

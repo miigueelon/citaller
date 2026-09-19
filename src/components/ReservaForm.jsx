@@ -27,7 +27,7 @@ export default function ReservaForm({
       setCargandoTaller(true);
 
       const { data, error } = await supabasePublic
-        .from("talleres")
+        .from("talleres_publicos")
         .select(`
           id,
           nombre,

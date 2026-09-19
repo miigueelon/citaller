@@ -2,6 +2,18 @@
 
 Ejecutar en el preview de Vercel de la rama (o en local) antes de cerrar cada fase. Marcar cada línea.
 
+## Fase 1: lo que solo puede comprobar una persona (necesita cuentas y navegador)
+
+Primero, en Google Cloud (proyecto `citaller-508917`, cuenta miguel.rodriguez.sevilla93@gmail.com):
+- [ ] Pantalla de consentimiento publicada: https://console.cloud.google.com/apis/credentials/consent?project=citaller-508917 → **Publish app** → **Confirm**. Sin esto, los tokens caducan cada 7 días.
+- [ ] Redirect URI añadida: https://console.cloud.google.com/apis/credentials?project=citaller-508917 → cliente OAuth de tipo web → "URIs de redirección autorizados" → **AÑADIR URI** → `https://zrrqqqbgwwovmglhqxwn.supabase.co/functions/v1/google-calendar-callback` → **GUARDAR**.
+
+Después, con la app en local (`npm run dev`, `http://localhost:5173/?taller=2&modo=taller`) y la sesión del taller Rik and Roll:
+- [ ] **E. Conectar**: "Conectar Google Calendar" lleva a Google, se acepta y vuelve al panel con el aviso "Google Calendar conectado correctamente".
+- [ ] **C. Confirmar**: reservar una cita de prueba en `http://localhost:5173/?taller=2`, confirmarla en el panel y comprobar que el evento aparece en el Google Calendar del taller.
+- [ ] **D. Cancelar**: cancelar esa misma cita y comprobar que el evento desaparece del calendario.
+- [ ] Borrar después la cita de prueba no hace falta: queda como Cancelada, igual que las demás pruebas.
+
 ## A. Reservar (público)
 - [ ] `/speedbikes` (hoy `/?taller=1`): se ve nombre, dirección y horario del taller.
 - [ ] Aparece el campo Kilómetros (solo Speedbikes). Acepta solo dígitos.

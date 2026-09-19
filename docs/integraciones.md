@@ -3,7 +3,8 @@
 ## Supabase
 - Proyecto: `CiTaller` (`zrrqqqbgwwovmglhqxwn`, eu-west-3). URL: `https://zrrqqqbgwwovmglhqxwn.supabase.co`.
 - Clave publicable (anon): en `.env.local` y en las variables de Vercel (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`). Se expone al navegador por diseño; la seguridad la dan RLS y los grants por columna.
-- Secretos de Edge Functions (solo nombres; los valores viven en Supabase → Edge Functions → Secrets): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `CITALLER_APP_URL`, `CITALLER_CRON_SECRET`, `WHATSAPP_TOKEN_TALLER_<id>` (uno por taller; objetivo: Vault), `META_GRAPH_VERSION` (opcional, por defecto `v23.0`).
+- Secretos de Edge Functions existentes el 19-sep-2026 (`npx supabase secrets list`, solo nombres): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `CITALLER_CRON_SECRET`, más los automáticos `SUPABASE_*`. **Faltan**: `CITALLER_APP_URL` (necesario para el callback de Google) y `WHATSAPP_TOKEN_TALLER_<id>` (uno por taller cuando se active WhatsApp; objetivo: Vault). Opcional: `META_GRAPH_VERSION` (por defecto `v23.0`).
+- Las Edge Functions están en `supabase/functions/<slug>/` con su fichero original; `supabase/config.toml` declara `entrypoint` y `verify_jwt` de cada una. Para desplegar: `npx supabase functions deploy <slug>`.
 
 ## Edge Functions (estado actual → nombre objetivo)
 | Slug actual | Nombre objetivo | Qué hace | Auth |
@@ -17,7 +18,8 @@
 | `hyper-processor` | `enviar-whatsapp-recordatorios` | Citas confirmadas de mañana, plantilla `recordatorio_cita` (5 parámetros) | `x-cron-secret`; debe tener `verify_jwt=false` (hoy está a `true` y el cron falla con 401) |
 
 ## Google Calendar
-- Proyecto de Google Cloud de la cuenta `miguel.rodriguez.sevilla93@gmail.com`. API habilitada: Google Calendar API. Cliente OAuth 2.0 de tipo web.
+- Proyecto de Google Cloud `citaller-508917` (nombre "CiTaller", número 474991882154) de la cuenta `miguel.rodriguez.sevilla93@gmail.com`. `gcloud` configurado con ese proyecto. API habilitada (verificado 19-sep-2026): `calendar-json.googleapis.com`. Cliente OAuth 2.0 de tipo web (se revisa en https://console.cloud.google.com/apis/credentials?project=citaller-508917). Pantalla de consentimiento: https://console.cloud.google.com/apis/credentials/consent?project=citaller-508917.
+- **Secreto `CITALLER_APP_URL` no existe en Supabase** (verificado con `secrets list`): el callback usa el valor por defecto `http://localhost:5173`, así que en producción la vuelta de Google acaba en localhost. Se crea en la fase 1 con el dominio de Vercel.
 - Scope: `https://www.googleapis.com/auth/calendar.events` (sensible).
 - Redirect URI registrada hoy: `https://zrrqqqbgwwovmglhqxwn.supabase.co/functions/v1/bright-service`. Al renombrar el callback hay que **añadir** `.../functions/v1/google-calendar-callback` antes de desplegar y quitar la antigua después.
 - **Pantalla de consentimiento**: si está en estado *Testing*, los refresh tokens caducan a los 7 días y la conexión se rompe semanalmente. Debe estar *In production* (con scope sensible Google puede pedir verificación; mientras tanto muestra "app no verificada" pero funciona para los talleres que acepten).

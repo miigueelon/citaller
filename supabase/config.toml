@@ -413,3 +413,35 @@ enabled = true
 # formatted with uppercase keywords, indent 2, max width 180, trailing commas,
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
+
+# ============================================================
+# Edge Functions descargadas de la nube el 19-sep-2026.
+# entrypoint: fichero original de cada función (no usan index.ts).
+# verify_jwt: valor que tiene HOY cada función en la nube, para que un
+# `functions deploy` no cambie el comportamiento sin querer.
+# Nombres y verify_jwt se corrigen en la fase 1 (ver docs/plan.md).
+# ============================================================
+
+[functions.dynamic-function]
+entrypoint = "./functions/dynamic-function/crear-evento-google.ts"
+verify_jwt = true
+
+[functions.quick-worker]
+entrypoint = "./functions/quick-worker/cancelar-evento-google.ts"
+verify_jwt = true
+
+[functions.cancelar-evento-google]
+entrypoint = "./functions/cancelar-evento-google/cancelar-evento-google.ts"
+verify_jwt = true
+
+[functions.bright-service]
+entrypoint = "./functions/bright-service/google-calendar-callback.ts"
+verify_jwt = false
+
+[functions.bright-processor]
+entrypoint = "./functions/bright-processor/enviar-whatsapp.ts"
+verify_jwt = false
+
+[functions.hyper-processor]
+entrypoint = "./functions/hyper-processor/recordatorios-whatsapp.ts"
+verify_jwt = true

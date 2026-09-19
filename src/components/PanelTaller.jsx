@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { EDGE_FUNCTIONS } from "../features/integraciones/edgeFunctions";
 import {
   Wrench,
   Clock,
@@ -86,7 +87,7 @@ const [filtroFecha, setFiltroFecha] = useState("todas");
     ) {
       try {
         const { data: cancelarData, error: cancelarError } =
-          await supabase.functions.invoke("cancelar-evento-google", {
+          await supabase.functions.invoke(EDGE_FUNCTIONS.cancelarEventoGoogle, {
             body: {
               reserva_id: id,
             },
@@ -136,7 +137,7 @@ const [filtroFecha, setFiltroFecha] = useState("todas");
     if (nuevoEstado === "Confirmada") {
       try {
         const { data: whatsappData, error: whatsappError } =
-          await supabase.functions.invoke("bright-processor", {
+          await supabase.functions.invoke(EDGE_FUNCTIONS.enviarWhatsappConfirmacion, {
             body: {
               reserva_id: id,
             },
@@ -161,7 +162,7 @@ const [filtroFecha, setFiltroFecha] = useState("todas");
     if (nuevoEstado === "Confirmada" && (tallerId === 1 || tallerId === 2)) {
       try {
         const { data: calendarData, error: calendarError } =
-          await supabase.functions.invoke("quick-worker", {
+          await supabase.functions.invoke(EDGE_FUNCTIONS.crearEventoGoogle, {
             body: {
               reserva_id: id,
             },
@@ -196,7 +197,7 @@ const [filtroFecha, setFiltroFecha] = useState("todas");
   async function conectarGoogleCalendar() {
     try {
       const { data, error } = await supabase.functions.invoke(
-        "dynamic-function",
+        EDGE_FUNCTIONS.conectarGoogleCalendar,
         {
           body: {
             taller_id: tallerId,

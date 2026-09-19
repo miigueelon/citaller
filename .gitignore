@@ -36,3 +36,5 @@ public/clientes/
 
 # Supabase CLI
 supabase/.temp/
+
+.vercel

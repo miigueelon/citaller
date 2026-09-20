@@ -30,3 +30,9 @@ Resultado de `scripts/rls-test.sql` contra el proyecto remoto antes de cualquier
 | 24 | CHECK/enum en `reservas.estado` | **false** | true | ✘ |
 
 Conclusión: los datos personales de las reservas y los identificadores internos de los talleres **no** son legibles con la clave pública (grants por columna). Las tablas internas (12, 13, 14, 19) solo las protege que RLS esté activa sin políticas; la fase 1 revoca esos privilegios como defensa en profundidad.
+
+## Estado tras la fase 1 (20-sep-2026)
+
+`scripts/rls-test.sql` ampliado a 35 comprobaciones: **32 en objetivo**. Las 3 pendientes son las marcadas "(despliegue)" (31, 32, 33): el INSERT directo de anon en `reservas`, su lectura de `(dia, hora, estado)` y la lectura de `talleres.user_id` por `authenticated` no se pueden retirar hasta que el frontend nuevo esté en producción, porque el que hay desplegado (commit del 15-sep) depende de las dos primeras y `LoginTaller.jsx` de la tercera.
+
+Añadido en esta fase, además de lo que ya había: vista `talleres_publicos` y RPC `ocupacion_dia` como superficie pública; tablas internas (`configuracion_taller`, `google_oauth_states`, `integraciones_calendario`) sin privilegios para anon ni authenticated; funciones de Vault solo para `service_role`; `authenticated` limitado a la fila de su taller; FK y CHECK en `reservas`; `search_path` fijo en las funciones propias; trigger de aforo como SECURITY DEFINER (antes fallaba al insertar como anon); y política pública de `talleres` que exige `activo`.

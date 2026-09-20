@@ -6,7 +6,9 @@
 - CLI: `npx supabase login` (token de acceso personal, que la CLI guarda fuera del repo) y `npx supabase link --project-ref zrrqqqbgwwovmglhqxwn`. Con eso, `migration list`, `migration repair`, `db push`, `functions deploy`, `secrets list` y `gen types` trabajan por la API de gestión: **no necesitan la contraseña de la base de datos** (verificado el 19-sep-2026 con `db push --dry-run`). La contraseña solo la usa `npm run backup` (conexión directa por el pooler). Si el token de acceso se ha compartido por chat o captura de pantalla, revocarlo en https://supabase.com/dashboard/account/tokens y repetir `login`.
 - Migraciones: `supabase/migrations/20260919210000_baseline.sql` reproduce el esquema que había en la nube y está **marcada como aplicada** con `migration repair` (no se ejecutó en la nube). Todo cambio posterior es una migración nueva aplicada con `db push`.
 - Secretos de Edge Functions existentes el 19-sep-2026 (`npx supabase secrets list`, solo nombres): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `CITALLER_CRON_SECRET`, más los automáticos `SUPABASE_*`. **Faltan**: `CITALLER_APP_URL` (necesario para el callback de Google) y `WHATSAPP_TOKEN_TALLER_<id>` (uno por taller cuando se active WhatsApp; objetivo: Vault). Opcional: `META_GRAPH_VERSION` (por defecto `v23.0`).
-- Las Edge Functions están en `supabase/functions/<slug>/` con su fichero original; `supabase/config.toml` declara `entrypoint` y `verify_jwt` de cada una. Para desplegar: `npx supabase functions deploy <slug>`.
+- Las Edge Functions están en `supabase/functions/<nombre>/index.ts`, con lo común en `_shared/`; `supabase/config.toml` declara `entrypoint` y `verify_jwt` de cada una. Para desplegar, **sin Docker**: `npx supabase functions deploy <nombre> --use-api`, de una en una (una línea con varios nombres se parte al pegarla en la terminal y no llega a ejecutarse).
+- Secretos añadidos el 19-sep-2026: `CITALLER_APP_URL` (dominio de producción, al que vuelve el callback si no hay URL de vuelta válida) y `GOOGLE_REDIRECT_URI` (debe coincidir letra por letra con la registrada en Google Cloud).
+- Auth: registro público **desactivado** y `site_url` en el dominio de producción, aplicado con `npx supabase config push` el 20-sep-2026.
 - Los slugs que invoca el navegador están centralizados en `src/features/integraciones/edgeFunctions.js`: renombrar una función es cambiar una línea ahí (después de desplegar la nueva).
 
 ## Edge Functions (desde la fase 1)
@@ -41,8 +43,10 @@ Los creó el dashboard con nombres que no decían nada. Siguen desplegados pero 
 - Estado: ningún taller tiene WhatsApp activo todavía.
 
 ## Cron (pg_cron + pg_net)
-- Job `recordatorio-whatsapp-diario`, `0 8 * * *` (UTC), POST a la función de recordatorios con cabecera `x-cron-secret`.
-- Problema actual: la función exige JWT → 401 diario. Arreglo en la fase 1 (`verify_jwt=false` en `supabase/config.toml`, secreto en Vault, job creado por migración).
+- Job `citaller-recordatorios-whatsapp`, `0 8 * * *` (UTC, o sea 10:00 en Madrid en verano y 09:00 en invierno), creado por la migración `20260919220200`. Hace POST a `enviar-whatsapp-recordatorios` con la cabecera `x-cron-secret`, leyendo el secreto de Vault en cada ejecución: ya no está en claro en el comando del job.
+- Arreglado el 20-sep-2026. Antes: el job llamaba a `hyper-processor`, que exigía JWT, y devolvía 401 cada mañana. Verificación manual: respuesta **200** con los recordatorios del día siguiente listados y ninguno enviado (ningún taller tiene WhatsApp activo); sin la cabecera del secreto responde 401.
+- Ver ejecuciones: `select status_code, created from net._http_response order by created desc limit 5;`.
+- Queda pendiente **rotar el valor del secreto**: el histórico `cron.job_run_details` conserva el comando antiguo con el secreto en claro (solo visible con acceso de dueño del proyecto).
 
 ## Vercel
 - Proyecto `citaller`, framework Vite, Node 24, conectado a GitHub `miigueelon/citaller` (`main` → producción `citaller.vercel.app`, pública; ramas → previews protegidos).

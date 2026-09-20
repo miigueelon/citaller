@@ -54,7 +54,12 @@ with comprobaciones (orden, comprobacion, actual, esperado) as (
     -- pendientes del despliegue del frontend nuevo
     (31, '(despliegue) anon inserta directamente en reservas', has_table_privilege('anon', 'public.reservas', 'INSERT'),               false),
     (32, '(despliegue) anon lee reservas.hora',               has_column_privilege('anon', 'public.reservas', 'hora', 'SELECT'),        false),
-    (33, '(despliegue) authenticated lee talleres.user_id',   has_column_privilege('authenticated', 'public.talleres', 'user_id', 'SELECT'), false)
+    (33, '(despliegue) authenticated lee talleres.user_id',   has_column_privilege('authenticated', 'public.talleres', 'user_id', 'SELECT'), false),
+    -- correcciones de la revisión independiente de la fase 1
+    (34, 'el trigger de aforo es SECURITY DEFINER',       (select prosecdef from pg_proc where oid = 'public.comprobar_limite_citas_dia()'::regprocedure), true),
+    (35, 'la política pública de talleres exige activo',  exists (
+           select 1 from pg_policies
+           where schemaname = 'public' and tablename = 'talleres' and 'anon' = any(roles) and qual ilike '%activo%'), true)
 )
 select orden, comprobacion, actual, esperado, (actual = esperado) as ok
 from comprobaciones

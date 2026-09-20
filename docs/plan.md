@@ -1,123 +1,145 @@
-# Plan CiTaller v2: tomar el control con Claude Code, de extremo a extremo
+# Plan CiTaller v3: producto completo, de extremo a extremo
 
-> Cómo se usa: cada paso tiene una casilla. Claude ejecuta una fase, marca casillas, verifica la cadena completa y **se detiene al final de cada fase** para que apruebes la siguiente. Copia canónica en el repo: `docs/plan.md` (se crea en la Fase 0). Nada se sube a `main` ni se despliega a producción sin tu OK. **Claude no ejecuta ninguna fase, ni siquiera la 0, sin aprobación explícita de este plan.**
+> Cómo se usa: cada paso tiene una casilla. Copia canónica en el repo: `docs/plan.md` (al aprobar este plan se sincroniza allí). Nada se sube a `main` ni se despliega a producción sin tu OK explícito.
+>
+> **Ritmo acordado el 20-sep-2026**: las fases 2 → 2.5 → 3 se ejecutan encadenadas, sin parar al cierre de cada una. Claude solo se detiene cuando hay una decisión tuya pendiente, cuando un paso solo puedes hacerlo tú (consolas de Google o Meta, `functions deploy`, `secrets set`, `config push`) y, obligatoriamente, **antes de la salida a producción (fase 4)**. La fase 5 (varios empleados por taller) va después de producción. Cada fase sigue teniendo verificación automática (`npm run probar-cadena`), casillas marcadas y etiqueta `v0-faseN`.
 
-## 0. Estado a 19-sep-2026 (qué se ha ejecutado ya, por error de interpretación, y cómo deshacerlo)
+## 0. Estado a 20-sep-2026
 
-Al desactivarse el modo plan, Claude empezó la Fase 0 sin aprobación. Todo es local y reversible; nada se ha subido a GitHub ni desplegado:
-- Git: commit `d2dca73` en `main` con el trabajo que estaba sin commitear (tag `v0-baseline`); rama `reestructuracion` con `72f16e3` (`.gitattributes`) y `7a75b87` (borrado de `citaller/citaller/`). Sin push.
-- Vercel: variables `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` creadas (production, preview, development). Inofensivas hasta que el código las use en producción.
-- Ficheros sin commitear en la rama: `docs/{idea,arquitectura,integraciones,operaciones,checklist-manual}.md`, `CLAUDE.md`, `src/config/env.js`, `vercel.json`, `.env.local` (ignorado), cambios en `src/lib/supabaseClient.js` (lee de `import.meta.env`) y `.gitignore`. `npm run build` pasa. No se instaló la CLI de Supabase ni se escribieron `README.md`, `.env.example`, `.vscode/`, `docs/plan.md`.
-- Para deshacer todo: `git checkout main && git reset --hard 3c58927 && git branch -D reestructuracion && git tag -d v0-baseline`, borrar los ficheros nuevos, y quitar las dos variables en Vercel. Para conservarlo: al aprobar el plan, la Fase 0 continúa desde 0.3.
+- **Fases 0 y 1 hechas y etiquetadas** (`v0-fase0`, `v0-fase1`; detalle y casillas en `docs/plan.md`). En la nube: 4 migraciones aplicadas, 6 Edge Functions con nombres propios, tokens de Google cifrados en Vault, cron de recordatorios funcionando, registro público desactivado. Verificación `npm run probar-cadena`: 27/27 sobre el taller de pruebas `e2e` (id 3), incluido un evento real creado y borrado en Google Calendar.
+- Rama `reestructuracion`, 21 commits por delante de `main`, sin push. Producción sigue sirviendo el commit del 15-sep (demo de un solo taller que inserta directamente en `reservas`); por eso tres permisos de anon/authenticated quedan sin revocar hasta desplegar el frontend nuevo.
+- Google: pantalla de consentimiento en "Prueba" (publicarla exige verificación, política de privacidad y dominio propio). Miguel y la cuenta de Rik and Roll son usuarios de prueba; los permisos caducan cada 7 días (reconectar el taller `e2e` hacia el 27-sep).
+- Pendientes menores de la fase 1: borrar los cinco slugs antiguos de Edge Functions desde el dashboard; rotar el secreto del cron.
+- **Este plan v3 añade lo que Miguel describió el 20-sep-2026** (sección 1b) sin cambiar ninguna decisión anterior: cita manual desde el panel, WhatsApp de cancelación, cancelación por el cliente con enlace propio, modo de WhatsApp por taller, QR y botón de Google Business Profile.
 
 ## 1. Contexto
 
 CiTaller es una app de reserva de citas para talleres (hoy Speedbikes Moto y Rik and Roll), construida pegando código de ChatGPT, sin estructura, sin migraciones y con las integraciones (Google Calendar, WhatsApp de Meta) montadas a mano en la nube de Supabase. Objetivo: que Claude Code tome el control con una estructura limpia y escalable como SaaS multi-taller, todo versionado en el repo, y **que cada flujo funcione de extremo a extremo** (navegador → Supabase → Google/Meta → vuelta) y se pueda verificar.
 
+## 1b. El producto, tal como lo describió Miguel el 20-sep-2026
+
+1. **El cliente** entra por el enlace del taller (Google Business Profile o QR del mostrador), rellena un formulario corto (matrícula, nombre, teléfono, vehículo), elige servicio y, según el servicio, rellena campos propios: en neumáticos, la medida obligatoria con la foto de ayuda; en motos, los kilómetros. Elige fecha y hora según el horario del taller y su capacidad por franja (número de elevadores o mecánicos: "a las 9:30 pueden entrar dos coches"). La solicitud llega al taller como **pendiente**.
+2. **El taller** entra en su panel (independiente del resto) y **confirma o cancela**. Al confirmar: WhatsApp al cliente con los datos y evento en su Google Calendar. También **apunta citas a mano** para quien viene en persona (confirmadas directamente, teléfono opcional) y puede **cancelar una cita ya confirmada**, avisando al cliente por WhatsApp.
+3. **El cliente puede cancelar su cita por su cuenta** desde un enlace propio, hasta 24 horas antes: se libera el hueco, se borra el evento de Google y el taller lo ve en el panel como cancelada por el cliente (sin WhatsApp al taller).
+4. **Promoción**: botón "Reserva tu cita" en el perfil de Google Business de cada taller y un código QR con la URL completa del taller para el mostrador. Dominio propio: más adelante.
+
 ## 2. Decisiones cerradas
 
 | Tema | Decisión |
 |---|---|
+| Ritmo (20-sep) | Fases 2 → 2.5 → 3 encadenadas; paradas solo por decisiones, pasos manuales de Miguel o antes de producción. |
+| Cita manual del taller (20-sep) | Nace **Confirmada**, teléfono **opcional**; con teléfono se avisa por WhatsApp; siempre va al calendario. El taller puede elegir **cualquier hora**, con aviso si está llena o fuera de horario. |
+| Cancelación por el taller (20-sep) | Además de borrar el evento, **WhatsApp de cancelación** al cliente (plantilla nueva). |
+| Cancelación por el cliente (20-sep) | Enlace propio de la cita con código largo, **sin comprobación extra**; permitido **hasta 24 h antes**; el taller lo ve en el panel como "cancelada por el cliente"; **sin WhatsApp al taller**. |
+| WhatsApp por taller (20-sep) | Modo por taller: `api` (Meta Cloud, automático; Rik and Roll se hará WhatsApp Business), `enlace` (el panel abre WhatsApp con el mensaje ya escrito y el taller lo envía desde su móvil; **Speedbikes**, que usa el número personal de la dueña) o `ninguno`. La web solo promete WhatsApp al cliente si el taller lo envía automáticamente. |
+| Promoción (20-sep) | QR por taller generado en el repo (`clientes/<slug>/assets/`); nota de operaciones para el enlace de reserva en Google Business Profile. Requiere las URLs por slug (fase 2). |
+| Neumáticos (20-sep) | La "foto" es la **imagen de ayuda** que ya existe (`guia_neumatico.png`, pasa a `imagen_ayuda_url` del servicio); el cliente escribe la medida, obligatoria. El cliente **no** sube fotos (roadmap). |
+| Rechazo de pendientes (20-sep) | Si el taller cancela una solicitud que aún estaba Pendiente, el cliente **también** recibe el WhatsApp de cancelación. |
+| Recordatorios en modo `enlace` (20-sep) | El panel muestra una lista **"Citas de mañana"** con un botón por cita que abre WhatsApp con el recordatorio ya escrito. El envío automático sigue siendo solo para modo `api`. |
+| Salida a producción (20-sep) | **Al cerrar la fase 3**, con tu OK explícito (fase 4). Multiusuario (fase 5) sale después como mejora. |
 | Escalado | SaaS multi-tenant. Alta de taller sin tocar código. |
 | TypeScript | Sí, durante la reestructuración. |
 | Config por taller | Fuente de verdad en BD. En el repo, `clientes/<slug>/` con seed, assets y notas; **sin secretos** (ni tokens, ni refresh_token, ni IDs de WhatsApp). |
-| Supabase | Todo al repo con Supabase CLI. **Flujo solo remoto, sin Docker**: migraciones escritas a mano + `db push`; backup antes de cada migración. Docker queda como opción futura. |
-| URLs | `/<slug>` y `/<slug>/panel`; redirección de `?taller=N`. Slugs reservados prohibidos por CHECK. |
-| Google | Un proyecto de Google Cloud; cada taller conecta su Calendar. Claude guía los logins por terminal. |
+| Supabase | Todo al repo con Supabase CLI. **Flujo solo remoto, sin Docker**: migraciones escritas a mano + `db push`; backup antes de cada migración. |
+| URLs | `/<slug>`, `/<slug>/panel` y `/<slug>/cita/<token>`; redirección de `?taller=N`. Slugs reservados prohibidos por CHECK. |
+| Google | Un proyecto de Google Cloud; cada taller conecta su Calendar. |
 | Usuarios | Varios empleados por taller, con registro de quién hace qué. |
-| Cliente final | Sin cuenta; identificado por teléfono. |
-| Producción | Sin clientes reales aún (datos de prueba). Se trabaja en la rama `reestructuracion`; `main` y producción no cambian hasta que una fase esté verificada y tú lo apruebes. |
-| Fechas y horas | Se guardan como `dia date` + `hora time` **en hora local del taller** + `talleres.zona_horaria`; solo se convierten en los bordes (eventos de Calendar, "mañana" del cron). Nunca `new Date("YYYY-MM-DD")`. |
+| Cliente final | Sin cuenta; identificado por teléfono; gestiona su cita con el enlace de la cita. |
+| Producción | Sin clientes reales aún. Se trabaja en la rama `reestructuracion`; `main` y producción no cambian hasta que Miguel apruebe la salida (fase 5). |
+| Fechas y horas | `dia date` + `hora time` **en hora local del taller**; solo se convierten en los bordes (Calendar, "mañana" del cron, regla de 24 h). Nunca `new Date("YYYY-MM-DD")`; siempre `lib/fechas`. |
 | Estilos | CSS propio en tokens + CSS Modules. Fuera Tailwind y FullCalendar. |
-| Tests | Vitest solo para lógica pura (ficheros `*.test.ts` junto al código); **Playwright smoke** (reservar en cada taller, confirmar/cancelar en panel) contra el preview de Vercel con un taller de pruebas `e2e`; script SQL de pruebas RLS con `set role`; `docs/checklist-manual.md`. |
-| Alcance mínimo | Solo se crea en BD lo que sustituye un hardcode actual o una decisión cerrada. `eventos_reserva`, `clientes`/`vehiculos`, marca por taller, zona horaria, duración y ventana de reserva pasan a roadmap (revisión independiente: "sobra para dos talleres"). |
-| Roadmap (no ahora) | Panel admin de alta de talleres; cliente cancela/cambia por enlace; ficha de cliente e historial; facturación; Outlook; Turnstile anti-abuso; staging separado cuando haya el primer cliente real. |
+| Tests | Vitest para lógica pura; `scripts/probar-cadena.mjs` (ya existe, 27 comprobaciones) crece con cada flujo nuevo; Playwright smoke en la fase 2; `scripts/rls-test.sql`; `docs/checklist-manual.md`. |
+| Alcance mínimo | Solo se crea en BD lo que sustituye un hardcode actual o una decisión cerrada. |
+| Roadmap (no ahora) | Panel admin de alta de talleres con interfaz; el cliente **cambia** de hora (solo cancela, de momento); ficha de cliente e historial por matrícula; facturación; Outlook; Turnstile anti-abuso; dominio propio y publicación de la app de Google; staging separado con el primer cliente real. |
 
-## 3. Diagnóstico verificado
+## 3. Diagnóstico (lo que sigue pendiente a 20-sep-2026, verificado en el código)
 
-### Código (repo)
-- React 19 + Vite 8 + JS; 8 ficheros de código y 1.739 líneas de CSS; sin router, tests, `.env` ni CLAUDE.md. Lógica por taller en 11 puntos (`tallerId === 1/2`). `PanelTaller.jsx` 1.096 líneas. Estado de reserva duplicado 3 veces (falta `cantidad_neumaticos` en 2). `citaller/citaller/` es un scaffold vacío trackeado. LF/CRLF mezclado.
-- **Línea base ejecutada hoy**: `npm run build` OK (3,9 s; `logo.png` pesa 2,1 MB y se sirve a todos); `npm run lint` **4 errores y 3 avisos** (setState en efectos, prop sin usar, dependencias de efectos).
-- Git: `main` local = `origin/main` (15-sep). Hay **1.665 líneas sin commitear** (versión multi-taller) que **no están en producción**.
-
-### Supabase (`zrrqqqbgwwovmglhqxwn`, eu-west-3, PG 17)
-- Sin migraciones. 7 tablas: `talleres`, `reservas`, `horarios_taller`, `festivos_taller`, `configuracion_taller` (no usada por el frontend), `integraciones_calendario` (refresh_token en claro), `google_oauth_states`. Columnas legacy duplicadas en `reservas` y `talleres`.
-- RPC `crear_reserva_publica` (SECURITY DEFINER) inserta sin validar. Trigger `comprobar_limite_citas_dia` hardcodea taller 1 y límite 6.
-- **Permisos (corrección importante)**: hay **grants por columna**. `anon` solo lee `dia, estado, hora, taller_id` de `reservas` y las columnas públicas de `talleres`. **No hay fuga de datos personales** (verificado con la clave pública: `telefono` y `user_id` devuelven 401). `authenticated` solo puede actualizar `estado`. Lo que sí queda: `anon` puede **insertar directamente** en `reservas` (además de la RPC) sin ninguna validación de taller/hora/capacidad; `authenticated` ve `user_id` y IDs de WhatsApp de todos los talleres; `configuracion_taller`, `integraciones_calendario` y `google_oauth_states` tienen privilegios completos para anon/authenticated y solo las protege "RLS sin políticas"; políticas basadas en `talleres.user_id` (1 usuario = 1 taller); protección de contraseñas filtradas desactivada; registro público de usuarios a comprobar.
-- Datos: 2 talleres, 16 reservas de prueba (todas de estos días; ninguna Pendiente), 2 usuarios. Speedbikes (motos, capacidad 6, `calendar_provider='outlook'` sin conectar). Rik and Roll (capacidad 2, Google conectado el 17-sep, **3/3 confirmadas tienen evento en Google** → crear evento funciona de extremo a extremo). Ningún WhatsApp enviado nunca (inactivo en ambos).
-- Edge Functions (6):
-
-| Slug | Código real | Estado verificado |
-|---|---|---|
-| `dynamic-function` | crear evento Google | **Roto para su uso**: el botón "Conectar Google Calendar" la llama con `taller_id` esperando `auth_url`; el código de inicio de OAuth se perdió (no está en tu disco). |
-| `quick-worker` | crear evento Google (copia) | Funciona (es la que usa "Confirmar") |
-| `cancelar-evento-google` | borrar evento | Funciona |
-| `bright-service` | callback OAuth | Viva (400 sin parámetros). `REDIRECT_URI` fija a su slug. |
-| `bright-processor` | WhatsApp confirmación (Meta, plantilla `confirmacion_cita`, token por taller en env `WHATSAPP_TOKEN_TALLER_<id>`) | Viva; WhatsApp inactivo |
-| `hyper-processor` | recordatorios (cron 08:00, `x-cron-secret`) | **Roto**: `verify_jwt=true` y el cron no envía JWT → `401` reproducido hoy en vivo y en `net._http_response`. |
-
-### Entorno y despliegue
-- Equipo: git, node 24, npm 11, winget. Sin Supabase CLI, gcloud, Vercel CLI, Deno, Docker.
-- Vercel: proyecto `citaller` conectado a GitHub (`main` → producción). **`citaller.vercel.app` es pública** (HTTP 200 verificado; la protección solo afecta a previews). **Cero variables de entorno** en Vercel.
-- Google Cloud: pendiente `gcloud`. **A comprobar en consola**: estado de la pantalla de consentimiento (si está en "Testing", los refresh tokens caducan a los 7 días y "Conectar Google Calendar" dejará de funcionar semanalmente) y las redirect URIs del cliente OAuth.
+Lo resuelto en las fases 0 y 1 está en `docs/plan.md`. Lo que queda, y que este plan ataca:
+- **Lógica por taller en el código**: `ReservaForm.jsx` decide kilómetros/neumáticos con `tallerId === 1/2`; lista de servicios única y fija (7); `FechaHora.jsx` aplica capacidad **por día** al taller 1 y **por hora** al resto, regla triplicada; el trigger de aforo tiene `taller_id = 1` y `6` escritos a mano y corre también en UPDATE (confirmar con 6 activas falla); `configuracion_taller.max_citas_dia` no se usa. La capacidad por hora **no está protegida en la base de datos**: dos clientes pueden coger el mismo hueco.
+- **Sin `slug`**: la URL es `?taller=N` con fallback silencioso al taller 1.
+- **Cita manual**: "+ Nueva cita" saca al taller al formulario público y la cita nace Pendiente. La base de datos ya permite al taller insertar Confirmada (política de la fase 1); el frontend no lo usa.
+- **Cancelación por el taller**: no avisa al cliente; el panel ni carga el teléfono.
+- **Cancelación por el cliente**: no existe nada (ni ruta, ni token, ni columna).
+- **WhatsApp**: teléfono obligatorio sin validar formato; normalización duplicada en dos funciones; si falla el envío, el taller no se entera (solo consola); `Confirmacion.jsx` promete un WhatsApp que solo llega si el taller tiene la API activa, y dice "¡Solicitud enviada!" antes de guardar.
+- **Promoción**: nada de QR ni de Google Business en el repo.
 
 ## 4. Cadena end-to-end por flujo (qué debe estar en pie y cómo se comprueba)
 
-| Flujo | Cadena | Debe existir | Verificación |
-|---|---|---|---|
-| A. Reservar (público) | `/<slug>` → `talleres_publicos`, `servicios_taller`, `campos`, `horarios`, `festivos`, RPC `ocupacion_dia` → RPC `crear_reserva_publica` | grants anon solo a vistas/RPC; RPC valida y limita abuso; Vercel con `VITE_*` y rewrite SPA | Playwright: reserva en `e2e`; SQL: fila creada con `datos_extra`; RLS script: anon no lee PII |
-| B. Login y panel | `/<slug>/panel` → Auth → `miembros_taller` → `reservas` del taller | políticas por pertenencia; registro público desactivado | Playwright: login `e2e`; RLS script: usuario de A no ve reservas de B |
-| C. Confirmar | panel → Edge `confirmar-reserva` → `estado` + `eventos_reserva` → WhatsApp (si activo) → Calendar (si conectado) | secrets `GOOGLE_CLIENT_ID/SECRET`, tokens WhatsApp, plantilla Meta aprobada | Playwright + SQL: `google_event_id` relleno en Rik and Roll; `eventos_reserva` con `user_id` |
-| D. Cancelar | panel → Edge `cancelar-reserva` → estado → borrar evento (mejor esfuerzo) | ídem | SQL: `google_event_id` a null; fallo de Google no bloquea |
-| E. Conectar Calendar | botón → Edge `conectar-google-calendar` (`auth_url`) → Google → Edge `google-calendar-callback` → Vault → redirige a `/<slug>/panel?calendar=connected` | redirect URI registrada en Google Cloud; consentimiento "In production"; `CITALLER_APP_URL` | Manual guiado en Rik and Roll; SQL: `integraciones_calendario.conectado` |
-| F. Recordatorios | pg_cron 08:00 → Edge `enviar-whatsapp-recordatorios` (`verify_jwt=false`, secreto en Vault) | cron creado por migración | Invocación manual + `net._http_response` = 200 a la mañana siguiente |
-| G. Deploy | rama → preview Vercel (protegido) → `main` → producción | env vars en Vercel; `vercel.json` | Smoke en preview antes de aprobar merge |
+| Flujo | Cadena | Verificación (todo en `npm run probar-cadena` salvo lo marcado) |
+|---|---|---|
+| A. Reservar (público) | `/<slug>` → `talleres_publicos`, `servicios_taller`, `campos_formulario_taller`, `horarios`, `festivos`, RPC `ocupacion_dia` → RPC `crear_reserva_publica` v2 → pantalla con el **enlace de la cita** | reserva válida creada con `datos_extra` y `token_publico`; rechazos: festivo, fuera de horario, hueco lleno, taller inactivo, teléfono mal, más de 3 activas por teléfono |
+| B. Login y panel | `/<slug>/panel` → Auth → reservas del taller | ya verificado; se mantiene |
+| C. Confirmar | panel → Edge `confirmar-reserva` → estado + `confirmada_por/en` → WhatsApp según `whatsapp_modo` → Calendar | `api`: plantilla enviada o error registrado en la reserva; `enlace`: la función devuelve el texto y el panel abre wa.me; `ninguno`: nada; evento creado (ya verificado) |
+| D. Cancelar (taller) | panel → Edge `cancelar-reserva` → estado + `cancelada_por='taller'` → WhatsApp de cancelación según modo → borrar evento (mejor esfuerzo) | igual que C con la plantilla `cancelacion_cita` |
+| E. Conectar Calendar | ya verificado; se mantiene | |
+| F. Recordatorios | cron → Edge; **envía solo en modo `api`**. En modo `enlace`, lista "Citas de mañana" en el panel con botón de WhatsApp por cita | ya verificado; se añade la comprobación del modo; Vitest para el texto del recordatorio |
+| **G. Cita manual** | panel → formulario propio → Edge `crear-reserva-taller` (Confirmada, `creada_por='taller'`, teléfono opcional, cualquier hora con aviso) → misma orquestación que C | cita creada Confirmada con y sin teléfono; con hora llena se crea igual; evento en Calendar |
+| **H. Cancelación por el cliente** | WhatsApp o pantalla de confirmación → `/<slug>/cita/<token>` → RPC `cita_por_token` (datos mínimos) → Edge `cancelar-cita-cliente` → estado + `cancelada_por='cliente'` → borrar evento (mejor esfuerzo) | dentro de plazo: cancela y limpia el evento; a menos de 24 h: rechazada con mensaje; token inventado o ya usado: rechazado; el panel muestra "Cancelada por el cliente" |
+| **I. Promoción** | `clientes/<slug>/assets/qr-reserva.{svg,png}` → URL `/<slug>`; enlace de reserva en Google Business Profile | el QR decodifica a la URL exacta (test); manual: el botón del perfil abre el formulario del taller |
+| J. Deploy | rama → preview Vercel → `main` → producción | smoke en preview antes de aprobar el merge (fase 5) |
 
 ## 5. Estructura objetivo
 
 ```
 citaller/
-├── CLAUDE.md · README.md · .env.example · .gitattributes · vercel.json
-├── docs/  idea.md · plan.md (este plan con casillas) · arquitectura.md (flujos, modelo de datos, decisión de fechas)
-│          integraciones.md (Google OAuth: consentimiento, redirect URIs, secrets; Meta: plantillas, tokens; cron)
-│          operaciones.md (alta de taller, backups, deploy, qué se hace a mano en el dashboard) · checklist-manual.md
-├── clientes/  README.md · _plantilla/ · speedbikes/{seed.sql,assets/,README.md} · rikandroll/{...} · e2e/ (taller de pruebas)
-├── supabase/  config.toml (verify_jwt por función, auth) · migrations/ · seed.sql
-│   └── functions/ _shared/{cors,adminClient,autorizarMiembro,google,whatsapp,vault}.ts
-│        conectar-google-calendar/ · google-calendar-callback/ · confirmar-reserva/ · cancelar-reserva/
-│        enviar-whatsapp-recordatorios/  (crear/cancelar evento y WhatsApp pasan a ser módulos de _shared usados por confirmar/cancelar)
-├── scripts/  sync-clientes.mjs (assets → public/clientes/<slug>/) · backup.mjs · rls-test.sql
-├── tests/e2e/  reservar.spec.ts · panel.spec.ts (Playwright)
+├── CLAUDE.md · README.md · .env.example · vercel.json
+├── docs/  idea.md · plan.md · arquitectura.md · integraciones.md · operaciones.md · checklist-manual.md · rls-baseline.md
+├── clientes/  README.md · _plantilla/ · speedbikes/{seed.sql,assets/,README.md} · rikandroll/{...} · e2e/{seed.sql}
+│              assets/ incluye qr-reserva.svg y qr-reserva.png generados por scripts/qr.mjs
+├── supabase/  config.toml · migrations/ · functions/
+│   └── functions/ _shared/{http,supabaseAdmin,autorizar,google,tokensCalendario,origenes}.ts (existen)
+│                  _shared/{whatsapp,reservas,fechas}.ts (nuevos)
+│                  conectar-google-calendar · google-calendar-callback · crear-evento-google · cancelar-evento-google (existen)
+│                  confirmar-reserva · cancelar-reserva · crear-reserva-taller · cancelar-cita-cliente (nuevas, fase 3)
+│                  enviar-whatsapp-confirmacion · enviar-whatsapp-recordatorios (existen; en la fase 3 pasan a usar _shared/whatsapp.ts)
+├── scripts/  backup.mjs · rls-test.sql · probar-cadena.mjs (existen) · qr.mjs · sync-clientes.mjs (nuevos)
+├── tests/e2e/  reservar.spec.ts · panel.spec.ts · cita-cliente.spec.ts (Playwright)
 └── src/
     ├── main.tsx · app/{App,router}.tsx · app/providers/{TallerProvider,AuthProvider}.tsx
     ├── config/env.ts · lib/supabase/{client,database.types}.ts · lib/fechas.ts
-    ├── features/taller/ (api, tipos TallerConfig, useTaller) · features/reservar/ (ReservarPage, pasos/, useReservaWizard, disponibilidad.ts, validacion.ts, api)
-    ├── features/panel/ (PanelPage, LoginPage, componentes/, useReservasTaller, filtros.ts, api) · features/integraciones/
+    ├── features/taller/ (api, TallerConfig, useTaller) · features/reservar/ (ReservarPage, pasos/, useReservaWizard, disponibilidad.ts, validacion.ts, api)
+    ├── features/cita/ (CitaClientePage: ver y cancelar por token)
+    ├── features/panel/ (PanelPage, LoginPage, componentes/, NuevaCitaForm, useReservasTaller, filtros.ts, whatsappEnlace.ts, api)
+    ├── features/integraciones/ (edgeFunctions.ts, ConectarCalendar)
     ├── components/ (CampoInput, Boton, Alerta, Modal, Cargando, Layout) · styles/{tokens,base}.css + *.module.css · assets/
 ```
 
-Mapeo: `App.jsx` → `router` + `ReservarPage` + `useReservaWizard` + `reservar/api`; `ReservaForm` → `pasos/DatosForm` (+ campos extra); `FechaHora` → `pasos/FechaHora` + `disponibilidad.ts` + `useDisponibilidad`; `Confirmacion` → `pasos/Resumen` + `ReservaConfirmada`; `LoginTaller` → `panel/LoginPage`; `PanelTaller` → `panel/*`; `supabaseClient.js` → `lib/supabase/client.ts`; CSS → `styles/` + módulos.
+## 6. Modelo de configuración por taller y de reservas (BD)
 
-## 6. Modelo de configuración por taller (BD)
+### Ya existe (fase 1)
+`talleres_publicos`, `ocupacion_dia`, FK y CHECK de `reservas`, Vault para tokens, políticas por taller.
 
+### Fase 2b: `talleres.slug`
+`slug text unique`, CHECK `^[a-z0-9-]{3,40}$` y no en (`panel`,`login`,`admin`,`api`,`cita`,`clientes`,`assets`,`e2e`); backfill `speedbikes`, `rikandroll`, `e2e`. La vista `talleres_publicos` lo expone; RPC `taller_por_slug(slug)` o simplemente `talleres_publicos?slug=eq.`.
+
+### Fase 3.1: configuración por taller
 | Hoy (código) | Mañana (BD) |
 |---|---|
-| Kilómetros solo taller 1 | `campos_formulario_taller (taller_id, servicio_id null=todos, clave, etiqueta, tipo numero/texto/select, opciones jsonb, obligatorio, orden, unidad)`; valor en `reservas.datos_extra jsonb` |
-| Neumáticos taller 2 (cantidad, medidas, imagen) | `servicios_taller (taller_id, nombre, orden, activo, descripcion_modo oculta/opcional/obligatoria, descripcion_etiqueta, descripcion_placeholder, descripcion_ayuda, imagen_ayuda_url, duracion_min)` + campo extra `cantidad_neumaticos` ligado al servicio |
-| Catálogo de servicios fijo | `servicios_taller` (seed reproduce los 7 actuales por taller) |
-| Capacidad por día (1) vs por hora | `talleres.modo_capacidad ('por_hora'\|'por_dia')` + `talleres.capacidad`; trigger genérico; absorbe `configuracion_taller` |
-| Fin de semana a mano | se elimina; manda `horarios_taller.dia_semana` |
+| Kilómetros solo taller 1 | `campos_formulario_taller (id, taller_id, servicio_id null=todos, clave, etiqueta, tipo numero/texto/select, opciones jsonb, obligatorio, orden, unidad, ayuda, imagen_ayuda_url)`; valor en `reservas.datos_extra jsonb` |
+| Neumáticos taller 2 | `servicios_taller (id, taller_id, nombre, orden, activo, descripcion_modo oculta/opcional/obligatoria, descripcion_etiqueta, descripcion_placeholder, descripcion_ayuda, imagen_ayuda_url)` + campo `cantidad_neumaticos` (select 1-4) y `medidas` (texto obligatorio) ligados al servicio |
+| Catálogo fijo | `servicios_taller` (seed reproduce los 7 actuales por taller); `reservas.servicio_id` (FK) además del texto `servicio` |
+| Capacidad por día (taller 1) vs por hora | `talleres.modo_capacidad ('por_hora'\|'por_dia')` + `talleres.capacidad`; trigger **genérico** `comprobar_capacidad` (sustituye al de taller 1: lee del taller, solo en INSERT y en el paso a Confirmada, con `pg_advisory_xact_lock(taller_id, dia)`); `configuracion_taller` se elimina |
 | Aviso de tarde fijo | `talleres.texto_aviso_tarde` |
-| Google solo 1 y 2 | existencia de `integraciones_calendario` conectada |
-| Textos "WhatsApp" en la confirmación | `talleres.texto_confirmacion` (nullable; si es null, texto genérico sin prometer WhatsApp) |
-| `?taller=1` | `talleres.slug` unique, CHECK `^[a-z0-9-]{3,40}$` y no en (`panel`,`login`,`admin`,`api`,`clientes`,`assets`,`e2e-*`...) |
-| *(roadmap, no ahora)* | `tipo_vehiculo`, `logo_url`, `color_primario`, `titulo_publico`, `duracion_cita_min`, `zona_horaria`, `antelacion_*` |
+| Textos "WhatsApp" en la confirmación | `talleres.whatsapp_modo ('api'\|'enlace'\|'ninguno')` default `ninguno`; `talleres.texto_confirmacion` nullable |
+| Google solo 1 y 2 | existencia de `integraciones_calendario.conectado` (hecho en la fase 1) |
 
-Nuevas tablas (fase 4): `miembros_taller (user_id, taller_id, rol, nombre, activo)`; `reservas.confirmada_por, confirmada_en, cancelada_por, cancelada_en` (cubre "quién hizo qué" para las dos acciones que existen). Roadmap: `eventos_reserva`, `clientes`, `vehiculos`.
+**Teléfono, una sola normalización, en la base de datos**: función `normalizar_telefono(text)` (solo dígitos; 9 cifras → `34` delante; vacío → null) aplicada por trigger `before insert or update of telefono` en `reservas` (cubre también al frontend viejo de producción) + backfill; `CHECK (telefono is null or telefono ~ '^[0-9]{9,15}$')`. Las Edge Functions dejan de normalizar (hoy hay dos copias).
 
-Integridad: FK `reservas.taller_id → talleres(id)` (hoy no existe: `?taller=999` crea reservas huérfanas). Sin índice único por hora porque la capacidad por hora puede ser >1 (Rik and Roll = 2); la concurrencia se resuelve con bloqueo en la RPC.
+**Trigger de capacidad `comprobar_capacidad`** (sustituye al de taller 1; SECURITY DEFINER, `search_path=''`, sin EXECUTE para anon/authenticated): solo cuenta cuando la fila queda en Pendiente/Confirmada; **confirmar no consume hueco** (si `old.estado` ya era activo y no cambian `dia`/`hora`, no recuenta: hoy confirmar la sexta cita de Speedbikes falla); bloqueo `pg_advisory_xact_lock` por `(taller, día)` para que dos clientes no cojan el mismo hueco; `por_dia` cuenta el día, `por_hora` la hora; **no se aplica a `creada_por='taller'`** (decisión: el taller elige cualquier hora, el panel solo avisa). Error con `errcode` de dominio (`CT001`).
 
-Seguridad pública: vista `talleres_publicos`; RPC `ocupacion_dia(taller_id, dia) → (hora, n)`; se revoca INSERT directo de anon en `reservas` (solo RPC); se revocan privilegios sobrantes de anon/authenticated en tablas internas (hoy tienen `GRANT ALL` y solo las protege RLS sin políticas); los **grants por columna actuales se conservan** y deben aparecer en la migración baseline; `crear_reserva_publica` v2 valida taller activo, servicio, festivo, horario, futuro, capacidad (con bloqueo transaccional), formato de teléfono/matrícula, `datos_extra` contra `campos_formulario_taller`, **límite por teléfono** (máx. 3 activas por taller y 5 creaciones/día), y errores con `errcode` de dominio.
+**Trigger `registrar_cambio_estado`**: al pasar a Confirmada rellena `confirmada_en`; al pasar a Cancelada rellena `cancelada_en` y `cancelada_por = coalesce(new.cancelada_por, 'taller')`. Así cualquier UPDATE deja rastro, venga del panel o de una función.
+
+`crear_reserva_publica` **v2** (SECURITY DEFINER, `search_path=''`): usa `validar_datos_reserva(...)` (interna) que comprueba taller activo, servicio activo del taller, `descripcion` según `descripcion_modo`, día no festivo, `(dow, hora)` en `horarios_taller`, fecha futura (`Europe/Madrid`), teléfono normalizado válido, matrícula, `datos_extra` contra `campos_formulario_taller` (claves, obligatorios, tipos, opciones); además **límite por teléfono** (máx. 3 activas por taller y 5 creaciones por día). Errores con `errcode` `CTxxx` que el frontend traduce (`src/lib/erroresDominio.ts`). Devuelve `{reserva_id, token_publico}`. `insertar_reserva_taller(...)` (solo `service_role`) aplica las mismas reglas menos: teléfono opcional, sin límites por teléfono, hora pasada de hoy permitida y sin capacidad. `ocupacion_dia` limita `p_dia` a `[hoy, hoy + 90 días]`.
+
+### Fase 3.4 y 3.5: citas manuales y cancelaciones
+- `reservas.token_publico uuid not null default gen_random_uuid() unique` (backfill para las existentes); es la credencial del enlace `/<slug>/cita/<token>`. Nunca la lee anon por REST: solo la RPC `cita_por_token` y la Edge `cancelar-cita-cliente`.
+- `reservas.creada_por text not null default 'cliente' check in ('cliente','taller')`; `reservas.cancelada_por text check in ('cliente','taller')`; `reservas.cancelada_en timestamptz`; `reservas.confirmada_en timestamptz` (en la fase 4 se añade `confirmada_por uuid` y `cancelada_por_usuario uuid`).
+- Teléfono opcional solo en manuales: CHECK `(creada_por = 'taller' or telefono is not null)`.
+- Aviso al taller de fallos de mensajería: `reservas.whatsapp_ultimo_error text`, `reservas.whatsapp_cancelacion_enviada boolean default false`, `whatsapp_cancelacion_fecha`.
+- RPC `consultar_cita_cliente(p_token uuid)` (SECURITY DEFINER, anon): devuelve solo `taller_nombre, taller_slug, taller_telefono, nombre, vehiculo, matricula, servicio, dia, hora, estado, cancelada_por, puede_cancelar, limite_cancelacion`. **Nunca el teléfono del cliente.** `puede_cancelar` = estado en (Pendiente, Confirmada) y `dia+hora` en `Europe/Madrid` ≥ ahora + 24 h. La regla de 24 h es una constante de la función (no una columna por taller mientras nadie pida otro plazo).
+- Función `cancelar_reserva_cliente(p_token uuid)` (SECURITY DEFINER, **solo `service_role`**): `select … for update`; no existe → `CT010`; ya cancelada → `CT012`; fuera de plazo → `CT011`; si no, `estado='Cancelada', cancelada_por='cliente'`. La llama la Edge `cancelar-cita-cliente`, que después borra el evento de Google a mejor esfuerzo.
+- Índices: parcial `(taller_id, dia, hora) where estado in ('Pendiente','Confirmada')` y `(taller_id, telefono)` con el mismo filtro.
+- Migración "de despliegue" (fase 5): además de las tres revocaciones pendientes, revocar a `authenticated` el INSERT y el UPDATE directos en `reservas` (desde 3.3 el panel escribe solo por Edge Functions) y borrar `capacidad_simultanea`, `kilometros`, `whatsapp_activo`, `configuracion_taller` y la sobrecarga vieja de la RPC.
 
 ## 7. Fases
 
@@ -149,46 +171,54 @@ Seguridad pública: vista `talleres_publicos`; RPC `ocupacion_dia(taller_id, dia
 - [x] **Cierre (20-sep-2026)**: `get_advisors` sin WARN nuevo más allá de los aceptados; `rls-test.sql` 32/35 (las tres "(despliegue)" siguen pendientes por diseño); flujos A, B, C, D, E y F verificados con `npm run probar-cadena` (27/27) sobre el taller `e2e`, incluido el evento real de Google; build y lint como en la línea base. Tag `v0-fase1`. **Parado, esperando aprobación de la fase 2.**
 
 ### Fase 2 — Reestructurar el frontend con comportamiento idéntico (un commit por subfase, app funcionando)
-- [ ] 2a Tooling: `tsconfig` (strict, `allowJs`), `vite.config.ts`, Vitest, ESLint TS, CSS Modules; quitar tailwind y fullcalendar; Playwright instalado con `tests/e2e/` y taller `e2e` (seed).
-- [ ] 2b `lib/supabase/client.ts` (un cliente público y uno autenticado, `detectSessionInUrl: false`: el callback OAuth vuelve con query params, no con tokens), `config/env.ts`, `lib/fechas.ts` (+tests). Migración `slug` (backfill). Router + `TallerProvider` + `AuthProvider` **con la comprobación de pertenencia que hoy hace `LoginTaller.jsx:34-53`** (`talleres.user_id`; en la fase 4 pasa a `miembros_taller`) + redirección `?taller=N[&modo=taller]` (conservando `calendar=connected`); slug desconocido → 404. Orden de migración a TS: `CampoInput → Confirmacion → LoginTaller → FechaHora → ReservaForm → PanelTaller`, con `allowJs` hasta el final.
-- [ ] 2c `features/reservar`: `useReservaWizard` (un solo estado inicial, actualizaciones funcionales), `disponibilidad.ts` puro (+tests, incluido cruce de medianoche), páginas. La lógica por taller se concentra en `features/taller/configTemporal.ts` (único sitio con `1`/`2`; regla en `CLAUDE.md`: nunca comparar ids de taller en la UI).
+- [ ] 2a Tooling: `tsconfig` (strict, `allowJs`), `vite.config.ts`, Vitest, ESLint TS, CSS Modules; quitar tailwind y fullcalendar; Playwright con `tests/e2e/` usando el taller `e2e` y las credenciales de `.env.local`.
+- [ ] 2b `lib/supabase/client.ts` (cliente público + autenticado, `detectSessionInUrl: false`), `config/env.ts`, `lib/fechas.ts` (+tests). Migración `slug` (backfill `speedbikes`, `rikandroll`, `e2e`). Router + `TallerProvider` + `AuthProvider` con la comprobación de pertenencia que hoy hace `LoginTaller.jsx` + redirección `?taller=N[&modo=taller]` (conservando `calendar=…`); slug desconocido → 404. Ruta `/<slug>/cita/<token>` reservada (página "próximamente" hasta la 3.5). Orden de migración a TS: `CampoInput → Confirmacion → LoginTaller → FechaHora → ReservaForm → PanelTaller`.
+- [ ] 2c `features/reservar`: `useReservaWizard`, `disponibilidad.ts` puro (+tests, incluido cruce de medianoche y modo por día/por hora), páginas. La lógica por taller se concentra en `features/taller/configTemporal.ts` (único sitio con `1`/`2`).
 - [ ] 2d `features/panel`: hooks + componentes; `filtros.ts` (+tests); `Modal`/`Alerta` en vez de `alert`/`confirm`.
-- [ ] 2e Estilos: `tokens.css`, `base.css`, módulos; fuera `index.css` de plantilla, los 51 `!important`, los 22 bloques inline; **borrar CSS muerto** (`.app .badge .volver .progreso* .confirmacion* .inicio-demo .inicio-card`) y el bloque duplicado `.buscador-reservas`; `lang="es"`; `logo.png` (2,1 MB) y `guia_neumatico.png` (627 KB) comprimidos.
-- **Cierre**: lint 0 errores, tests en verde, Playwright en verde contra preview; recorrido de `checklist-manual.md` en los dos talleres; tag `v0-fase2`. **Parar.**
+- [ ] 2e Estilos: `tokens.css`, `base.css`, módulos; fuera `index.css` de plantilla, los `!important` y los bloques inline; CSS muerto borrado; `lang="es"`; `logo.png` y `guia_neumatico.png` comprimidos.
+- **Cierre**: lint 0 errores, tests en verde, Playwright en verde en local y contra el preview de Vercel; `probar-cadena` 27/27; `grep "=== 1\|=== 2" src/` solo en `configTemporal.ts`; tag `v0-fase2`. Se continúa sin parar.
 
-### Fase 2.5 — Correcciones de comportamiento (hallazgos confirmados en el código)
-- [ ] Paso 3 pasa a `Resumen` + pantalla `ReservaConfirmada` solo tras guardar; botón bloqueado mientras guarda (hoy el doble clic duplica reservas).
-- [ ] `useDisponibilidad`: una sola bandera de carga (hoy la capacidad se carga aparte y da falsos "No hay horas"), cancelación de peticiones obsoletas, reset en error.
-- [ ] Panel: fuera el filtro de fin de semana (oculta reservas futuras de sábado/domingo), `[tallerId]` en efectos, `TarjetaReserva` fuera del componente, historial agrupado, acciones deshabilitadas en pasadas y durante la operación (las Edge Functions ya son idempotentes por `whatsapp_confirmacion_enviada` y `google_event_id`; la deshabilitación es por UX y por el update de 0 filas), contador coherente, "hoy" se recalcula, `valoracion` 0 no se oculta.
-- [ ] Sesión: usuario derivado de cada evento de `onAuthStateChange` (parpadeo al recargar).
-- [ ] Al cambiar de servicio se limpian campos dependientes. `CampoInput` reenvía `placeholder`/`inputMode`. `validarReserva` con formato de teléfono y matrícula. Errores de dominio traducidos.
-- **Cierre**: tests nuevos por cada corrección; Playwright en verde; tag `v0-fase2.5`. **Parar.**
+### Fase 2.5 — Correcciones de comportamiento
+- [ ] Paso 3 pasa a `Resumen` + pantalla `ReservaConfirmada` **solo tras guardar**; botón bloqueado mientras guarda; la pantalla final muestra el **enlace de la cita** (`/<slug>/cita/<token>`) con "guárdalo para cancelar si no puedes venir".
+- [ ] `useDisponibilidad`: una sola bandera de carga, cancelación de peticiones obsoletas, reset en error.
+- [ ] Panel: fuera el filtro de fin de semana, `[tallerId]` en efectos, `TarjetaReserva` fuera del componente, acciones deshabilitadas en pasadas y durante la operación, contador coherente, "hoy" se recalcula, `valoracion` 0 no se oculta; **carga y muestra el teléfono**; **aviso visible cuando un WhatsApp o Calendar falla** (hoy solo consola).
+- [ ] Sesión: usuario derivado de cada evento de `onAuthStateChange`.
+- [ ] Al cambiar de servicio se limpian campos dependientes. `validacion.ts` con formato de teléfono (`[67]` + 8 dígitos tras normalizar) y matrícula. Errores de dominio traducidos.
+- **Cierre**: tests por corrección; Playwright en verde; tag `v0-fase2.5`. Se continúa.
 
-### Fase 3 — Configuración por taller en BD y orquestación en servidor
-- [ ] 3.1 Backup. Migración `config_taller` (sección 6), `crear_reserva_publica` v2, trigger genérico. Seeds `clientes/speedbikes`, `clientes/rikandroll`, `clientes/e2e`, `_plantilla`. `scripts/sync-clientes.mjs`. Garantías mecánicas de "no mezclar clientes": test `seeds.test.ts` (cada seed falla si menciona otro slug) y regla ESLint `no-restricted-imports` (nada en `src/` importa de `clientes/`).
-- [ ] 3.2 Frontend: `TallerConfig`; servicios y campos extra dinámicos; capacidad por modo; resumen y tarjeta iteran campos; texto de confirmación por taller; borrar `configTemporal.ts`.
-- [ ] 3.3 Edge: `confirmar-reserva` y `cancelar-reserva` (estado + `confirmada_por`/`cancelada_por` → WhatsApp → Calendar, en servidor, con fallo registrado en columnas de la reserva); el panel llama a una sola función por acción.
-- [ ] 3.4 Prueba de escalado: alta de un taller solo con `_plantilla` + seed; reservar y panel sin tocar código; borrarlo.
-- **Cierre**: `grep "=== 1\|=== 2" src/` vacío; Playwright y checklist en verde en los dos talleres; tag `v0-fase3`. **Parar.**
+### Fase 3 — Configuración por taller en BD, orquestación en servidor y los flujos nuevos
+- [ ] 3.1 Backup. Migración `config_taller` (sección 6): `servicios_taller`, `campos_formulario_taller`, `reservas.datos_extra` + `servicio_id`, `modo_capacidad` + `capacidad`, trigger genérico con bloqueo (adiós al de taller 1 y a `configuracion_taller`), `whatsapp_modo`, textos; `crear_reserva_publica` v2 con `token_publico`. Seeds `clientes/speedbikes` (motos, kilómetros, por día 6, `whatsapp_modo='enlace'`), `clientes/rikandroll` (neumáticos, por hora 2, `api` cuando esté dado de alta), `clientes/e2e`, `_plantilla`. `scripts/sync-clientes.mjs` (assets → `public/clientes/<slug>/`). Garantías: `seeds.test.ts` (cada seed falla si menciona otro slug) y ESLint `no-restricted-imports` (nada en `src/` importa de `clientes/`).
+- [ ] 3.2 Frontend dinámico: `TallerConfig` desde BD; servicios y campos extra por servicio (con imagen de ayuda y obligatorios); capacidad según modo; resumen y tarjeta iteran campos; textos de confirmación según `whatsapp_modo` (solo promete WhatsApp en `api`); borrar `configTemporal.ts`.
+- [ ] 3.3 Edge de orquestación. `_shared/whatsapp.ts` (cliente de Meta, plantillas `confirmacion_cita_v2` con botón de URL al enlace de la cita, `cancelacion_cita`, `recordatorio_cita`; `formatearDiaLargo` para no mandar la fecha en ISO; token por taller desde Vault como los de Google), `_shared/calendario.ts` (crear/borrar evento de una reserva, descripción con `datos_extra` etiquetados), `_shared/reservas.ts` (reserva + taller + autorización), `_shared/enlaces.ts` (`urlCitaCliente(slug, token)`), `_shared/notificar.ts` (`trasConfirmar`: WhatsApp según `whatsapp_modo` y Calendar si conectado, devolviendo `{whatsapp: {modo, enviado, motivo}, calendario: {creado, error}}` y registrando `whatsapp_error`/`google_error`). `confirmar-reserva` (JWT): Confirmada si estaba Pendiente; si ya lo estaba, reintenta las notificaciones pendientes (así "reintentar" es volver a pulsar). `cancelar-reserva` (JWT): Cancelada con `cancelada_por='taller'`; WhatsApp de cancelación según modo **tanto si venía de Confirmada como de Pendiente** (idempotente por `whatsapp_cancelacion_enviada`) y, si tenía evento, borrado a mejor esfuerzo. El panel en modo `enlace` añade además la vista **"Citas de mañana"** (confirmadas del día siguiente con teléfono) con un botón por cita que abre el recordatorio ya escrito. En modo `enlace` las funciones no llaman a Meta: el panel construye `https://wa.me/<telefono>?text=…` (`features/panel/textosWhatsapp.ts`, con marcadores `{nombre} {taller} {dia} {hora} {vehiculo} {servicio} {matricula} {enlace_cita}` y textos por taller opcionales) y muestra "Avisar por WhatsApp". Recordatorios solo en modo `api`. El panel llama a **una** función por acción y enseña un modal de resultado ("WhatsApp enviado", "no enviado: sin teléfono", "Meta rechazó el envío", "Google: conexión caducada") con botón Reintentar. `enviar-whatsapp-confirmacion`, `crear-evento-google` y `cancelar-evento-google` pasan a ser módulos internos y se borran de la nube una semana después de desplegar.
+- [ ] 3.4 **Cita manual**: `NuevaCitaForm` dentro del panel (mismos campos que el público, servicio del taller, teléfono opcional, selector de día/hora libre con aviso "hora llena" o "fuera de horario" pero sin bloquear); Edge `crear-reserva-taller` (JWT): inserta Confirmada con `creada_por='taller'` (el trigger de capacidad no se aplica a `creada_por='taller'`) y encadena la misma orquestación que `confirmar-reserva` (WhatsApp solo si hay teléfono; Calendar siempre).
+- [ ] 3.5 **Cancelación por el cliente**: migración (`token_publico`, `creada_por`, `cancelada_por/en`, `confirmada_en`, columnas de WhatsApp de cancelación, RPC `cita_por_token`); página `/<slug>/cita/<token>` (datos de la cita, botón "Cancelar mi cita" con confirmación, mensaje "ya no se puede cancelar por internet, llama al taller: <teléfono>" cuando faltan menos de 24 h o el estado no lo permite); Edge `cancelar-cita-cliente` (`verify_jwt=false`, autoriza por token, aplica la regla de 24 h en `Europe/Madrid`, marca `cancelada_por='cliente'`, borra el evento a mejor esfuerzo, **no** avisa al taller por WhatsApp); el panel etiqueta "Cancelada por el cliente". El WhatsApp de confirmación en modo `api` lleva el enlace como **botón de URL** de la plantilla (parámetro dinámico = token); en modo `enlace`, el texto prellenado lo incluye.
+- [ ] 3.6 **Promoción**: `scripts/qr.mjs` (dependencia `qrcode`) genera `clientes/<slug>/assets/qr-reserva.svg` y `.png` con `https://citaller.vercel.app/<slug>` (o `CITALLER_APP_URL`), y `docs/operaciones.md` explica cómo poner el enlace de reserva en Google Business Profile y cómo imprimir el QR. Test: el PNG decodifica a la URL exacta.
+- [ ] 3.7 Prueba de escalado: alta de un cuarto taller solo con `_plantilla` + seed; reservar, panel, cita manual y cancelación por cliente sin tocar código; borrarlo.
+- **Cierre**: `grep "=== 1\|=== 2" src/` vacío; `probar-cadena` ampliado (A con rechazos y concurrencia, C/D según modo, G, H con sus tres casos, I); Playwright y checklist en los tres talleres; `rls-test.sql` en verde; revisión independiente de las migraciones antes de aplicarlas; tag `v0-fase3`. **Parar: lo siguiente es producción y necesita tu OK.**
 
-### Fase 4 — Multiusuario, auditoría y base de clientes
-- [ ] 4.1 Backup. Migración `miembros_y_auditoria` (backfill desde `talleres.user_id`, `es_miembro()`, **políticas nuevas en OR con `talleres.user_id` durante la transición**, `confirmada_por/confirmada_en/cancelada_por/cancelada_en`). La política vieja se retira solo tras probar los dos paneles.
-- [ ] 4.2 Edge Functions autorizan por `miembros_taller`. Frontend: `AuthProvider` pasa de `talleres.user_id` a `miembros_taller`; la tarjeta muestra quién y cuándo.
-- **Cierre**: `rls-test.sql` con usuario de dos talleres y usuario ajeno; Playwright; tag `v0-fase4`. **Parar.** Después: decidir merge a `main` y despliegue.
+### Fase 4 — Salida a producción (solo con tu OK explícito)
+- [ ] 4.1 Migración `cierre_permisos_publicos` (las tres comprobaciones "(despliegue)" de `rls-test.sql` más las revocaciones a `authenticated` y las columnas obsoletas de la sección 6), preparada pero **aplicada después** del despliegue del frontend.
+- [ ] 4.2 Preview de Vercel de la rama: Playwright y checklist completos. Merge a `main` → producción. Aplicar 4.1. Comprobar que `citaller.vercel.app/speedbikes` y `/rikandroll` reservan, que `?taller=1` redirige y que un enlace `/rikandroll/cita/<token>` abre la cita.
+- [ ] 4.3 Pasos manuales guiados: borrar los cinco slugs antiguos de Edge Functions; rotar el secreto del cron; poner el enlace de reserva en Google Business Profile de cada taller; imprimir los QR; dar de alta WhatsApp Business de Rik and Roll en Meta (número, token permanente a Vault, plantillas `confirmacion_cita_v2` con botón de URL, `cancelacion_cita` y `recordatorio_cita` en español) y activar `whatsapp_modo='api'` con una cita de prueba real; Speedbikes en `enlace`.
+- **Cierre**: tag `v1`. Vigilancia la primera semana: `net._http_response` del cron, errores de WhatsApp y Google en el panel, caducidad de tokens de Google (7 días mientras la app esté en "Prueba").
+
+### Fase 5 — Multiusuario y auditoría (después de producción)
+- [ ] 5.1 Backup. Migración `miembros_y_auditoria`: `miembros_taller (user_id, taller_id, rol, nombre, activo)` con backfill desde `talleres.user_id`; `es_miembro()`; políticas nuevas en OR con `talleres.user_id` durante la transición; `reservas.confirmada_por_usuario uuid`, `cancelada_por_usuario uuid`, `creada_por_usuario uuid`. La política vieja se retira tras probar los tres paneles.
+- [ ] 5.2 Edge Functions autorizan por `miembros_taller` (`_shared/autorizar.ts` es el único sitio a cambiar); `AuthProvider` pasa a `miembros_taller`; la tarjeta muestra quién confirmó, canceló o creó la cita y cuándo (y "el cliente" cuando `cancelada_por='cliente'`).
+- **Cierre**: `rls-test.sql` con usuario de dos talleres y usuario ajeno; `probar-cadena`; tag `v0-fase5`; despliegue a producción con tu OK.
 
 ## 8. Riesgos y mitigaciones
-- Renombrar Edge Functions cambia URLs → registrar redirect URI nueva y actualizar cron antes de borrar las viejas.
-- Google en modo Testing → tokens caducan en 7 días → pasar a producción en 0.7 (con scope sensible puede requerir verificación de Google; hasta entonces aviso "app no verificada", funcional).
-- Sin Docker → `db dump/diff` pueden fallar → `scripts/backup.mjs`/`pg_dump`; migraciones a mano validadas con `rls-test.sql` y `list_tables`.
-- Un solo proyecto Supabase → backup + tag antes de cada migración; datos de prueba nunca se borran (salvo taller `e2e`).
-- `.env` sin variables en Vercel rompería el deploy → 0.4 crea las variables antes.
-- Abuso de la RPC pública → límites por teléfono en 3.1; Turnstile en roadmap.
+- **Plantillas de Meta**: Meta no permite editar una plantilla aprobada, así que la confirmación con botón de URL es una plantilla nueva (`confirmacion_cita_v2`) y la de cancelación otra; ambas necesitan aprobación (horas o días) y el botón queda ligado al dominio `citaller.vercel.app` (con dominio propio habrá que crear plantillas nuevas; los QR impresos siguen valiendo porque las URLs de Vercel no se retiran). Se preparan en la fase 3 y se dan de alta en la 5.3; mientras, el modo `enlace` funciona sin aprobación.
+- **Verificación con WhatsApp real**: hasta que exista la cuenta de Meta de Rik and Roll, el envío automático solo se prueba con el taller `e2e` en modos `ninguno` y `enlace`; el primer mensaje real se hará en la fase 5 con una cita de prueba de Rik and Roll.
+- **Modo `enlace`** depende de que la persona del taller pulse enviar. El panel deja claro que el mensaje no se ha enviado hasta que lo haga (estado "pendiente de enviar" en la tarjeta).
+- **Enlace de la cita reenviado**: quien tenga el enlace puede cancelar (decisión: sin comprobación extra). Mitigación: el token es un uuid, la RPC solo devuelve datos mínimos y la página no muestra el teléfono del cliente.
+- **Regla de 24 h**: se calcula en la base de datos y en la Edge con la zona `Europe/Madrid`, nunca en el navegador.
+- **Trigger de capacidad genérico** cambia comportamiento en el paso a Confirmada (hoy falla si el día está lleno en el taller 1): se documenta y `probar-cadena` lo cubre.
+- **Google en "Prueba"**: reconectar cada 7 días; la página de operaciones lleva el recordatorio y el panel avisa cuando `crear-evento-google` devuelve "conexión caducada".
+- **Sin Docker**: migraciones a mano validadas con `rls-test.sql`, `probar-cadena` y una revisión independiente antes de aplicar las de la fase 3 (como en la fase 1).
+- **Producción compartida**: cada fase con backup + tag; los datos de Speedbikes y Rik and Roll no se tocan; todo se prueba con `e2e` y con el taller de escalado de 3.7.
 
-## 9. Revisión independiente (workflow, 8 agentes, 19-sep)
-Veredicto: "ejecutable con cambios menores". Integrado: FK en `reservas`; conservar grants por columna en la baseline; pertenencia comprobada desde la fase 2; funciones viejas vivas una semana; `verify_jwt` declarado en `config.toml`; recorte de tablas/columnas sin hardcode que sustituir; tests solo de lógica pura; `[db.seed] sql_paths`; `seeds.test.ts` + ESLint; orden de migración a TS; `edgeFunctions` con slugs actuales; CSS muerto explícito; assets comprimidos. Descartado como falso o exagerado: fuga de PII por RLS, `user_id` expuesto a anon, UPDATE sin `WITH CHECK`, Edge Functions invocables con anon key, WhatsApp duplicado al confirmar dos veces (idempotente), inyección de texto libre en WhatsApp (plantilla con parámetros tipados).
-
-## 10. Correcciones respecto a la versión anterior del plan
-- La fuga de datos personales por RLS **no existe**: hay grants por columna. Se reclasifica como "inserción directa sin validación" (media).
-- Producción en Vercel **es pública**; la protección solo afecta a previews.
-- El deploy de producción es del 15-sep (no del 11) y coincide con `origin/main`; el trabajo multi-taller no está desplegado.
-- WhatsApp = Meta Cloud API; el código de las funciones se obtiene de Supabase (no está en local).
+## 9. Revisiones independientes
+- Plan v2 (19-sep, 8 agentes): "ejecutable con cambios menores", integrados.
+- Fase 1 (19-sep, 4 lentes + refutación): 4 correcciones aplicadas (trigger SECURITY DEFINER, grant `activo`, política de talleres activos, panel comprueba filas afectadas); resto aceptado o aplazado a la 3.1 (`crear_reserva_publica` v2).
+- Antes de aplicar las migraciones de la fase 3 se repite el mismo esquema de revisión (corrección SQL, seguridad, compatibilidad, Edge Functions).

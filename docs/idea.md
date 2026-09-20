@@ -11,10 +11,11 @@ Los talleres pequeños gestionan citas por teléfono y a mano: llamadas perdidas
 - **Taller**: uno o varios empleados con acceso al panel del taller (`/<slug>/panel`). Confirman o cancelan citas, ven el día, buscan por matrícula o nombre, consultan el historial.
 - **Plataforma (Miguel)**: da de alta talleres, configura servicios, horarios, festivos e integraciones.
 
-## Cómo funciona hoy (flujos)
-1. **Reservar**: datos del vehículo y del cliente → servicio (con campos extra según taller/servicio) → fecha y hora (según horarios, festivos, capacidad y horas ya ocupadas) → resumen → solicitud creada en estado *Pendiente*.
-2. **Gestionar**: el taller entra con email y contraseña, ve las citas agrupadas por día, filtra (pendientes / confirmadas / canceladas; hoy / mañana / 7 días), busca, y confirma o cancela.
-3. **Automatizar**: al confirmar, el cliente recibe un WhatsApp (plantilla de Meta) y la cita se crea en el Google Calendar del taller; al cancelar, el evento se borra; cada mañana se envían recordatorios de las citas del día siguiente.
+## Cómo funciona (flujos; los marcados con ➜ se construyen en el plan v3, fase 3)
+1. **Reservar**: el cliente llega por el enlace del taller (botón "Reservar" de Google Business Profile o QR del mostrador ➜), rellena datos del vehículo y del cliente → servicio, con campos propios del servicio (en neumáticos, la medida obligatoria con imagen de ayuda; en motos, los kilómetros) → fecha y hora según horarios, festivos, capacidad por franja (elevadores o mecánicos disponibles) y huecos ya ocupados → resumen → solicitud creada en estado *Pendiente* → pantalla final con el **enlace de su cita** ➜.
+2. **Gestionar**: el taller entra con email y contraseña, ve las citas agrupadas por día, filtra (pendientes / confirmadas / canceladas; hoy / mañana / 7 días), busca, confirma o cancela, y **apunta a mano** las citas de quien viene en persona (nacen confirmadas, teléfono opcional) ➜.
+3. **Automatizar**: al confirmar, el cliente recibe un WhatsApp con los datos y la cita se crea en el Google Calendar del taller; al cancelar (una confirmada o una pendiente), el cliente recibe un WhatsApp de aviso ➜ y el evento se borra; cada mañana se envían recordatorios de las citas del día siguiente. Cada taller elige su **modo de WhatsApp** ➜: `api` (Meta, automático), `enlace` (el panel abre WhatsApp con el mensaje escrito y el taller lo envía desde su móvil) o `ninguno`.
+4. **El cliente cancela por su cuenta** ➜ desde el enlace de su cita, hasta 24 horas antes: se libera el hueco, se borra el evento y el taller lo ve en el panel como "cancelada por el cliente".
 
 ## Talleres actuales
 | Slug | Nombre | Particularidades |

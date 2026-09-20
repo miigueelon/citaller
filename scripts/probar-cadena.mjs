@@ -27,9 +27,18 @@ function diaLaborable(desdeDias) {
   while (fecha.getDay() === 0 || fecha.getDay() === 6 || (fecha.getMonth() === 11 && fecha.getDate() === 25)) fecha.setDate(fecha.getDate() + 1);
   return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, "0")}-${String(fecha.getDate()).padStart(2, "0")}`;
 }
+// Hoy en la zona del taller (Europe/Madrid), sin saltar el fin de semana: la cita manual no valida
+// horario, así que 'hoy a las 23:59' siempre está a menos de 24 h y sirve para probar el plazo.
+function hoyMadrid() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+}
 const DIA = diaLaborable(2);
 const DIA_2 = diaLaborable(9);
-const telefono = (n) => `6001${String(n).padStart(5, "0")}`; // teléfonos distintos por escenario (límites por teléfono)
+// Teléfonos distintos por escenario y por ejecución: la RPC limita a 3 citas activas y 5 creaciones
+// al día por teléfono, así que repetir la prueba el mismo día con números fijos daría CT006.
+// El prefijo 6001 se conserva para que la limpieza previa siga reconociéndolos.
+const SELLO = Math.floor(Date.now() / 60000) % 4000;
+const telefono = (n) => `6001${String((SELLO * 25 + n) % 100000).padStart(5, "0")}`;
 const creadas = [];
 
 let fallos = 0;
@@ -242,22 +251,25 @@ comprobar("G. No puede apuntar citas en otro taller", manualAjeno.status === 403
 const rpcDirecta = await pedir("/rest/v1/rpc/insertar_reserva_taller", { token: TOKEN, metodo: "POST", cuerpo: { p_taller_id: TALLER_E2E, p_matricula: "X", p_nombre: "X", p_telefono: "", p_vehiculo: "V", p_servicio: "Frenos", p_descripcion: "", p_dia: DIA, p_hora: "10:00", p_datos_extra: {} } });
 comprobar("G. La RPC de citas manuales no es invocable con sesión de taller", rpcDirecta.status === 401 || rpcDirecta.status === 403 || rpcDirecta.status === 404, `HTTP ${rpcDirecta.status}`);
 
-// H. Cancelación por el cliente con el enlace de su cita
-const paraCliente = l1.fila; // pendiente, dentro de plazo (pasado mañana o más)
-const consulta = await pedir("/rest/v1/rpc/consultar_cita_cliente", { metodo: "POST", cuerpo: { p_token: paraCliente.token_publico } });
+// H. Cancelación por el cliente con el enlace de su cita. Usa una reserva propia (pendiente y
+// dentro de plazo) para no depender del bloque de límites por teléfono de más arriba.
+const tCliente = telefono(22);
+const paraCliente = (await reservar({ p_telefono: tCliente, p_dia: DIA, p_hora: "09:00" })).fila;
+comprobar("H. Reserva de prueba para el cliente creada", !!paraCliente?.token_publico, paraCliente ? `id ${paraCliente.reserva_id}` : "(no se creó)");
+const consulta = await pedir("/rest/v1/rpc/consultar_cita_cliente", { metodo: "POST", cuerpo: { p_token: paraCliente?.token_publico } });
 const cita = consulta.datos?.[0];
 comprobar("H. El cliente consulta su cita con el token (anon)", consulta.status === 200 && cita?.taller_slug === SLUG && cita?.estado === "Pendiente" && cita?.puede_cancelar === true, JSON.stringify(cita));
-comprobar("H. La consulta no devuelve el teléfono del cliente", cita !== undefined && !("telefono" in cita) && JSON.stringify(cita).includes(`34${t3}`) === false, Object.keys(cita ?? {}).join(","));
+comprobar("H. La consulta no devuelve el teléfono del cliente", cita !== undefined && !("telefono" in cita) && JSON.stringify(cita).includes(`34${tCliente}`) === false, Object.keys(cita ?? {}).join(","));
 
-const cancelarAnon = await pedir("/rest/v1/rpc/cancelar_reserva_cliente", { metodo: "POST", cuerpo: { p_token: paraCliente.token_publico } });
+const cancelarAnon = await pedir("/rest/v1/rpc/cancelar_reserva_cliente", { metodo: "POST", cuerpo: { p_token: paraCliente?.token_publico } });
 comprobar("H. La RPC de cancelar no es invocable por anon", cancelarAnon.status === 401 || cancelarAnon.status === 403 || cancelarAnon.status === 404, `HTTP ${cancelarAnon.status}`);
 
-const cancelaCliente = await pedir("/functions/v1/cancelar-cita-cliente", { metodo: "POST", cuerpo: { token: paraCliente.token_publico } });
+const cancelaCliente = await pedir("/functions/v1/cancelar-cita-cliente", { metodo: "POST", cuerpo: { token: paraCliente?.token_publico } });
 comprobar("H. cancelar-cita-cliente cancela dentro de plazo (sin sesión)", cancelaCliente.status === 200 && cancelaCliente.datos?.ok === true, `HTTP ${cancelaCliente.status} ${JSON.stringify(cancelaCliente.datos).slice(0, 100)}`);
-const trasCliente = await pedir(`/rest/v1/reservas?id=eq.${paraCliente.reserva_id}&select=estado,cancelada_por,cancelada_en`, { token: TOKEN });
+const trasCliente = await pedir(`/rest/v1/reservas?id=eq.${paraCliente?.reserva_id}&select=estado,cancelada_por,cancelada_en`, { token: TOKEN });
 comprobar("H. El panel la ve como cancelada por el cliente", trasCliente.datos?.[0]?.estado === "Cancelada" && trasCliente.datos?.[0]?.cancelada_por === "cliente" && !!trasCliente.datos?.[0]?.cancelada_en, JSON.stringify(trasCliente.datos?.[0]));
 
-const otraVez = await pedir("/functions/v1/cancelar-cita-cliente", { metodo: "POST", cuerpo: { token: paraCliente.token_publico } });
+const otraVez = await pedir("/functions/v1/cancelar-cita-cliente", { metodo: "POST", cuerpo: { token: paraCliente?.token_publico } });
 comprobar("H. Cancelar dos veces → ya_cancelada (409)", otraVez.status === 409 && otraVez.datos?.codigo === "ya_cancelada", `HTTP ${otraVez.status} ${otraVez.datos?.codigo}`);
 
 const inventado = await pedir("/functions/v1/cancelar-cita-cliente", { metodo: "POST", cuerpo: { token: "00000000-0000-4000-8000-000000000000" } });
@@ -266,9 +278,10 @@ comprobar("H. Token inventado → no_encontrada (404)", inventado.status === 404
 const malFormado = await pedir("/functions/v1/cancelar-cita-cliente", { metodo: "POST", cuerpo: { token: "hola" } });
 comprobar("H. Token mal formado → 404", malFormado.status === 404, `HTTP ${malFormado.status}`);
 
-// H. A menos de 24 h no se puede: cita manual para hoy (el taller puede apuntarla), el cliente no puede cancelarla
-const hoyStr = diaLaborable(0);
-const paraHoy = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: { taller_id: TALLER_E2E, nombre: "Cliente hoy", telefono: telefono(21), matricula: "HOY0001", vehiculo: "V", servicio: "Frenos", descripcion: "", dia: hoyStr, hora: "23:45", datos_extra: {} } });
+// H. A menos de 24 h no se puede: cita manual para hoy a última hora (el taller puede apuntarla,
+// no valida horario), el cliente ya no puede cancelarla.
+const hoyStr = hoyMadrid();
+const paraHoy = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: { taller_id: TALLER_E2E, nombre: "Cliente hoy", telefono: telefono(21), matricula: "HOY0001", vehiculo: "V", servicio: "Frenos", descripcion: "", dia: hoyStr, hora: "23:59", datos_extra: {} } });
 if (paraHoy.datos?.reserva_id) creadas.push(paraHoy.datos.reserva_id);
 if (paraHoy.status === 200 && paraHoy.datos?.token_publico) {
   const consultaHoy = await pedir("/rest/v1/rpc/consultar_cita_cliente", { metodo: "POST", cuerpo: { p_token: paraHoy.datos.token_publico } });

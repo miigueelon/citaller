@@ -55,12 +55,15 @@ test.describe("Panel del taller", () => {
   });
 
   test("apunta una cita a mano sin teléfono y nace confirmada", async ({ page }) => {
+    // Nombre distinto en cada ejecución: si una prueba anterior se cortó antes de limpiar, su
+    // cita sigue en el panel y la tarjeta buscada tiene que ser la de ahora.
+    const nombre = `Cliente Mostrador ${String(Date.now()).slice(-5)}`;
     await entrar(page);
     await page.getByRole("button", { name: /nueva cita/i }).click();
 
     const dialogo = page.getByRole("dialog");
     await expect(dialogo.getByRole("heading", { name: /apuntar una cita/i })).toBeVisible();
-    await dialogo.locator('input[name="nombre"]').fill("Cliente Mostrador");
+    await dialogo.locator('input[name="nombre"]').fill(nombre);
     await dialogo.locator('input[name="matricula"]').fill("9999ZZZ");
     await dialogo.locator('input[name="vehiculo"]').fill("Furgoneta");
     await dialogo.locator('select[name="servicio"]').selectOption("Frenos");
@@ -70,9 +73,10 @@ test.describe("Panel del taller", () => {
 
     await expect(page.getByText(/cita confirmada/i)).toBeVisible();
     await page.getByRole("button", { name: /^Confirmadas/ }).click();
-    const tarjeta = page.locator(".tarjeta-reserva", { hasText: "Cliente Mostrador" }).first();
+    const tarjeta = page.locator(".tarjeta-reserva", { hasText: nombre }).first();
     await expect(tarjeta).toBeVisible();
-    await expect(tarjeta.getByText(/mostrador/i)).toBeVisible();
+    // La etiqueta de origen, no el nombre del cliente (que también dice "Mostrador").
+    await expect(tarjeta.locator(".tarjeta-origen")).toHaveText(/mostrador/i);
     await expect(tarjeta.getByText(/sin teléfono/i)).toBeVisible();
 
     // Limpieza: se cancela para no dejar huecos ocupados en el taller de pruebas.

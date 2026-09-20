@@ -7,7 +7,7 @@ import type { ReservaPanel } from "./tipos";
 
 export interface ResultadoAccion {
   ok: boolean;
-  /** Lo que ha ido bien ("WhatsApp enviado", "evento creado"). */
+  /** Lo que ha ido bien: primero la acción ("Cita confirmada."), después sus notificaciones. */
   logros: string[];
   /** Lo que ha fallado o queda pendiente; el panel lo enseña con botón de reintentar. */
   avisos: string[];
@@ -112,7 +112,7 @@ export function useReservasTaller(cliente: ClienteSupabase, tallerId: number) {
 
   /** Una sola Edge Function por acción: cambia el estado y notifica (WhatsApp según modo, Calendar). */
   const invocar = useCallback(
-    async (nombre: string, body: Record<string, unknown>, accion: "confirmar" | "cancelar", generico: string): Promise<ResultadoAccion> => {
+    async (nombre: string, body: Record<string, unknown>, accion: "confirmar" | "cancelar", exito: string, generico: string): Promise<ResultadoAccion> => {
       try {
         const { data, error: fallo } = await cliente.functions.invoke<RespuestaFuncion>(nombre, { body });
         if (fallo || !data?.ok) {
@@ -122,7 +122,9 @@ export function useReservasTaller(cliente: ClienteSupabase, tallerId: number) {
           return { ok: false, logros: [], avisos: [mensaje] };
         }
         await recargar();
-        return { ok: true, reservaId: data.reserva_id, tokenPublico: data.token_publico, ...describirNotificaciones(data.notificaciones, accion) };
+        // El aviso empieza por lo que ha pasado con la cita; después, WhatsApp y Calendar.
+        const { logros, avisos } = describirNotificaciones(data.notificaciones, accion);
+        return { ok: true, reservaId: data.reserva_id, tokenPublico: data.token_publico, logros: [exito, ...logros], avisos };
       } catch (fallo: unknown) {
         console.error(`${nombre}:`, fallo);
         return { ok: false, logros: [], avisos: [generico] };
@@ -132,18 +134,18 @@ export function useReservasTaller(cliente: ClienteSupabase, tallerId: number) {
   );
 
   const confirmar = useCallback(
-    (reservaId: number) => invocar(EDGE_FUNCTIONS.confirmarReserva, { reserva_id: reservaId }, "confirmar", "No se pudo confirmar la cita. Inténtalo de nuevo."),
+    (reservaId: number) => invocar(EDGE_FUNCTIONS.confirmarReserva, { reserva_id: reservaId }, "confirmar", "Cita confirmada.", "No se pudo confirmar la cita. Inténtalo de nuevo."),
     [invocar],
   );
 
   const cancelar = useCallback(
-    (reservaId: number) => invocar(EDGE_FUNCTIONS.cancelarReserva, { reserva_id: reservaId }, "cancelar", "No se pudo cancelar la cita. Inténtalo de nuevo."),
+    (reservaId: number) => invocar(EDGE_FUNCTIONS.cancelarReserva, { reserva_id: reservaId }, "cancelar", "Cita cancelada.", "No se pudo cancelar la cita. Inténtalo de nuevo."),
     [invocar],
   );
 
   const crearManual = useCallback(
     (datos: DatosCitaManual) =>
-      invocar(EDGE_FUNCTIONS.crearReservaTaller, { taller_id: tallerId, ...datos }, "confirmar", "No se pudo guardar la cita. Revisa los datos e inténtalo de nuevo."),
+      invocar(EDGE_FUNCTIONS.crearReservaTaller, { taller_id: tallerId, ...datos }, "confirmar", "Cita confirmada y apuntada en la agenda.", "No se pudo guardar la cita. Revisa los datos e inténtalo de nuevo."),
     [invocar, tallerId],
   );
 

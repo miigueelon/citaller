@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import CampoInput from "./CampoInput";
 import logo from "../assets/logo.png";
-import { supabasePublic } from "../lib/supabaseClient";
+import { supabasePublic } from "@/lib/supabase/client";
 import guiaNeumatico from "../assets/guia_neumatico.png";
 
 export default function ReservaForm({

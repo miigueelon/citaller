@@ -24,6 +24,7 @@ const env = { ...leerEnvLocal(), ...process.env };
 /** Taller de pruebas `e2e` (id 3). Sus datos se pueden crear y borrar (CLAUDE.md). */
 export const TALLER_E2E = {
   id: 3,
+  slug: "e2e",
   nombre: "Taller de pruebas e2e",
   email: env.E2E_TALLER_EMAIL ?? "",
   password: env.E2E_TALLER_PASSWORD ?? "",

@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { requiereCredenciales, TALLER_E2E } from "./entorno";
 
 // Humo del panel del taller de pruebas: login y carga de reservas.
-const URL_PANEL = `/?taller=${TALLER_E2E.id}&modo=taller`;
+const URL_PANEL = `/${TALLER_E2E.slug}/panel`;
 
 test.describe("Panel del taller", () => {
   test.beforeAll(() => requiereCredenciales());

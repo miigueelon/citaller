@@ -1,19 +1,19 @@
-export default function Confirmacion({
-  reserva,
-  guardarReserva,
-  volverMenu,
-}) {
+import { formatearDiaCorto } from "@/lib/fechas";
+import type { ReservaEnCurso } from "../tipos";
 
-  const fechaFormateada = reserva.dia
-    ? new Date(reserva.dia).toLocaleDateString("es-ES")
-    : "-";
+interface Props {
+  reserva: ReservaEnCurso;
+  guardarReserva: () => Promise<boolean>;
+  volverMenu: () => void;
+}
+
+/** Paso 3: resumen de la solicitud y envío. (En la fase 2.5 pasa a mostrar "enviada" solo tras guardar.) */
+export function Confirmacion({ reserva, guardarReserva, volverMenu }: Props) {
+  const fechaFormateada = reserva.dia ? formatearDiaCorto(reserva.dia) : "-";
 
   return (
-
     <div className="container">
-
       <div className="card">
-
         <div
           style={{
             width: "74px",
@@ -27,112 +27,58 @@ export default function Confirmacion({
             color: "white",
             fontSize: "42px",
             fontWeight: "700",
-            boxShadow: "0 12px 28px rgba(34,197,94,.25)"
+            boxShadow: "0 12px 28px rgba(34,197,94,.25)",
           }}
         >
           ✓
         </div>
 
-        <h1>
-          ¡Solicitud enviada!
-        </h1>
+        <h1>¡Solicitud enviada!</h1>
 
-        <p className="subtitulo">
-          Tu solicitud de cita se ha enviado correctamente.
-        </p>
+        <p className="subtitulo">Tu solicitud de cita se ha enviado correctamente.</p>
 
         <div className="resumen-reserva">
-
-          {/* MATRÍCULA */}
-
           <div className="resumen-item">
-
             <span>🚗 Matrícula</span>
-
             <strong>{reserva.matricula}</strong>
-
           </div>
 
-          {/* VEHÍCULO */}
-
           <div className="resumen-item">
-
             <span>🚙 Vehículo</span>
-
             <strong>{reserva.vehiculo}</strong>
-
           </div>
 
-          {/* CLIENTE */}
-
           <div className="resumen-item">
-
             <span>👤 Cliente</span>
-
             <strong>{reserva.nombre}</strong>
-
           </div>
 
-          {/* TELÉFONO */}
-
           <div className="resumen-item">
-
             <span>📱 Teléfono</span>
-
             <strong>{reserva.telefono}</strong>
-
           </div>
-
-          {/* SERVICIO */}
 
           <div className="resumen-item">
-
             <span>🔧 Servicio</span>
-
             <strong>{reserva.servicio}</strong>
-
           </div>
-
-          {/* DESCRIPCIÓN - SOLO SI EXISTE */}
 
           {reserva.descripcion && (
-
             <div className="resumen-item">
-
-              <span>
-                📝 {reserva.servicio === "Otro"
-                  ? "Necesidad"
-                  : "Descripción"}
-              </span>
-
-              <strong>
-                {reserva.descripcion}
-              </strong>
-
+              <span>📝 {reserva.servicio === "Otro" ? "Necesidad" : "Descripción"}</span>
+              <strong>{reserva.descripcion}</strong>
             </div>
-
           )}
 
-          {/* FECHA */}
-
           <div className="resumen-item">
-
             <span>📅 Fecha</span>
-
             <strong>{fechaFormateada}</strong>
-
           </div>
-
-          {/* HORA */}
 
           <div className="resumen-item">
-
             <span>🕒 Hora</span>
-
             <strong>{reserva.hora}</strong>
-
           </div>
-
         </div>
 
         <p
@@ -141,7 +87,7 @@ export default function Confirmacion({
             textAlign: "center",
             color: "#6b7280",
             lineHeight: "1.6",
-            fontSize: "15px"
+            fontSize: "15px",
           }}
         >
           En unos minutos el taller recibirá tu solicitud y recibirás un WhatsApp con la confirmación.
@@ -152,18 +98,12 @@ export default function Confirmacion({
           style={{ marginTop: "26px" }}
           onClick={async () => {
             const guardada = await guardarReserva();
-
-            if (guardada) {
-              volverMenu();
-            }
+            if (guardada) volverMenu();
           }}
         >
           FINALIZAR
         </button>
-
       </div>
-
     </div>
-
   );
 }

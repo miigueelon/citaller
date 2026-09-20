@@ -22,6 +22,7 @@ import {
 import "./PanelTaller.css";
 
 export default function PanelTaller({
+  slug,
   supabaseClient,
   tallerId,
 }) {
@@ -206,7 +207,7 @@ const [filtroFecha, setFiltroFecha] = useState("todas");
           body: {
             taller_id: tallerId,
             // A dónde debe devolvernos Google al terminar (la función valida el origen).
-            volver_a: `${window.location.origin}${window.location.pathname}?taller=${tallerId}&modo=taller`,
+            volver_a: `${window.location.origin}/${slug}/panel`,
           },
         }
       );
@@ -836,7 +837,7 @@ const reservasMostradas = useMemo(
             <button
               className="panel-btn-actualizar"
               onClick={() => {
-                window.location.href = `/?taller=${tallerId}`;
+                window.location.href = `/${slug}`;
               }}
               style={{ flex: 1 }}
             >
@@ -857,7 +858,7 @@ const reservasMostradas = useMemo(
               className="panel-btn-actualizar"
               onClick={async () => {
                 await supabase.auth.signOut();
-                window.location.href = `/?taller=${tallerId}&modo=taller`;
+                window.location.href = `/${slug}/panel`;
               }}
               style={{ flex: 1 }}
             >

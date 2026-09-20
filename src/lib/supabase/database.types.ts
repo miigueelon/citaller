@@ -69,6 +69,13 @@ export type Database = {
             referencedRelation: "talleres"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "configuracion_taller_taller_id_fkey"
+            columns: ["taller_id"]
+            isOneToOne: true
+            referencedRelation: "talleres_publicos"
+            referencedColumns: ["id"]
+          },
         ]
       }
       festivos_taller: {
@@ -98,6 +105,13 @@ export type Database = {
             referencedRelation: "talleres"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "festivos_taller_taller_id_fkey"
+            columns: ["taller_id"]
+            isOneToOne: false
+            referencedRelation: "talleres_publicos"
+            referencedColumns: ["id"]
+          },
         ]
       }
       google_oauth_states: {
@@ -106,18 +120,24 @@ export type Database = {
           expires_at: string
           state: string
           taller_id: number
+          user_id: string | null
+          volver_a: string | null
         }
         Insert: {
           created_at?: string
           expires_at: string
           state: string
           taller_id: number
+          user_id?: string | null
+          volver_a?: string | null
         }
         Update: {
           created_at?: string
           expires_at?: string
           state?: string
           taller_id?: number
+          user_id?: string | null
+          volver_a?: string | null
         }
         Relationships: [
           {
@@ -125,6 +145,13 @@ export type Database = {
             columns: ["taller_id"]
             isOneToOne: false
             referencedRelation: "talleres"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "google_oauth_states_taller_id_fkey"
+            columns: ["taller_id"]
+            isOneToOne: false
+            referencedRelation: "talleres_publicos"
             referencedColumns: ["id"]
           },
         ]
@@ -159,6 +186,13 @@ export type Database = {
             referencedRelation: "talleres"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "horarios_taller_taller_id_fkey"
+            columns: ["taller_id"]
+            isOneToOne: false
+            referencedRelation: "talleres_publicos"
+            referencedColumns: ["id"]
+          },
         ]
       }
       integraciones_calendario: {
@@ -168,7 +202,8 @@ export type Database = {
           created_at: string
           id: number
           proveedor: string
-          refresh_token: string
+          refresh_token: string | null
+          refresh_token_secret_id: string | null
           scope: string | null
           taller_id: number
           updated_at: string
@@ -179,7 +214,8 @@ export type Database = {
           created_at?: string
           id?: number
           proveedor: string
-          refresh_token: string
+          refresh_token?: string | null
+          refresh_token_secret_id?: string | null
           scope?: string | null
           taller_id: number
           updated_at?: string
@@ -190,7 +226,8 @@ export type Database = {
           created_at?: string
           id?: number
           proveedor?: string
-          refresh_token?: string
+          refresh_token?: string | null
+          refresh_token_secret_id?: string | null
           scope?: string | null
           taller_id?: number
           updated_at?: string
@@ -203,6 +240,13 @@ export type Database = {
             referencedRelation: "talleres"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "integraciones_calendario_taller_id_fkey"
+            columns: ["taller_id"]
+            isOneToOne: false
+            referencedRelation: "talleres_publicos"
+            referencedColumns: ["id"]
+          },
         ]
       }
       reservas: {
@@ -212,17 +256,17 @@ export type Database = {
           calendar_sync_status: string | null
           created_at: string | null
           descripcion: string | null
-          dia: string | null
-          estado: string | null
+          dia: string
+          estado: string
           google_event_html_link: string | null
           google_event_id: string | null
-          hora: string | null
+          hora: string
           id: number
           kilometros: number | null
           matricula: string | null
           nombre: string | null
           servicio: string | null
-          taller_id: number | null
+          taller_id: number
           telefono: string | null
           vehiculo: string | null
           whatsapp_confirmacion_enviada: boolean
@@ -236,17 +280,17 @@ export type Database = {
           calendar_sync_status?: string | null
           created_at?: string | null
           descripcion?: string | null
-          dia?: string | null
-          estado?: string | null
+          dia: string
+          estado?: string
           google_event_html_link?: string | null
           google_event_id?: string | null
-          hora?: string | null
+          hora: string
           id?: number
           kilometros?: number | null
           matricula?: string | null
           nombre?: string | null
           servicio?: string | null
-          taller_id?: number | null
+          taller_id: number
           telefono?: string | null
           vehiculo?: string | null
           whatsapp_confirmacion_enviada?: boolean
@@ -260,17 +304,17 @@ export type Database = {
           calendar_sync_status?: string | null
           created_at?: string | null
           descripcion?: string | null
-          dia?: string | null
-          estado?: string | null
+          dia?: string
+          estado?: string
           google_event_html_link?: string | null
           google_event_id?: string | null
-          hora?: string | null
+          hora?: string
           id?: number
           kilometros?: number | null
           matricula?: string | null
           nombre?: string | null
           servicio?: string | null
-          taller_id?: number | null
+          taller_id?: number
           telefono?: string | null
           vehiculo?: string | null
           whatsapp_confirmacion_enviada?: boolean
@@ -278,7 +322,22 @@ export type Database = {
           whatsapp_recordatorio_enviado?: boolean
           whatsapp_recordatorio_fecha?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "reservas_taller_id_fkey"
+            columns: ["taller_id"]
+            isOneToOne: false
+            referencedRelation: "talleres"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservas_taller_id_fkey"
+            columns: ["taller_id"]
+            isOneToOne: false
+            referencedRelation: "talleres_publicos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       talleres: {
         Row: {
@@ -293,6 +352,7 @@ export type Database = {
           id: number
           nombre: string
           numero_resenas: number | null
+          slug: string
           telefono: string | null
           user_id: string | null
           valoracion: number | null
@@ -312,6 +372,7 @@ export type Database = {
           id?: number
           nombre: string
           numero_resenas?: number | null
+          slug: string
           telefono?: string | null
           user_id?: string | null
           valoracion?: number | null
@@ -331,6 +392,7 @@ export type Database = {
           id?: number
           nombre?: string
           numero_resenas?: number | null
+          slug?: string
           telefono?: string | null
           user_id?: string | null
           valoracion?: number | null
@@ -342,7 +404,45 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      talleres_publicos: {
+        Row: {
+          capacidad_simultanea: number | null
+          ciudad: string | null
+          direccion: string | null
+          horario_texto: string | null
+          id: number | null
+          nombre: string | null
+          numero_resenas: number | null
+          slug: string | null
+          telefono: string | null
+          valoracion: number | null
+        }
+        Insert: {
+          capacidad_simultanea?: number | null
+          ciudad?: string | null
+          direccion?: string | null
+          horario_texto?: string | null
+          id?: number | null
+          nombre?: string | null
+          numero_resenas?: number | null
+          slug?: string | null
+          telefono?: string | null
+          valoracion?: number | null
+        }
+        Update: {
+          capacidad_simultanea?: number | null
+          ciudad?: string | null
+          direccion?: string | null
+          horario_texto?: string | null
+          id?: number | null
+          nombre?: string | null
+          numero_resenas?: number | null
+          slug?: string | null
+          telefono?: string | null
+          valoracion?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       crear_reserva_publica: {
@@ -359,6 +459,30 @@ export type Database = {
           p_vehiculo: string
         }
         Returns: undefined
+      }
+      guardar_token_calendario: {
+        Args: {
+          p_proveedor: string
+          p_refresh_token: string
+          p_scope?: string
+          p_taller_id: number
+        }
+        Returns: undefined
+      }
+      leer_token_calendario: {
+        Args: { p_proveedor: string; p_taller_id: number }
+        Returns: {
+          calendar_id: string
+          conectado: boolean
+          refresh_token: string
+        }[]
+      }
+      ocupacion_dia: {
+        Args: { p_dia: string; p_taller_id: number }
+        Returns: {
+          hora: string
+          total: number
+        }[]
       }
     }
     Enums: {

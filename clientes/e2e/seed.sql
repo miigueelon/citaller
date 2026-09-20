@@ -10,11 +10,13 @@
 -- ============================================================================
 
 insert into public.talleres
-  (nombre, telefono, direccion, ciudad, activo, capacidad_simultanea, horario_texto)
+  (nombre, slug, telefono, direccion, ciudad, activo, capacidad_simultanea, horario_texto)
 select
-  'Taller de pruebas e2e', '600000000', 'Calle de Prueba 1', 'Pruebas', true, 2,
+  'Taller de pruebas e2e', 'e2e', '600000000', 'Calle de Prueba 1', 'Pruebas', true, 2,
   'Lunes a viernes, 9:00 a 13:00'
-where not exists (select 1 from public.talleres where nombre = 'Taller de pruebas e2e');
+where not exists (select 1 from public.talleres where slug = 'e2e');
+
+update public.talleres set slug = 'e2e' where nombre = 'Taller de pruebas e2e' and slug is distinct from 'e2e';
 
 -- Horario: de lunes a viernes, a las 9, 10, 11 y 12. La última hora lleva aviso de tarde
 -- para poder comprobar ese aviso en la pantalla de reserva.

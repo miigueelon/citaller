@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import { supabasePublic } from "../lib/supabaseClient";
+import { supabasePublic } from "@/lib/supabase/client";
 
 export default function FechaHora({
   reserva,

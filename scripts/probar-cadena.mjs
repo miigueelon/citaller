@@ -33,7 +33,7 @@ async function pedir(ruta, { token = ANON, metodo = "GET", cuerpo, cabeceras = {
     body: cuerpo ? JSON.stringify(cuerpo) : undefined,
   });
   const texto = await r.text();
-  let datos = null;
+  let datos;
   try {
     datos = texto ? JSON.parse(texto) : null;
   } catch {

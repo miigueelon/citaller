@@ -9,23 +9,22 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "backup": "node scripts/backup.mjs",
-    "probar-cadena": "node scripts/probar-cadena.mjs"
+    "probar-cadena": "node scripts/probar-cadena.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "e2e": "playwright test"
   },
   "dependencies": {
-    "@fullcalendar/daygrid": "^6.1.21",
-    "@fullcalendar/interaction": "^6.1.21",
-    "@fullcalendar/react": "^6.1.21",
-    "@fullcalendar/timegrid": "^6.1.21",
     "@supabase/supabase-js": "^2.112.0",
-    "@tailwindcss/vite": "^4.3.3",
     "lucide-react": "^1.28.0",
     "react": "^19.2.7",
     "react-calendar": "^6.0.1",
-    "react-dom": "^19.2.7",
-    "tailwindcss": "^4.3.3"
+    "react-dom": "^19.2.7"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^26.6.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
@@ -35,6 +34,9 @@
     "globals": "^17.7.0",
     "pg": "^8.23.0",
     "supabase": "^2.117.0",
-    "vite": "^8.1.1"
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.0",
+    "vite": "^8.1.1",
+    "vitest": "^5.0.1"
   }
 }

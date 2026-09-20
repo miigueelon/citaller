@@ -9,6 +9,7 @@ function reserva(parcial: Partial<ReservaPanel> & { id: number; dia: string }): 
   return {
     taller_id: 3,
     nombre: "Cliente",
+    telefono: "600111222",
     matricula: "1234ABC",
     vehiculo: "Coche",
     servicio: "Revisión",
@@ -30,14 +31,14 @@ const lista: ReservaPanel[] = [
 ];
 
 describe("futuras, estados e historial", () => {
-  it("las futuras excluyen las pasadas y (regla heredada) los fines de semana", () => {
-    expect(reservasFuturas(lista, ahora).map((r) => r.id)).toEqual([2, 3, 5]);
+  it("las futuras excluyen las pasadas e incluyen los fines de semana", () => {
+    expect(reservasFuturas(lista, ahora).map((r) => r.id)).toEqual([2, 3, 4, 5]);
   });
 
   it("separa por estado y cuenta las válidas sin las canceladas", () => {
     const futuras = reservasFuturas(lista, ahora);
     expect(porEstado(futuras, "Pendiente").map((r) => r.id)).toEqual([2]);
-    expect(porEstado(futuras, "Confirmada").map((r) => r.id)).toEqual([3]);
+    expect(porEstado(futuras, "Confirmada").map((r) => r.id)).toEqual([3, 4]);
     expect(totalValidas(lista)).toBe(4);
   });
 
@@ -58,7 +59,7 @@ describe("filtrar", () => {
   it("filtra por hoy, mañana y próximos 7 días", () => {
     expect(filtrarReservas(futuras, { busqueda: "", filtroFecha: "hoy" }, ahora).map((r) => r.id)).toEqual([2]);
     expect(filtrarReservas(futuras, { busqueda: "", filtroFecha: "manana" }, ahora).map((r) => r.id)).toEqual([3]);
-    expect(filtrarReservas(futuras, { busqueda: "", filtroFecha: "7dias" }, ahora).map((r) => r.id)).toEqual([2, 3]);
+    expect(filtrarReservas(futuras, { busqueda: "", filtroFecha: "7dias" }, ahora).map((r) => r.id)).toEqual([2, 3, 4]);
   });
 });
 

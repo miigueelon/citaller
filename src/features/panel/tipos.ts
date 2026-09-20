@@ -5,6 +5,7 @@ export interface ReservaPanel {
   id: number;
   taller_id: number;
   nombre: string | null;
+  telefono: string | null;
   matricula: string | null;
   vehiculo: string | null;
   servicio: string | null;

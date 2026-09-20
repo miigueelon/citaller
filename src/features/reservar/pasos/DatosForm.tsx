@@ -5,6 +5,7 @@ import guiaNeumatico from "@/assets/guia_neumatico.png";
 import { useTaller } from "@/app/providers/useTaller";
 import { esNeumaticosConMedidas, tallerPideKilometros } from "@/features/taller/configTemporal";
 import type { ReservaEnCurso } from "../tipos";
+import { erroresDeFormato, formularioCompleto } from "../validacion";
 
 interface Props {
   reserva: ReservaEnCurso;
@@ -17,7 +18,13 @@ export function DatosForm({ reserva, actualizar, continuar }: Props) {
   const taller = useTaller();
 
   function alCambiar(evento: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
-    actualizar({ [evento.target.name]: evento.target.value } as Partial<ReservaEnCurso>);
+    const { name, value } = evento.target;
+    // Al cambiar de servicio se limpian los campos que dependen de él.
+    if (name === "servicio") {
+      actualizar({ servicio: value, descripcion: "", cantidad_neumaticos: "" });
+      return;
+    }
+    actualizar({ [name]: value } as Partial<ReservaEnCurso>);
   }
 
   // Solo permite números en kilómetros. El campo sigue siendo opcional.
@@ -29,13 +36,8 @@ export function DatosForm({ reserva, actualizar, continuar }: Props) {
   const neumaticosConMedidas = esNeumaticosConMedidas(reserva.taller_id, reserva.servicio);
   const mostrarDescripcion = reserva.servicio === "Avería / luz de aviso" || reserva.servicio === "Otro" || neumaticosConMedidas;
 
-  const formularioCompleto =
-    reserva.matricula.trim() !== "" &&
-    reserva.nombre.trim() !== "" &&
-    reserva.telefono.trim() !== "" &&
-    reserva.vehiculo.trim() !== "" &&
-    reserva.servicio !== "" &&
-    (!neumaticosConMedidas || (reserva.cantidad_neumaticos !== "" && reserva.descripcion.trim() !== ""));
+  const errores = erroresDeFormato(reserva);
+  const completo = formularioCompleto(reserva, { neumaticosConMedidas });
 
   return (
     <div className="container">
@@ -61,7 +63,7 @@ export function DatosForm({ reserva, actualizar, continuar }: Props) {
 
           {taller.horario_texto && <p>🕒 {taller.horario_texto}</p>}
 
-          {taller.valoracion && (
+          {taller.valoracion != null && (
             <p>
               ⭐ {Number(taller.valoracion).toFixed(1)}
               {(taller.numero_resenas ?? 0) > 0 ? ` · ${taller.numero_resenas} reseñas` : ""}
@@ -74,7 +76,7 @@ export function DatosForm({ reserva, actualizar, continuar }: Props) {
         <form className="formulario-reserva">
           <div className="fila">
             <div className="campo">
-              <CampoInput label="Matrícula" name="matricula" value={reserva.matricula} onChange={alCambiar} />
+              <CampoInput label="Matrícula" name="matricula" value={reserva.matricula} onChange={alCambiar} autoComplete="off" error={errores.matricula} />
             </div>
 
             <div className="campo">
@@ -84,18 +86,18 @@ export function DatosForm({ reserva, actualizar, continuar }: Props) {
 
           <div className="fila">
             <div className="campo">
-              <CampoInput label="Nombre" name="nombre" value={reserva.nombre} onChange={alCambiar} />
+              <CampoInput label="Nombre" name="nombre" value={reserva.nombre} onChange={alCambiar} autoComplete="name" />
             </div>
 
             <div className="campo">
-              <CampoInput label="Teléfono" name="telefono" type="tel" value={reserva.telefono} onChange={alCambiar} />
+              <CampoInput label="Teléfono" name="telefono" type="tel" inputMode="tel" autoComplete="tel" value={reserva.telefono} onChange={alCambiar} error={errores.telefono} />
             </div>
           </div>
 
           {pideKilometros && (
             <div className="fila">
               <div className="campo">
-                <CampoInput label="Kilómetros (opcional)" name="kilometros" type="text" value={reserva.kilometros} onChange={alCambiarKilometros} />
+                <CampoInput label="Kilómetros (opcional)" name="kilometros" type="text" inputMode="numeric" value={reserva.kilometros} onChange={alCambiarKilometros} />
               </div>
             </div>
           )}
@@ -181,7 +183,7 @@ export function DatosForm({ reserva, actualizar, continuar }: Props) {
             </div>
           )}
 
-          <button type="button" className="boton-principal" disabled={!formularioCompleto} onClick={continuar}>
+          <button type="button" className="boton-principal" disabled={!completo} onClick={continuar}>
             CONTINUAR
           </button>
         </form>

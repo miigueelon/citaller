@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { reservaVacia, type ReservaEnCurso } from "./tipos";
 
-export type Paso = 1 | 2 | 3;
+export type Paso = 1 | 2 | 3 | 4;
 
 /** Estado del asistente de reserva: los datos que va rellenando el cliente y el paso actual. */
 export function useReservaWizard(tallerId: number) {

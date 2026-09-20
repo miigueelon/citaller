@@ -10,6 +10,12 @@ export interface ResultadoCambio {
   avisos: string[];
 }
 
+/** supabase-js envuelve las respuestas 4xx en FunctionsHttpError; "sin calendario" es un 400 esperado. */
+function esErrorSinCalendario(error: unknown): boolean {
+  const contexto = (error as { context?: { status?: number } })?.context;
+  return contexto?.status === 400;
+}
+
 /** Reservas del taller y las dos acciones del panel: recargar y cambiar de estado. */
 export function useReservasTaller(cliente: ClienteSupabase, tallerId: number) {
   const [reservas, setReservas] = useState<ReservaPanel[]>([]);
@@ -78,34 +84,49 @@ export function useReservasTaller(cliente: ClienteSupabase, tallerId: number) {
       if (nuevoEstado === "Cancelada" && actual?.estado === "Confirmada") {
         try {
           const { data, error } = await cliente.functions.invoke<RespuestaFuncion>(EDGE_FUNCTIONS.cancelarEventoGoogle, { body: { reserva_id: reservaId } });
-          if (error || !data?.ok) console.error("La cita se canceló, pero falló la llamada a Google Calendar:", error ?? data);
-          else if (data.aviso) avisos.push(`La cita está cancelada. ${data.aviso}.`);
+          if (error || !data?.ok) {
+            console.error("La cita se canceló, pero falló la llamada a Google Calendar:", error ?? data);
+            avisos.push("La cita está cancelada, pero no se pudo borrar su evento de Google Calendar. Bórralo a mano en el calendario.");
+          } else if (data.aviso) {
+            avisos.push(`La cita está cancelada. ${data.aviso}.`);
+          }
         } catch (fallo: unknown) {
           console.error("La cita se canceló, pero ocurrió un error con Google Calendar:", fallo);
+          avisos.push("La cita está cancelada, pero no se pudo contactar con Google Calendar. Bórralo a mano en el calendario.");
         }
       }
 
       if (nuevoEstado === "Confirmada") {
         try {
           const { data, error } = await cliente.functions.invoke<RespuestaFuncion>(EDGE_FUNCTIONS.enviarWhatsappConfirmacion, { body: { reserva_id: reservaId } });
-          if (error) console.error("La reserva se confirmó, pero falló la llamada a WhatsApp:", error);
-          else console.log("Respuesta WhatsApp:", data);
+          if (error || data?.ok === false) {
+            console.error("La reserva se confirmó, pero falló la llamada a WhatsApp:", error ?? data);
+            avisos.push("La cita está confirmada, pero no se pudo enviar el WhatsApp al cliente. Avísale por otro medio.");
+          } else if (data?.mensaje && !data.mensaje.includes("activo")) {
+            console.log("Respuesta WhatsApp:", data);
+          }
         } catch (fallo: unknown) {
           console.error("La reserva se confirmó, pero ocurrió un error con WhatsApp:", fallo);
+          avisos.push("La cita está confirmada, pero no se pudo contactar con WhatsApp. Avísale por otro medio.");
         }
 
         // La función responde con un error claro si el taller no tiene Google conectado.
         try {
           const { data, error } = await cliente.functions.invoke<RespuestaFuncion>(EDGE_FUNCTIONS.crearEventoGoogle, { body: { reserva_id: reservaId } });
-          if (error) console.error("La reserva se confirmó, pero falló Google Calendar:", error);
-          else console.log("Respuesta Google Calendar:", data);
+          if (error) {
+            console.error("La reserva se confirmó, pero falló Google Calendar:", error);
+            avisos.push(esErrorSinCalendario(error) ? "" : "La cita está confirmada, pero no se pudo crear el evento en Google Calendar.");
+          } else if (data?.ok === false && data.error && !data.error.includes("no está conectado")) {
+            avisos.push(`La cita está confirmada, pero Google Calendar respondió: ${data.error}`);
+          }
         } catch (fallo: unknown) {
           console.error("La reserva se confirmó, pero ocurrió un error con Google Calendar:", fallo);
+          avisos.push("La cita está confirmada, pero no se pudo contactar con Google Calendar.");
         }
       }
 
       await recargar();
-      return { ok: true, avisos };
+      return { ok: true, avisos: avisos.filter(Boolean) };
     },
     [cliente, tallerId, reservas, recargar],
   );

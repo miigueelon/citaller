@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { ArrowLeft, History } from "lucide-react";
 import { useAuth } from "@/app/providers/useAuth";
@@ -31,7 +31,14 @@ export function PanelTaller() {
   const [pendienteDeCancelar, setPendienteDeCancelar] = useState<ReservaPanel | null>(null);
   const [operando, setOperando] = useState(false);
 
-  const futuras = useMemo(() => reservasFuturas(reservas), [reservas]);
+  // "Hoy" se recalcula cada minuto, por si el panel queda abierto de un día para otro.
+  const [ahora, setAhora] = useState(() => new Date());
+  useEffect(() => {
+    const intervalo = setInterval(() => setAhora(new Date()), 60_000);
+    return () => clearInterval(intervalo);
+  }, []);
+
+  const futuras = useMemo(() => reservasFuturas(reservas, ahora), [reservas, ahora]);
   const contadores = useMemo(
     () => ({
       Pendiente: porEstado(futuras, "Pendiente").length,
@@ -42,11 +49,14 @@ export function PanelTaller() {
   );
 
   const gruposProximas = useMemo(
-    () => agruparPorDia(filtrarReservas(porEstado(futuras, filtroEstado), { busqueda, filtroFecha })).map(([dia, items]) => [tituloGrupo(dia), items] as [string, ReservaPanel[]]),
-    [futuras, filtroEstado, busqueda, filtroFecha],
+    () =>
+      agruparPorDia(filtrarReservas(porEstado(futuras, filtroEstado), { busqueda, filtroFecha }, ahora)).map(
+        ([dia, items]) => [tituloGrupo(dia, ahora), items] as [string, ReservaPanel[]],
+      ),
+    [futuras, filtroEstado, busqueda, filtroFecha, ahora],
   );
 
-  const pasadas = useMemo(() => historial(reservas), [reservas]);
+  const pasadas = useMemo(() => historial(reservas, ahora), [reservas, ahora]);
   const gruposHistorial = useMemo(() => pasadas.map((reserva) => [tituloHistorial(reserva.dia), [reserva]] as [string, ReservaPanel[]]), [pasadas]);
 
   async function ejecutarCambio(reserva: ReservaPanel, estado: "Confirmada" | "Cancelada") {
@@ -69,7 +79,7 @@ export function PanelTaller() {
         <CabeceraPanel
           nombreTaller={taller.nombre}
           modoHistorial={mostrarHistorial}
-          totalReservas={totalValidas(reservas)}
+          totalReservas={totalValidas(futuras)}
           totalHistorial={pasadas.length}
           cargando={cargando}
           onActualizar={() => void recargar()}
@@ -120,6 +130,7 @@ export function PanelTaller() {
           cargando={cargando}
           error={error}
           grupos={mostrarHistorial ? gruposHistorial : gruposProximas}
+          ocupado={operando}
           textoVacio={
             mostrarHistorial
               ? "Todavía no hay reservas pasadas."

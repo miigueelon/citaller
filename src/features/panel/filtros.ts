@@ -1,13 +1,10 @@
 // Filtros y agrupaciones del panel. Lógica pura, sin React: se prueba sola.
-import { esDiaPasado, esFinDeSemana, formatearDiaLargo, hoy, sumarDias, type Dia } from "@/lib/fechas";
+import { esDiaPasado, formatearDiaLargo, hoy, sumarDias, type Dia } from "@/lib/fechas";
 import type { EstadoReserva, FiltroFecha, ReservaPanel } from "./tipos";
 
-/**
- * Reservas de hoy en adelante. (Regla heredada: también se ocultan las de fin de semana;
- * la fase 2.5 la retira porque esconde citas futuras de sábado o domingo.)
- */
+/** Reservas de hoy en adelante, cualquier día de la semana. */
 export function reservasFuturas(reservas: ReservaPanel[], ahora: Date = new Date()): ReservaPanel[] {
-  return reservas.filter((reserva) => !!reserva.dia && !esDiaPasado(reserva.dia, ahora) && !esFinDeSemana(reserva.dia));
+  return reservas.filter((reserva) => !!reserva.dia && !esDiaPasado(reserva.dia, ahora));
 }
 
 export function porEstado(reservas: ReservaPanel[], estado: EstadoReserva): ReservaPanel[] {

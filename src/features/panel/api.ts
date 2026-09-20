@@ -5,7 +5,7 @@ import { esEstadoReserva, type EstadoReserva, type ReservaPanel } from "./tipos"
 export async function cargarReservasTaller(cliente: ClienteSupabase, tallerId: number): Promise<ReservaPanel[]> {
   const { data, error } = await cliente
     .from("reservas")
-    .select("id, taller_id, nombre, matricula, vehiculo, servicio, descripcion, kilometros, estado, dia, hora")
+    .select("id, taller_id, nombre, telefono, matricula, vehiculo, servicio, descripcion, kilometros, estado, dia, hora")
     .eq("taller_id", tallerId)
     .order("dia", { ascending: true })
     .order("hora", { ascending: true });

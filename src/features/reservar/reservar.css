@@ -550,3 +550,15 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* Errores de formato bajo un campo */
+.campo-input-error input {
+  border-color: var(--color-error);
+}
+
+.campo-error {
+  margin: 6px 4px 0;
+  font-size: 13px;
+  color: var(--color-error);
+  line-height: 1.4;
+}

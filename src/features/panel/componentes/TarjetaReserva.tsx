@@ -1,15 +1,17 @@
-import { Car, Clock, Gauge, Hash, User, Wrench } from "lucide-react";
+import { Car, Clock, Gauge, Hash, Phone, User, Wrench } from "lucide-react";
 import { horaCorta } from "@/lib/fechas";
 import { tallerPideKilometros } from "@/features/taller/configTemporal";
 import type { ReservaPanel } from "../tipos";
 
 interface Props {
   reserva: ReservaPanel;
+  /** Mientras hay una acción en curso, los botones se deshabilitan. */
+  ocupado?: boolean;
   onConfirmar: (reserva: ReservaPanel) => void;
   onCancelar: (reserva: ReservaPanel) => void;
 }
 
-export function TarjetaReserva({ reserva, onConfirmar, onCancelar }: Props) {
+export function TarjetaReserva({ reserva, ocupado = false, onConfirmar, onCancelar }: Props) {
   const mostrarKilometros = tallerPideKilometros(reserva.taller_id) && reserva.kilometros !== null;
 
   return (
@@ -31,6 +33,14 @@ export function TarjetaReserva({ reserva, onConfirmar, onCancelar }: Props) {
           <div className="campo-contenido">
             <p className="campo-label">Cliente</p>
             <p className="campo-valor">{reserva.nombre || "-"}</p>
+          </div>
+        </div>
+
+        <div className="campo-item">
+          <Phone className="campo-icon" size={16} />
+          <div className="campo-contenido">
+            <p className="campo-label">Teléfono</p>
+            <p className="campo-valor">{reserva.telefono ? <a href={`tel:${reserva.telefono}`}>{reserva.telefono}</a> : "-"}</p>
           </div>
         </div>
 
@@ -78,10 +88,10 @@ export function TarjetaReserva({ reserva, onConfirmar, onCancelar }: Props) {
 
       {reserva.estado === "Pendiente" && (
         <div className="tarjeta-acciones">
-          <button type="button" className="btn-confirmar" onClick={() => onConfirmar(reserva)}>
+          <button type="button" className="btn-confirmar" onClick={() => onConfirmar(reserva)} disabled={ocupado}>
             ✓ Confirmar
           </button>
-          <button type="button" className="btn-cancelar" onClick={() => onCancelar(reserva)}>
+          <button type="button" className="btn-cancelar" onClick={() => onCancelar(reserva)} disabled={ocupado}>
             ✕ Cancelar
           </button>
         </div>
@@ -89,7 +99,7 @@ export function TarjetaReserva({ reserva, onConfirmar, onCancelar }: Props) {
 
       {reserva.estado === "Confirmada" && (
         <div className="tarjeta-acciones">
-          <button type="button" className="btn-cancelar" onClick={() => onCancelar(reserva)}>
+          <button type="button" className="btn-cancelar" onClick={() => onCancelar(reserva)} disabled={ocupado}>
             ✕ Cancelar cita
           </button>
         </div>

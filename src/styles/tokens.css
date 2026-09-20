@@ -1,0 +1,61 @@
+/* Tokens de diseño de CiTaller: colores, radios, sombras, tipografía y medidas.
+   Todo el CSS de la app usa estas variables; los valores son los que ya tenía la app. */
+:root {
+  /* Marca */
+  --color-primario: #ff6b00;
+  --color-primario-oscuro: #ea5e00;
+  --color-primario-suave: #fff3eb;
+  --color-primario-borde: #ffb067;
+  --color-primario-foco: rgba(255, 107, 0, 0.12);
+
+  /* Texto */
+  --color-titulo: #16233a;
+  --color-texto: #1f2937;
+  --color-texto-suave: #6b7280;
+  --color-texto-apagado: #9ca3af;
+  --color-texto-panel: #8a8478;
+  --color-etiqueta: #a6a093;
+
+  /* Superficies y bordes */
+  --color-blanco: #ffffff;
+  --color-fondo-campo: #f8fafc;
+  --color-fondo-chip: #f5f7fb;
+  --color-borde: #e5e7eb;
+  --color-borde-suave: #f0f0f0;
+  --color-deshabilitado: #d1d5db;
+  --fondo-pagina: linear-gradient(135deg, #eef2f7, #dde8f5);
+
+  /* Estados */
+  --color-ok: #22c55e;
+  --color-ok-oscuro: #16a34a;
+  --color-ok-fondo: #dcfce7;
+  --color-ok-texto: #15803d;
+  --color-error: #dc2626;
+  --color-error-fondo: #fee2e2;
+  --color-error-hover: #fecaca;
+  --color-aviso-texto: #b45309;
+  --color-aviso-fondo: #fff7ed;
+  --color-aviso-borde: #fed7aa;
+  --color-pendiente-fondo: #fff3e8;
+  --color-pendiente-texto: #ea580c;
+
+  /* Formas */
+  --radio-s: 10px;
+  --radio-m: 16px;
+  --radio-l: 22px;
+  --radio-pill: 999px;
+
+  /* Sombras */
+  --sombra-tarjeta: 0 20px 50px rgba(0, 0, 0, 0.12);
+  --sombra-suave: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --sombra-media: 0 10px 30px rgba(0, 0, 0, 0.05);
+  --sombra-primario: 0 12px 24px rgba(255, 107, 0, 0.3);
+  --sombra-primario-suave: 0 8px 18px rgba(255, 107, 0, 0.25);
+
+  /* Tipografía y medidas */
+  --fuente: Arial, Helvetica, sans-serif;
+  --alto-campo: 68px;
+  --alto-boton: 64px;
+  --ancho-tarjeta: 560px;
+  --ancho-panel: 768px;
+}

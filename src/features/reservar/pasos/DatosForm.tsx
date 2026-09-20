@@ -71,7 +71,7 @@ export function DatosForm({ reserva, actualizar, continuar }: Props) {
           {taller.telefono && <p>📞 {taller.telefono}</p>}
         </div>
 
-        <form>
+        <form className="formulario-reserva">
           <div className="fila">
             <div className="campo">
               <CampoInput label="Matrícula" name="matricula" value={reserva.matricula} onChange={alCambiar} />
@@ -137,7 +137,7 @@ export function DatosForm({ reserva, actualizar, continuar }: Props) {
                 {neumaticosConMedidas ? "Medidas / observaciones" : reserva.servicio === "Otro" ? "Cuéntanos qué necesitas" : "Cuéntanos qué ocurre"}
 
                 {neumaticosConMedidas ? (
-                  <span style={{ color: "#c0392b", marginLeft: 6 }}>* Obligatorio</span>
+                  <span className="texto-obligatorio">* Obligatorio</span>
                 ) : (
                   <span className="texto-opcional"> (opcional)</span>
                 )}
@@ -171,13 +171,9 @@ export function DatosForm({ reserva, actualizar, continuar }: Props) {
               </p>
 
               {neumaticosConMedidas && (
-                <div style={{ marginTop: "10px", padding: "10px", border: "1px solid #e5e7eb", borderRadius: "12px", background: "#fff" }}>
-                  <img
-                    src={guiaNeumatico}
-                    alt="Ejemplo de medida de neumático: 205/55 R16 91W, destacada en amarillo en el lateral"
-                    style={{ display: "block", width: "100%", maxWidth: "520px", height: "auto", margin: "0 auto", borderRadius: "8px" }}
-                  />
-                  <p style={{ margin: "8px 0 0", textAlign: "center", fontSize: "13px" }}>
+                <div className="guia-imagen">
+                  <img src={guiaNeumatico} alt="Ejemplo de medida de neumático: 205/55 R16 91W, destacada en amarillo en el lateral" />
+                  <p>
                     Ejemplo: <strong>205/55 R16 91W</strong>
                   </p>
                 </div>
@@ -185,7 +181,7 @@ export function DatosForm({ reserva, actualizar, continuar }: Props) {
             </div>
           )}
 
-          <button type="button" disabled={!formularioCompleto} onClick={continuar}>
+          <button type="button" className="boton-principal" disabled={!formularioCompleto} onClick={continuar}>
             CONTINUAR
           </button>
         </form>

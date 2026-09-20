@@ -1,0 +1,35 @@
+.contenedor {
+  max-width: 400px;
+  margin: 80px auto;
+  padding: 0 16px;
+}
+
+.titulo {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-titulo);
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.campo {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid #767676;
+  border-radius: 4px;
+  font-size: 14px;
+  background: var(--color-blanco);
+}
+
+.campo:focus {
+  outline: none;
+  border-color: var(--color-primario);
+  box-shadow: 0 0 0 3px var(--color-primario-foco);
+}
+
+.error {
+  color: var(--color-error);
+  margin-top: 10px;
+  text-align: center;
+}

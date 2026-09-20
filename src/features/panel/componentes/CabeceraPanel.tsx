@@ -46,19 +46,19 @@ export function CabeceraPanel({
           <p className="panel-subtitulo">{subtitulo}</p>
         </div>
 
-        <div style={{ display: "flex", gap: "12px", width: "100%" }}>
-          <button type="button" className="panel-btn-actualizar" onClick={onActualizar} disabled={cargando} style={{ flex: 1 }}>
+        <div className="panel-acciones">
+          <button type="button" className="panel-btn-actualizar" onClick={onActualizar} disabled={cargando}>
             <RefreshCw className={`panel-btn-icon ${cargando ? "spin" : ""}`} />
             Actualizar
           </button>
-          <button type="button" className="panel-btn-actualizar" onClick={onNuevaCita} style={{ flex: 1 }}>
+          <button type="button" className="panel-btn-actualizar" onClick={onNuevaCita}>
             + Nueva cita
           </button>
           {/* Disponible para cualquier taller: la conexión se guarda por taller. */}
-          <button type="button" className="panel-btn-actualizar" onClick={onConectarGoogle} style={{ flex: 1 }}>
+          <button type="button" className="panel-btn-actualizar" onClick={onConectarGoogle}>
             Conectar Google Calendar
           </button>
-          <button type="button" className="panel-btn-actualizar" onClick={onCerrarSesion} style={{ flex: 1 }}>
+          <button type="button" className="panel-btn-actualizar" onClick={onCerrarSesion}>
             Cerrar sesión
           </button>
         </div>

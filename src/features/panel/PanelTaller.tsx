@@ -12,7 +12,7 @@ import { agruparPorDia, filtrarReservas, historial, porEstado, reservasFuturas, 
 import type { FiltroEstado, FiltroFecha, ReservaPanel } from "./tipos";
 import { useConexionGoogle } from "./useConexionGoogle";
 import { useReservasTaller } from "./useReservasTaller";
-import "./PanelTaller.css";
+import "./panel.css";
 
 /** Panel del taller: reservas próximas por estado, búsqueda, historial, y acciones. */
 export function PanelTaller() {
@@ -87,7 +87,7 @@ export function PanelTaller() {
         {avisos.length > 0 && (
           <Alerta tipo="aviso" onCerrar={() => setAvisos([])}>
             {avisos.map((aviso) => (
-              <p key={aviso} style={{ margin: 0 }}>
+              <p key={aviso}>
                 {aviso}
               </p>
             ))}
@@ -105,12 +105,12 @@ export function PanelTaller() {
         />
 
         {!mostrarHistorial ? (
-          <button type="button" className="panel-btn-historial" onClick={() => setMostrarHistorial(true)}>
+          <button type="button" className="boton-principal panel-btn-historial" onClick={() => setMostrarHistorial(true)}>
             <History size={18} />
             Ver historial de reservas
           </button>
         ) : (
-          <button type="button" className="panel-btn-historial" onClick={() => setMostrarHistorial(false)}>
+          <button type="button" className="boton-principal panel-btn-historial" onClick={() => setMostrarHistorial(false)}>
             <ArrowLeft size={18} />
             Volver a reservas
           </button>

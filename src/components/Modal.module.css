@@ -1,0 +1,63 @@
+.fondo {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+
+.dialogo {
+  background: var(--color-blanco);
+  border-radius: var(--radio-m);
+  padding: 24px;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+
+.titulo {
+  margin: 0 0 12px;
+  font-size: 20px;
+  color: var(--color-titulo);
+}
+
+.cuerpo {
+  color: #374151;
+  line-height: 1.6;
+}
+
+.botones {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  justify-content: flex-end;
+}
+
+.boton {
+  padding: 10px 18px;
+  border-radius: var(--radio-s);
+  border: 1px solid var(--color-deshabilitado);
+  background: var(--color-blanco);
+  color: var(--color-texto);
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.boton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.confirmar {
+  border: none;
+  color: var(--color-blanco);
+  background: var(--color-primario);
+  font-weight: 600;
+}
+
+.peligroso {
+  background: var(--color-error);
+}

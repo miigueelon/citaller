@@ -9,11 +9,11 @@ export function CitaClientePage() {
 
   return (
     <div className="container">
-      <div className="card" style={{ textAlign: "center" }}>
+      <div className="card">
         <h1>{taller.nombre}</h1>
         <p className="subtitulo">Muy pronto podrás ver y cancelar tu cita desde este enlace.</p>
         {taller.telefono && (
-          <p style={{ color: "#6b7280", fontSize: "15px" }}>
+          <p className="texto-secundario centrado">
             Mientras tanto, para cualquier cambio llama al taller: <strong>{taller.telefono}</strong>.
           </p>
         )}

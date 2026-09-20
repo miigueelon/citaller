@@ -6,6 +6,7 @@ import type { ReservaEnCurso } from "./tipos";
 import { DatosForm } from "./pasos/DatosForm";
 import { FechaHora } from "./pasos/FechaHora";
 import { Confirmacion } from "./pasos/Confirmacion";
+import "./reservar.css";
 
 /** Guarda la solicitud con la RPC pública. Devuelve true si se creó. */
 async function guardarReserva(reserva: ReservaEnCurso): Promise<boolean> {

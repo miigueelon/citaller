@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useAuth } from "@/app/providers/useAuth";
+import estilos from "./LoginPage.module.css";
 
 /** Acceso al panel del taller con email y contraseña. */
 export function LoginPage() {
@@ -19,31 +20,25 @@ export function LoginPage() {
   }
 
   return (
-    <div style={{ maxWidth: "400px", margin: "80px auto" }}>
-      <h2>Acceso taller</h2>
+    <div className={estilos.contenedor}>
+      <h2 className={estilos.titulo}>Acceso taller</h2>
 
       <form onSubmit={enviar}>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{ width: "100%", padding: "12px", marginBottom: "10px" }}
-        />
+        <input type="email" className={estilos.campo} placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
 
         <input
           type="password"
+          className={estilos.campo}
           placeholder="Contraseña"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          style={{ width: "100%", padding: "12px", marginBottom: "10px" }}
         />
 
-        <button type="submit" disabled={cargando} style={{ width: "100%", padding: "12px" }}>
+        <button type="submit" className="boton-principal" disabled={cargando}>
           {cargando ? "Entrando..." : "Entrar"}
         </button>
 
-        {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>}
+        {error && <p className={estilos.error}>{error}</p>}
       </form>
     </div>
   );

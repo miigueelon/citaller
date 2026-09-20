@@ -14,22 +14,7 @@ export function Confirmacion({ reserva, guardarReserva, volverMenu }: Props) {
   return (
     <div className="container">
       <div className="card">
-        <div
-          style={{
-            width: "74px",
-            height: "74px",
-            margin: "0 auto 24px",
-            borderRadius: "50%",
-            background: "#22c55e",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "white",
-            fontSize: "42px",
-            fontWeight: "700",
-            boxShadow: "0 12px 28px rgba(34,197,94,.25)",
-          }}
-        >
+        <div className="icono-exito">
           ✓
         </div>
 
@@ -81,21 +66,13 @@ export function Confirmacion({ reserva, guardarReserva, volverMenu }: Props) {
           </div>
         </div>
 
-        <p
-          style={{
-            marginTop: "24px",
-            textAlign: "center",
-            color: "#6b7280",
-            lineHeight: "1.6",
-            fontSize: "15px",
-          }}
-        >
+        <p className="nota-final">
           En unos minutos el taller recibirá tu solicitud y recibirás un WhatsApp con la confirmación.
         </p>
 
         <button
           type="button"
-          style={{ marginTop: "26px" }}
+          className="boton-principal"
           onClick={async () => {
             const guardada = await guardarReserva();
             if (guardada) volverMenu();

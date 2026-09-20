@@ -1,0 +1,132 @@
+/* Reset y elementos comunes a toda la app. Sustituye al index.css de la plantilla de Vite. */
+@import "./tokens.css";
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  font-family: var(--fuente);
+  color: var(--color-texto);
+  background: var(--fondo-pagina);
+  min-height: 100vh;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* Contenedor centrado de las pantallas de una sola tarjeta (reserva, cita, no encontrado). */
+.container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 80px 20px;
+}
+
+.card {
+  position: relative;
+  width: var(--ancho-tarjeta);
+  max-width: 95%;
+  margin: auto;
+  background: var(--color-blanco);
+  border-radius: var(--radio-l);
+  padding: 40px;
+  box-shadow: var(--sombra-tarjeta);
+}
+
+.card h1 {
+  font-size: 46px;
+  font-weight: 650;
+  color: var(--color-titulo);
+  text-align: center;
+  line-height: 1.05;
+  margin-bottom: 14px;
+}
+
+.subtitulo {
+  text-align: center;
+  color: var(--color-texto-suave);
+  font-size: 18px;
+  margin-bottom: 18px;
+}
+
+.centrado {
+  text-align: center;
+}
+
+.texto-secundario {
+  color: var(--color-texto-suave);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* Botón principal (naranja, a todo el ancho). Antes era la regla global `button`. */
+.boton-principal {
+  width: 100%;
+  height: var(--alto-boton);
+  margin-top: 30px;
+  border: none;
+  border-radius: var(--radio-m);
+  background: var(--color-primario);
+  color: var(--color-blanco);
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+.boton-principal:hover:not(:disabled) {
+  background: var(--color-primario-oscuro);
+  transform: translateY(-2px);
+  box-shadow: var(--sombra-primario);
+}
+
+.boton-principal:disabled {
+  background: var(--color-deshabilitado);
+  color: var(--color-texto-apagado);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@media (max-width: 768px) {
+  .card {
+    width: 100%;
+    padding: 26px;
+  }
+
+  .card h1 {
+    font-size: 36px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card h1 {
+    font-size: 30px;
+  }
+}

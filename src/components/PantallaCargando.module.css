@@ -1,0 +1,5 @@
+.pantalla {
+  padding: 40px;
+  text-align: center;
+  color: var(--color-texto-suave);
+}

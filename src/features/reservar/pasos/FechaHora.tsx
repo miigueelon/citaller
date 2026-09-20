@@ -93,7 +93,7 @@ export function FechaHora({ reserva, actualizar, volver, continuar }: Props) {
           const festivo = festivoDelDia(festivos, formatearDia(date));
           if (!festivo) return null;
           return (
-            <div title={festivo.nombre} style={{ fontSize: "9px", lineHeight: "10px", marginTop: "2px", color: "#dc2626", fontWeight: "700" }}>
+            <div title={festivo.nombre} className="festivo-etiqueta">
               FESTIVO
             </div>
           );
@@ -105,7 +105,7 @@ export function FechaHora({ reserva, actualizar, volver, continuar }: Props) {
           <h3 className="titulo-horas">Horas disponibles</h3>
 
           {cargandoHorarios || cargandoOcupacion ? (
-            <p style={{ textAlign: "center", color: "#6b7280", margin: "20px 0" }}>Comprobando disponibilidad...</p>
+            <p className="mensaje-disponibilidad">Comprobando disponibilidad...</p>
           ) : horas.length > 0 ? (
             <>
               <div className="horas-grid">
@@ -122,29 +122,18 @@ export function FechaHora({ reserva, actualizar, volver, continuar }: Props) {
               </div>
 
               {mostrarAvisoTarde && (
-                <p
-                  style={{
-                    textAlign: "center",
-                    color: "#b45309",
-                    background: "#fff7ed",
-                    border: "1px solid #fed7aa",
-                    borderRadius: "10px",
-                    padding: "12px",
-                    marginTop: "16px",
-                    fontWeight: "600",
-                  }}
-                >
+                <p className="aviso-tarde">
                   ⚠️ Al seleccionar esta última hora de recepción, el vehículo podría quedar en el taller y entregarse al día siguiente.
                 </p>
               )}
             </>
           ) : (
-            <p style={{ textAlign: "center", color: "#6b7280", margin: "20px 0" }}>No hay horas disponibles para este día.</p>
+            <p className="mensaje-disponibilidad">No hay horas disponibles para este día.</p>
           )}
         </>
       )}
 
-      <button type="button" disabled={!reserva.hora} onClick={continuar}>
+      <button type="button" className="boton-principal" disabled={!reserva.hora} onClick={continuar}>
         CONTINUAR
       </button>
     </div>

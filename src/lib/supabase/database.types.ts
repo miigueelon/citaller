@@ -39,40 +39,65 @@ export type Database = {
   }
   public: {
     Tables: {
-      configuracion_taller: {
+      campos_formulario_taller: {
         Row: {
-          aviso_tarde: string | null
-          created_at: string
+          ayuda: string | null
+          clave: string
+          etiqueta: string
           id: number
-          max_citas_dia: number
+          obligatorio: boolean
+          opciones: Json | null
+          orden: number
+          servicio_id: number | null
           taller_id: number
+          tipo: string
+          unidad: string | null
         }
         Insert: {
-          aviso_tarde?: string | null
-          created_at?: string
+          ayuda?: string | null
+          clave: string
+          etiqueta: string
           id?: number
-          max_citas_dia?: number
+          obligatorio?: boolean
+          opciones?: Json | null
+          orden?: number
+          servicio_id?: number | null
           taller_id: number
+          tipo: string
+          unidad?: string | null
         }
         Update: {
-          aviso_tarde?: string | null
-          created_at?: string
+          ayuda?: string | null
+          clave?: string
+          etiqueta?: string
           id?: number
-          max_citas_dia?: number
+          obligatorio?: boolean
+          opciones?: Json | null
+          orden?: number
+          servicio_id?: number | null
           taller_id?: number
+          tipo?: string
+          unidad?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "configuracion_taller_taller_id_fkey"
+            foreignKeyName: "campos_formulario_taller_servicio_id_fkey"
+            columns: ["servicio_id"]
+            isOneToOne: false
+            referencedRelation: "servicios_taller"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campos_formulario_taller_taller_id_fkey"
             columns: ["taller_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "talleres"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "configuracion_taller_taller_id_fkey"
+            foreignKeyName: "campos_formulario_taller_taller_id_fkey"
             columns: ["taller_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "talleres_publicos"
             referencedColumns: ["id"]
           },
@@ -254,10 +279,16 @@ export type Database = {
           calendar_event_id: string | null
           calendar_provider: string | null
           calendar_sync_status: string | null
+          cancelada_en: string | null
+          cancelada_por: string | null
+          confirmada_en: string | null
+          creada_por: string
           created_at: string | null
+          datos_extra: Json
           descripcion: string | null
           dia: string
           estado: string
+          google_error: string | null
           google_event_html_link: string | null
           google_event_id: string | null
           hora: string
@@ -266,11 +297,16 @@ export type Database = {
           matricula: string | null
           nombre: string | null
           servicio: string | null
+          servicio_id: number | null
           taller_id: number
           telefono: string | null
+          token_publico: string
           vehiculo: string | null
+          whatsapp_cancelacion_enviada: boolean
+          whatsapp_cancelacion_fecha: string | null
           whatsapp_confirmacion_enviada: boolean
           whatsapp_confirmacion_fecha: string | null
+          whatsapp_error: string | null
           whatsapp_recordatorio_enviado: boolean
           whatsapp_recordatorio_fecha: string | null
         }
@@ -278,10 +314,16 @@ export type Database = {
           calendar_event_id?: string | null
           calendar_provider?: string | null
           calendar_sync_status?: string | null
+          cancelada_en?: string | null
+          cancelada_por?: string | null
+          confirmada_en?: string | null
+          creada_por?: string
           created_at?: string | null
+          datos_extra?: Json
           descripcion?: string | null
           dia: string
           estado?: string
+          google_error?: string | null
           google_event_html_link?: string | null
           google_event_id?: string | null
           hora: string
@@ -290,11 +332,16 @@ export type Database = {
           matricula?: string | null
           nombre?: string | null
           servicio?: string | null
+          servicio_id?: number | null
           taller_id: number
           telefono?: string | null
+          token_publico?: string
           vehiculo?: string | null
+          whatsapp_cancelacion_enviada?: boolean
+          whatsapp_cancelacion_fecha?: string | null
           whatsapp_confirmacion_enviada?: boolean
           whatsapp_confirmacion_fecha?: string | null
+          whatsapp_error?: string | null
           whatsapp_recordatorio_enviado?: boolean
           whatsapp_recordatorio_fecha?: string | null
         }
@@ -302,10 +349,16 @@ export type Database = {
           calendar_event_id?: string | null
           calendar_provider?: string | null
           calendar_sync_status?: string | null
+          cancelada_en?: string | null
+          cancelada_por?: string | null
+          confirmada_en?: string | null
+          creada_por?: string
           created_at?: string | null
+          datos_extra?: Json
           descripcion?: string | null
           dia?: string
           estado?: string
+          google_error?: string | null
           google_event_html_link?: string | null
           google_event_id?: string | null
           hora?: string
@@ -314,15 +367,27 @@ export type Database = {
           matricula?: string | null
           nombre?: string | null
           servicio?: string | null
+          servicio_id?: number | null
           taller_id?: number
           telefono?: string | null
+          token_publico?: string
           vehiculo?: string | null
+          whatsapp_cancelacion_enviada?: boolean
+          whatsapp_cancelacion_fecha?: string | null
           whatsapp_confirmacion_enviada?: boolean
           whatsapp_confirmacion_fecha?: string | null
+          whatsapp_error?: string | null
           whatsapp_recordatorio_enviado?: boolean
           whatsapp_recordatorio_fecha?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "reservas_servicio_id_fkey"
+            columns: ["servicio_id"]
+            isOneToOne: false
+            referencedRelation: "servicios_taller"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "reservas_taller_id_fkey"
             columns: ["taller_id"]
@@ -339,65 +404,143 @@ export type Database = {
           },
         ]
       }
+      servicios_taller: {
+        Row: {
+          activo: boolean
+          descripcion_ayuda: string | null
+          descripcion_etiqueta: string | null
+          descripcion_modo: string
+          descripcion_placeholder: string | null
+          id: number
+          imagen_ayuda_url: string | null
+          nombre: string
+          orden: number
+          taller_id: number
+        }
+        Insert: {
+          activo?: boolean
+          descripcion_ayuda?: string | null
+          descripcion_etiqueta?: string | null
+          descripcion_modo?: string
+          descripcion_placeholder?: string | null
+          id?: number
+          imagen_ayuda_url?: string | null
+          nombre: string
+          orden?: number
+          taller_id: number
+        }
+        Update: {
+          activo?: boolean
+          descripcion_ayuda?: string | null
+          descripcion_etiqueta?: string | null
+          descripcion_modo?: string
+          descripcion_placeholder?: string | null
+          id?: number
+          imagen_ayuda_url?: string | null
+          nombre?: string
+          orden?: number
+          taller_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "servicios_taller_taller_id_fkey"
+            columns: ["taller_id"]
+            isOneToOne: false
+            referencedRelation: "talleres"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "servicios_taller_taller_id_fkey"
+            columns: ["taller_id"]
+            isOneToOne: false
+            referencedRelation: "talleres_publicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       talleres: {
         Row: {
           activo: boolean
           calendar_id: string | null
           calendar_provider: string | null
+          capacidad: number
           capacidad_simultanea: number
           ciudad: string | null
           created_at: string
           direccion: string | null
           horario_texto: string | null
           id: number
+          modo_capacidad: string
           nombre: string
           numero_resenas: number | null
           slug: string
           telefono: string | null
+          texto_aviso_tarde: string | null
+          texto_confirmacion: string | null
+          texto_whatsapp_cancelacion: string | null
+          texto_whatsapp_confirmacion: string | null
+          texto_whatsapp_recordatorio: string | null
           user_id: string | null
           valoracion: number | null
           whatsapp_activo: boolean
           whatsapp_business_account_id: string | null
+          whatsapp_modo: string
           whatsapp_phone_number_id: string | null
         }
         Insert: {
           activo?: boolean
           calendar_id?: string | null
           calendar_provider?: string | null
+          capacidad?: number
           capacidad_simultanea?: number
           ciudad?: string | null
           created_at?: string
           direccion?: string | null
           horario_texto?: string | null
           id?: number
+          modo_capacidad?: string
           nombre: string
           numero_resenas?: number | null
           slug: string
           telefono?: string | null
+          texto_aviso_tarde?: string | null
+          texto_confirmacion?: string | null
+          texto_whatsapp_cancelacion?: string | null
+          texto_whatsapp_confirmacion?: string | null
+          texto_whatsapp_recordatorio?: string | null
           user_id?: string | null
           valoracion?: number | null
           whatsapp_activo?: boolean
           whatsapp_business_account_id?: string | null
+          whatsapp_modo?: string
           whatsapp_phone_number_id?: string | null
         }
         Update: {
           activo?: boolean
           calendar_id?: string | null
           calendar_provider?: string | null
+          capacidad?: number
           capacidad_simultanea?: number
           ciudad?: string | null
           created_at?: string
           direccion?: string | null
           horario_texto?: string | null
           id?: number
+          modo_capacidad?: string
           nombre?: string
           numero_resenas?: number | null
           slug?: string
           telefono?: string | null
+          texto_aviso_tarde?: string | null
+          texto_confirmacion?: string | null
+          texto_whatsapp_cancelacion?: string | null
+          texto_whatsapp_confirmacion?: string | null
+          texto_whatsapp_recordatorio?: string | null
           user_id?: string | null
           valoracion?: number | null
           whatsapp_activo?: boolean
           whatsapp_business_account_id?: string | null
+          whatsapp_modo?: string
           whatsapp_phone_number_id?: string | null
         }
         Relationships: []
@@ -406,51 +549,93 @@ export type Database = {
     Views: {
       talleres_publicos: {
         Row: {
+          capacidad: number | null
           capacidad_simultanea: number | null
           ciudad: string | null
           direccion: string | null
           horario_texto: string | null
           id: number | null
+          modo_capacidad: string | null
           nombre: string | null
           numero_resenas: number | null
           slug: string | null
           telefono: string | null
+          texto_aviso_tarde: string | null
+          texto_confirmacion: string | null
           valoracion: number | null
+          whatsapp_modo: string | null
         }
         Insert: {
+          capacidad?: number | null
           capacidad_simultanea?: number | null
           ciudad?: string | null
           direccion?: string | null
           horario_texto?: string | null
           id?: number | null
+          modo_capacidad?: string | null
           nombre?: string | null
           numero_resenas?: number | null
           slug?: string | null
           telefono?: string | null
+          texto_aviso_tarde?: string | null
+          texto_confirmacion?: string | null
           valoracion?: number | null
+          whatsapp_modo?: string | null
         }
         Update: {
+          capacidad?: number | null
           capacidad_simultanea?: number | null
           ciudad?: string | null
           direccion?: string | null
           horario_texto?: string | null
           id?: number | null
+          modo_capacidad?: string | null
           nombre?: string | null
           numero_resenas?: number | null
           slug?: string | null
           telefono?: string | null
+          texto_aviso_tarde?: string | null
+          texto_confirmacion?: string | null
           valoracion?: number | null
+          whatsapp_modo?: string | null
         }
         Relationships: []
       }
     }
     Functions: {
+      cancelar_reserva_cliente: {
+        Args: { p_token: string }
+        Returns: {
+          estado_anterior: string
+          google_event_id: string
+          reserva_id: number
+          taller_id: number
+        }[]
+      }
+      consultar_cita_cliente: {
+        Args: { p_token: string }
+        Returns: {
+          cancelada_por: string
+          dia: string
+          estado: string
+          hora: string
+          limite_cancelacion: string
+          matricula: string
+          nombre: string
+          puede_cancelar: boolean
+          servicio: string
+          taller_nombre: string
+          taller_slug: string
+          taller_telefono: string
+          vehiculo: string
+        }[]
+      }
       crear_reserva_publica: {
         Args: {
+          p_datos_extra?: Json
           p_descripcion: string
           p_dia: string
           p_hora: string
-          p_kilometros?: number
           p_matricula: string
           p_nombre: string
           p_servicio: string
@@ -458,8 +643,12 @@ export type Database = {
           p_telefono: string
           p_vehiculo: string
         }
-        Returns: undefined
+        Returns: {
+          reserva_id: number
+          token_publico: string
+        }[]
       }
+      es_telefono_valido: { Args: { p_telefono: string }; Returns: boolean }
       guardar_token_calendario: {
         Args: {
           p_proveedor: string
@@ -469,6 +658,24 @@ export type Database = {
         }
         Returns: undefined
       }
+      insertar_reserva_taller: {
+        Args: {
+          p_datos_extra?: Json
+          p_descripcion: string
+          p_dia: string
+          p_hora: string
+          p_matricula: string
+          p_nombre: string
+          p_servicio: string
+          p_taller_id: number
+          p_telefono: string
+          p_vehiculo: string
+        }
+        Returns: {
+          reserva_id: number
+          token_publico: string
+        }[]
+      }
       leer_token_calendario: {
         Args: { p_proveedor: string; p_taller_id: number }
         Returns: {
@@ -477,11 +684,32 @@ export type Database = {
           refresh_token: string
         }[]
       }
+      normalizar_telefono: { Args: { p_telefono: string }; Returns: string }
       ocupacion_dia: {
         Args: { p_dia: string; p_taller_id: number }
         Returns: {
           hora: string
           total: number
+        }[]
+      }
+      validar_datos_reserva: {
+        Args: {
+          p_datos_extra: Json
+          p_descripcion: string
+          p_dia: string
+          p_es_taller: boolean
+          p_hora: string
+          p_matricula: string
+          p_servicio: string
+          p_taller_id: number
+          p_telefono: string
+        }
+        Returns: {
+          datos_extra: Json
+          descripcion: string
+          matricula: string
+          servicio_id: number
+          telefono: string
         }[]
       }
     }

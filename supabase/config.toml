@@ -67,7 +67,7 @@ schema_paths = []
 enabled = true
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
-sql_paths = ["../clientes/*/seed.sql"]  # CiTaller: un seed idempotente por taller, sin secretos (fase 3); se aplica con `db push --include-seed`
+sql_paths = ["../clientes/e2e/seed.sql", "../clientes/rikandroll/seed.sql", "../clientes/speedbikes/seed.sql"]  # CiTaller: un seed idempotente por taller, sin secretos (fase 3); se aplica con `db push --include-seed`
 
 [db.network_restrictions]
 # Enable management of network restrictions.
@@ -437,17 +437,22 @@ verify_jwt = true
 entrypoint = "./functions/google-calendar-callback/index.ts"
 verify_jwt = false
 
-[functions.crear-evento-google]
-entrypoint = "./functions/crear-evento-google/index.ts"
+[functions.confirmar-reserva]
+entrypoint = "./functions/confirmar-reserva/index.ts"
 verify_jwt = true
 
-[functions.cancelar-evento-google]
-entrypoint = "./functions/cancelar-evento-google/index.ts"
+[functions.cancelar-reserva]
+entrypoint = "./functions/cancelar-reserva/index.ts"
 verify_jwt = true
 
-[functions.enviar-whatsapp-confirmacion]
-entrypoint = "./functions/enviar-whatsapp-confirmacion/index.ts"
+[functions.crear-reserva-taller]
+entrypoint = "./functions/crear-reserva-taller/index.ts"
 verify_jwt = true
+
+# La llama el cliente sin sesion: autoriza por el token (uuid) de la cita.
+[functions.cancelar-cita-cliente]
+entrypoint = "./functions/cancelar-cita-cliente/index.ts"
+verify_jwt = false
 
 [functions.enviar-whatsapp-recordatorios]
 entrypoint = "./functions/enviar-whatsapp-recordatorios/index.ts"

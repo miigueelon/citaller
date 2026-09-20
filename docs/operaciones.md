@@ -3,8 +3,9 @@
 ## Entorno local
 1. Node 24 y npm 11. `npm install`.
 2. Copiar `.env.example` a `.env.local` y rellenar `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`. Opcional: `SUPABASE_DB_PASSWORD`, que solo usa `npm run backup` (Supabase → Project Settings → Database → "Reset database password" si no se conoce). `.env.local` no se commitea.
-3. `npm run dev` → `http://localhost:5173/?taller=1` (cliente) y `?taller=1&modo=taller` (panel). Tras la fase 2: `/speedbikes` y `/speedbikes/panel`.
-4. `npm run lint`, `npm test`, `npm run build`.
+3. `npm run dev` → `http://localhost:5173/speedbikes` (cliente), `/speedbikes/panel` (panel) y `/e2e` para el taller de pruebas. Las URLs antiguas `?taller=N[&modo=taller]` redirigen.
+4. Comprobaciones: `npm run typecheck` (tipos), `npm run lint`, `npm test` (lógica pura con Vitest), `npm run build`, `npm run e2e` (Playwright contra el servidor local o contra un preview con `E2E_BASE_URL=https://...`), `npm run probar-cadena` (cadena completa contra Supabase).
+5. Utilidades: `node scripts/capturas.mjs <carpeta>` guarda capturas de las pantallas principales para comparar cambios de estilo; `node scripts/optimizar-imagenes.mjs` comprime las imágenes de `src/assets`.
 
 ## Flujo con Supabase (solo remoto, sin Docker)
 - `npx supabase login` y `npx supabase link --project-ref zrrqqqbgwwovmglhqxwn` una vez por equipo. La CLI trabaja por la API de gestión con ese token: **no pide la contraseña de la base de datos** para `db push`, `migration list`, `migration repair`, `functions deploy` ni `gen types`.

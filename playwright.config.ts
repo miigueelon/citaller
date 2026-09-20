@@ -6,6 +6,12 @@ import { defineConfig, devices } from "@playwright/test";
 // Credenciales del taller de pruebas: E2E_TALLER_EMAIL y E2E_TALLER_PASSWORD en .env.local.
 const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:5173";
 
+// Los previews de Vercel están protegidos. Con el secreto "Protection Bypass for Automation" del
+// proyecto (E2E_BYPASS_SECRET, nunca en el repo) Playwright puede entrar.
+const cabecerasBypass = process.env.E2E_BYPASS_SECRET
+  ? { "x-vercel-protection-bypass": process.env.E2E_BYPASS_SECRET, "x-vercel-set-bypass-cookie": "true" }
+  : undefined;
+
 export default defineConfig({
   testDir: "./tests/e2e",
   timeout: 30_000,
@@ -19,6 +25,7 @@ export default defineConfig({
     timezoneId: "Europe/Madrid",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
+    extraHTTPHeaders: cabecerasBypass,
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: process.env.E2E_BASE_URL

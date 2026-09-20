@@ -2,6 +2,14 @@
 
 Ejecutar en el preview de Vercel de la rama (o en local) antes de cerrar cada fase. Marcar cada línea.
 
+## Comprobación automática: `npm run probar-cadena`
+
+Verifica de extremo a extremo contra el taller de pruebas `e2e` (id 3), sin tocar Speedbikes ni Rik and Roll: login del taller, lecturas públicas, reserva por la RPC, ocupación, aislamiento entre talleres, confirmar, WhatsApp, Calendar, cancelar, que una cita cancelada no se reabre, y el inicio del OAuth de Google (URL, `redirect_uri`, permisos, `state` inventado rechazado, taller ajeno rechazado). Al final borra la reserva de prueba. Necesita `E2E_TALLER_EMAIL` y `E2E_TALLER_PASSWORD` en `.env.local`; para la limpieza, `SR_KEY` con la clave de servicio.
+
+Resultado del 20-sep-2026: **24 de 24 comprobaciones correctas**.
+
+Lo único que no puede cubrir: que Google muestre su pantalla de permisos y que el evento aparezca de verdad en el calendario del taller. Eso es el bloque siguiente.
+
 ## Fase 1: lo que solo puede comprobar una persona (necesita cuentas y navegador)
 
 Primero, en Google Cloud (proyecto `citaller-508917`, cuenta miguel.rodriguez.sevilla93@gmail.com):

@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "backup": "node scripts/backup.mjs"
+    "backup": "node scripts/backup.mjs",
+    "probar-cadena": "node scripts/probar-cadena.mjs"
   },
   "dependencies": {
     "@fullcalendar/daygrid": "^6.1.21",

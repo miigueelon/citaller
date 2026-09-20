@@ -843,15 +843,15 @@ const reservasMostradas = useMemo(
               + Nueva cita
             </button>
 
-            {(tallerId === 1 || tallerId === 2) && (
-              <button
-                className="panel-btn-actualizar"
-                onClick={conectarGoogleCalendar}
-                style={{ flex: 1 }}
-              >
-                Conectar Google Calendar
-              </button>
-            )}
+            {/* Disponible para cualquier taller: la conexión se guarda por taller.
+                En la fase 3 el botón dependerá de la configuración del taller en la base de datos. */}
+            <button
+              className="panel-btn-actualizar"
+              onClick={conectarGoogleCalendar}
+              style={{ flex: 1 }}
+            >
+              Conectar Google Calendar
+            </button>
 
             <button
               className="panel-btn-actualizar"

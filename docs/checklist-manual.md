@@ -6,9 +6,9 @@ Ejecutar en el preview de Vercel de la rama (o en local) antes de cerrar cada fa
 
 Verifica de extremo a extremo contra el taller de pruebas `e2e` (id 3), sin tocar Speedbikes ni Rik and Roll: login del taller, lecturas públicas, reserva por la RPC, ocupación, aislamiento entre talleres, confirmar, WhatsApp, Calendar, cancelar, que una cita cancelada no se reabre, y el inicio del OAuth de Google (URL, `redirect_uri`, permisos, `state` inventado rechazado, taller ajeno rechazado). Al final borra la reserva de prueba. Necesita `E2E_TALLER_EMAIL` y `E2E_TALLER_PASSWORD` en `.env.local`; para la limpieza, `SR_KEY` con la clave de servicio.
 
-Resultado del 20-sep-2026: **24 de 24 comprobaciones correctas**.
+Resultado del 20-sep-2026: **27 de 27 comprobaciones correctas**, con el taller de pruebas conectado a Google Calendar: crea el evento de verdad, no duplica si se confirma dos veces, y al cancelar lo borra y limpia su id.
 
-Lo único que no puede cubrir: que Google muestre su pantalla de permisos y que el evento aparezca de verdad en el calendario del taller. Eso es el bloque siguiente.
+Lo único que no puede cubrir es la pantalla de permisos de Google, que exige que una persona autorice con su cuenta (hecho el 20-sep-2026 para el taller de pruebas). Aviso: con la app en estado "Prueba", el permiso caduca a los 7 días, así que hacia el 27-sep habrá que volver a conectar el taller de pruebas para que esta comprobación siga cubriendo Calendar.
 
 ## Fase 1: lo que solo puede comprobar una persona (necesita cuentas y navegador)
 

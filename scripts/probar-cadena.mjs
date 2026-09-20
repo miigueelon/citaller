@@ -127,16 +127,46 @@ comprobar(
   `HTTP ${whatsapp.status} ${JSON.stringify(whatsapp.datos).slice(0, 90)}`
 );
 
+// Si el taller de pruebas tiene Google Calendar conectado, se crea un evento de verdad y se
+// borra al cancelar. Si no lo tiene, se comprueba que la función lo dice con claridad.
 const evento = await pedir("/functions/v1/crear-evento-google", {
   token: TOKEN,
   metodo: "POST",
   cuerpo: { reserva_id: reserva.id },
 });
-comprobar(
-  "C. Calendar responde que este taller no lo tiene conectado",
-  evento.status === 400 && JSON.stringify(evento.datos).includes("no está conectado"),
-  `HTTP ${evento.status} ${JSON.stringify(evento.datos).slice(0, 90)}`
-);
+const conCalendario = evento.status === 200 && evento.datos?.ok === true;
+
+if (conCalendario) {
+  comprobar(
+    "C. Crear el evento en Google Calendar",
+    evento.datos.evento_creado === true && !!evento.datos.google_event_id,
+    evento.datos.google_event_id || ""
+  );
+
+  const conId = await pedir(`/rest/v1/reservas?id=eq.${reserva.id}&select=google_event_id,google_event_html_link`, { token: TOKEN });
+  comprobar(
+    "C. La reserva guarda el id del evento",
+    conId.datos?.[0]?.google_event_id === evento.datos.google_event_id,
+    conId.datos?.[0]?.google_event_html_link ? "con enlace al evento" : "sin enlace"
+  );
+
+  const repetido = await pedir("/functions/v1/crear-evento-google", {
+    token: TOKEN,
+    metodo: "POST",
+    cuerpo: { reserva_id: reserva.id },
+  });
+  comprobar(
+    "C. Confirmar dos veces no crea un segundo evento",
+    repetido.status === 200 && repetido.datos?.evento_creado === false,
+    JSON.stringify(repetido.datos).slice(0, 80)
+  );
+} else {
+  comprobar(
+    "C. Calendar responde que este taller no lo tiene conectado",
+    evento.status === 400 && JSON.stringify(evento.datos).includes("no está conectado"),
+    `HTTP ${evento.status} ${JSON.stringify(evento.datos).slice(0, 90)}`
+  );
+}
 
 // 8. No puede tocar una reserva de otro taller
 const ajena = await pedir("/rest/v1/reservas?taller_id=eq.2&estado=eq.Confirmada&limit=1", { token: TOKEN, metodo: "PATCH", cuerpo: { estado: "Cancelada" }, cabeceras: { Prefer: "return=representation" } });
@@ -156,11 +186,23 @@ const borrarEvento = await pedir("/functions/v1/cancelar-evento-google", {
   metodo: "POST",
   cuerpo: { reserva_id: reserva.id },
 });
-comprobar(
-  "D. Borrar evento no bloquea aunque no haya evento",
-  borrarEvento.status === 200 && borrarEvento.datos?.ok === true,
-  JSON.stringify(borrarEvento.datos).slice(0, 90)
-);
+
+if (conCalendario) {
+  comprobar(
+    "D. Borrar el evento de Google Calendar",
+    borrarEvento.status === 200 && borrarEvento.datos?.evento_eliminado === true,
+    JSON.stringify(borrarEvento.datos).slice(0, 90)
+  );
+
+  const sinId = await pedir(`/rest/v1/reservas?id=eq.${reserva.id}&select=google_event_id`, { token: TOKEN });
+  comprobar("D. La reserva se queda sin id de evento", sinId.datos?.[0]?.google_event_id === null, JSON.stringify(sinId.datos));
+} else {
+  comprobar(
+    "D. Borrar evento no bloquea aunque no haya evento",
+    borrarEvento.status === 200 && borrarEvento.datos?.ok === true,
+    JSON.stringify(borrarEvento.datos).slice(0, 90)
+  );
+}
 
 const reabrir = await pedir(`/rest/v1/reservas?id=eq.${reserva.id}&taller_id=eq.${TALLER_E2E}`, {
   token: TOKEN,

@@ -41,6 +41,9 @@ export function requiereCredenciales(): void {
   }
 }
 
+/** Matrículas que solo usan las pruebas: tests/e2e/preparar.ts cancela sus citas al empezar. */
+export const MATRICULAS_DE_PRUEBA = ["E2E1234", "9999ZZZ"];
+
 /** Teléfono móvil español aleatorio: evita los límites por teléfono (3 activas, 5 al día). */
 export function telefonoAleatorio(): string {
   return `6${String(Math.floor(Math.random() * 1e8)).padStart(8, "0")}`;

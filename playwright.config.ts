@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { ESTADO_BYPASS } from "./tests/e2e/preparar";
 
 // Pruebas de humo de extremo a extremo contra el taller de pruebas `e2e` (id 3).
 // Base por defecto: el servidor de desarrollo local. Contra un preview de Vercel:
@@ -6,14 +7,14 @@ import { defineConfig, devices } from "@playwright/test";
 // Credenciales del taller de pruebas: E2E_TALLER_EMAIL y E2E_TALLER_PASSWORD en .env.local.
 const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:5173";
 
-// Los previews de Vercel están protegidos. Con el secreto "Protection Bypass for Automation" del
-// proyecto (E2E_BYPASS_SECRET, nunca en el repo) Playwright puede entrar.
-const cabecerasBypass = process.env.E2E_BYPASS_SECRET
-  ? { "x-vercel-protection-bypass": process.env.E2E_BYPASS_SECRET, "x-vercel-set-bypass-cookie": "true" }
-  : undefined;
+// Los previews de Vercel están protegidos. tests/e2e/preparar.ts cambia el secreto
+// "Protection Bypass for Automation" (E2E_BYPASS_SECRET, nunca en el repo) por una cookie de acceso
+// antes de empezar; ahí está explicado por qué no se usa la cabecera en cada petición.
+const conPreview = Boolean(process.env.E2E_BASE_URL && process.env.E2E_BYPASS_SECRET);
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  globalSetup: "./tests/e2e/preparar.ts",
   timeout: 30_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,
@@ -25,7 +26,8 @@ export default defineConfig({
     timezoneId: "Europe/Madrid",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
-    extraHTTPHeaders: cabecerasBypass,
+    // globalSetup escribe este fichero antes de los tests (y falla si no lo consigue).
+    storageState: conPreview ? ESTADO_BYPASS : undefined,
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: process.env.E2E_BASE_URL

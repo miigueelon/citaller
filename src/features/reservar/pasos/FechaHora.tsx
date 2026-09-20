@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { useTaller } from "@/app/providers/useTaller";
-import { capacidadEsPorDia } from "@/features/taller/configTemporal";
 import { formatearDia, parsearDia } from "@/lib/fechas";
 import { diaSeleccionable, festivoDelDia, horaSigueDisponible, horasDisponibles, type ParametrosDisponibilidad } from "../disponibilidad";
 import { useDisponibilidad } from "../useDisponibilidad";
@@ -15,7 +14,9 @@ interface Props {
   continuar: () => void;
 }
 
-/** Paso 2: calendario del taller y horas libres del día elegido. */
+const AVISO_TARDE_POR_DEFECTO = "⚠️ Al seleccionar esta última hora de recepción, el vehículo podría quedar en el taller y entregarse al día siguiente.";
+
+/** Paso 2: calendario del taller y horas libres del día elegido, según su modo de capacidad. */
 export function FechaHora({ reserva, actualizar, volver, continuar }: Props) {
   const taller = useTaller();
   const { horarios, festivos, ocupacion, cargandoHorarios, cargandoOcupacion } = useDisponibilidad(taller.id, reserva.dia);
@@ -30,16 +31,9 @@ export function FechaHora({ reserva, actualizar, volver, continuar }: Props) {
   const parametros: ParametrosDisponibilidad | null = useMemo(
     () =>
       reserva.dia
-        ? {
-            horarios,
-            dia: reserva.dia,
-            ocupacion,
-            capacidad: taller.capacidad_simultanea,
-            modo: capacidadEsPorDia(taller.id) ? "por_dia" : "por_hora",
-            ahora,
-          }
+        ? { horarios, dia: reserva.dia, ocupacion, capacidad: taller.capacidad, modo: taller.modo_capacidad, ahora }
         : null,
-    [horarios, reserva.dia, ocupacion, taller.capacidad_simultanea, taller.id, ahora],
+    [horarios, reserva.dia, ocupacion, taller.capacidad, taller.modo_capacidad, ahora],
   );
 
   const horas = useMemo(() => (parametros ? horasDisponibles(parametros) : []), [parametros]);
@@ -121,11 +115,7 @@ export function FechaHora({ reserva, actualizar, volver, continuar }: Props) {
                 ))}
               </div>
 
-              {mostrarAvisoTarde && (
-                <p className="aviso-tarde">
-                  ⚠️ Al seleccionar esta última hora de recepción, el vehículo podría quedar en el taller y entregarse al día siguiente.
-                </p>
-              )}
+              {mostrarAvisoTarde && <p className="aviso-tarde">{taller.texto_aviso_tarde ?? AVISO_TARDE_POR_DEFECTO}</p>}
             </>
           ) : (
             <p className="mensaje-disponibilidad">No hay horas disponibles para este día.</p>

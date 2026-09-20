@@ -576,3 +576,193 @@
     font-size: 13px;
   }
 }
+
+/* Fase 3: origen de la cita, avisos de mensajería, WhatsApp en modo enlace */
+.tarjeta-origen {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 10px;
+  padding: 2px 8px;
+  border-radius: var(--radio-pill);
+  background: var(--color-fondo-chip);
+  color: var(--color-texto-suave);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tarjeta-aviso {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 16px;
+  padding: 10px 12px;
+  border-radius: var(--radio-s);
+  background: var(--color-aviso-fondo);
+  border: 1px solid var(--color-aviso-borde);
+  color: var(--color-aviso-texto);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.tarjeta-aviso p {
+  margin: 0;
+}
+
+.btn-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 42px;
+  padding: 0 14px;
+  border: none;
+  border-radius: var(--radio-s);
+  background: var(--color-ok-fondo);
+  color: var(--color-ok-texto);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-whatsapp:hover {
+  background: var(--color-ok);
+  color: var(--color-blanco);
+  transform: translateY(-1px);
+}
+
+.btn-whatsapp:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Recordatorios de mañana (modo enlace) */
+.citas-manana {
+  margin: 0 0 20px;
+  padding: 16px 18px;
+  border-radius: var(--radio-m);
+  background: var(--color-blanco);
+  box-shadow: var(--sombra-suave);
+  border: 1px solid var(--color-borde-suave);
+}
+
+.citas-manana-titulo {
+  margin: 0 0 4px;
+  font-size: 16px;
+  color: var(--color-titulo);
+}
+
+.citas-manana-texto {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--color-texto-suave);
+}
+
+.citas-manana-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.citas-manana-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--color-texto-panel);
+}
+
+.citas-manana-item .btn-whatsapp {
+  height: 36px;
+  font-size: 13px;
+}
+
+/* Cita apuntada a mano */
+.nueva-cita-form {
+  display: grid;
+  gap: 12px;
+  text-align: left;
+}
+
+.nueva-cita-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-etiqueta);
+}
+
+.nueva-cita-form input,
+.nueva-cita-form select,
+.nueva-cita-form textarea {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-s);
+  background: var(--color-fondo-campo);
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-texto);
+}
+
+.nueva-cita-form input:focus,
+.nueva-cita-form select:focus,
+.nueva-cita-form textarea:focus {
+  outline: none;
+  border-color: var(--color-primario);
+  box-shadow: 0 0 0 3px var(--color-primario-foco);
+}
+
+.nueva-cita-form input[aria-invalid="true"] {
+  border-color: var(--color-error);
+}
+
+.nueva-cita-fila {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.nueva-cita-opcional {
+  font-weight: 400;
+  color: var(--color-texto-apagado);
+}
+
+.nueva-cita-error {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-error);
+}
+
+.nueva-cita-nota {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-texto-suave);
+  line-height: 1.5;
+}
+
+/* Los campos extra reutilizan el componente del formulario público. */
+.nueva-cita-form .descripcion-servicio {
+  margin: 0;
+}
+
+.nueva-cita-form .campo-input {
+  margin: 0;
+}
+
+@media (max-width: 520px) {
+  .nueva-cita-fila {
+    grid-template-columns: 1fr;
+  }
+
+  .citas-manana-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

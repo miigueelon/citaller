@@ -1,22 +1,75 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ClienteSupabase } from "@/lib/supabase/client";
-import { EDGE_FUNCTIONS, type RespuestaFuncion } from "@/features/integraciones/edgeFunctions";
-import { actualizarEstado, cargarReservasTaller } from "./api";
-import type { EstadoReserva, ReservaPanel } from "./tipos";
+import { mensajeDeError } from "@/lib/erroresDominio";
+import { EDGE_FUNCTIONS, type RespuestaFuncion, type ResultadoNotificaciones } from "@/features/integraciones/edgeFunctions";
+import { cargarReservasTaller } from "./api";
+import type { ReservaPanel } from "./tipos";
 
-export interface ResultadoCambio {
+export interface ResultadoAccion {
   ok: boolean;
-  /** Mensajes para la persona del taller (errores o avisos de WhatsApp y Calendar). */
+  /** Lo que ha ido bien ("WhatsApp enviado", "evento creado"). */
+  logros: string[];
+  /** Lo que ha fallado o queda pendiente; el panel lo enseña con botón de reintentar. */
   avisos: string[];
+  /** La reserva afectada, cuando la acción la creó o la cambió. */
+  reservaId?: number;
+  /** Token del enlace de la cita (solo al crearla a mano). */
+  tokenPublico?: string;
 }
 
-/** supabase-js envuelve las respuestas 4xx en FunctionsHttpError; "sin calendario" es un 400 esperado. */
-function esErrorSinCalendario(error: unknown): boolean {
-  const contexto = (error as { context?: { status?: number } })?.context;
-  return contexto?.status === 400;
+/** Datos de una cita apuntada a mano desde el panel. */
+export interface DatosCitaManual {
+  nombre: string;
+  telefono: string;
+  matricula: string;
+  vehiculo: string;
+  servicio: string;
+  descripcion: string;
+  dia: string;
+  hora: string;
+  datos_extra: Record<string, string>;
 }
 
-/** Reservas del taller y las dos acciones del panel: recargar y cambiar de estado. */
+/** Traduce el resultado de las notificaciones a frases para la persona del taller. */
+export function describirNotificaciones(n: ResultadoNotificaciones | undefined, accion: "confirmar" | "cancelar"): Pick<ResultadoAccion, "logros" | "avisos"> {
+  const logros: string[] = [];
+  const avisos: string[] = [];
+  if (!n) return { logros, avisos };
+
+  const { whatsapp, calendario } = n;
+  if (whatsapp.modo === "api") {
+    if (whatsapp.enviado) logros.push(accion === "confirmar" ? "WhatsApp de confirmación enviado al cliente." : "WhatsApp de cancelación enviado al cliente.");
+    else if (whatsapp.error) avisos.push(`No se pudo enviar el WhatsApp: ${whatsapp.error}. Avisa al cliente por otro medio o vuelve a pulsar para reintentar.`);
+    else if (whatsapp.motivo === "sin_telefono") avisos.push("La cita no tiene teléfono: no se ha enviado WhatsApp.");
+  }
+
+  if (calendario.error) {
+    avisos.push(`Google Calendar: ${calendario.error}`);
+  } else if (calendario.creado) {
+    logros.push("Evento creado en Google Calendar.");
+  } else if (calendario.borrado) {
+    logros.push("Evento eliminado de Google Calendar.");
+  }
+
+  return { logros, avisos };
+}
+
+/** Mensaje de error de una Edge Function (cuerpo JSON de un 4xx/5xx o error de red). */
+async function mensajeDeFallo(error: unknown, generico: string): Promise<string> {
+  const contexto = (error as { context?: Response })?.context;
+  if (contexto instanceof Response) {
+    try {
+      const cuerpo = (await contexto.clone().json()) as RespuestaFuncion;
+      if (cuerpo.codigo?.startsWith("CT")) return mensajeDeError({ code: cuerpo.codigo, message: cuerpo.error });
+      if (cuerpo.error) return cuerpo.error;
+    } catch {
+      /* sin cuerpo JSON */
+    }
+  }
+  return generico;
+}
+
+/** Reservas del taller y sus acciones: recargar, confirmar, cancelar y apuntar una cita a mano. */
 export function useReservasTaller(cliente: ClienteSupabase, tallerId: number) {
   const [reservas, setReservas] = useState<ReservaPanel[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -57,79 +110,42 @@ export function useReservasTaller(cliente: ClienteSupabase, tallerId: number) {
     };
   }, [cliente, tallerId]);
 
-  /**
-   * Confirma o cancela. Primero el cambio de estado; solo si la base de datos lo acepta se avisa a
-   * WhatsApp y a Google Calendar. (En la fase 3.3 pasa a una sola Edge Function por acción.)
-   */
-  const cambiarEstado = useCallback(
-    async (reservaId: number, nuevoEstado: EstadoReserva): Promise<ResultadoCambio> => {
-      const actual = reservas.find((reserva) => reserva.id === reservaId);
-      const avisos: string[] = [];
-
-      let filas: number;
+  /** Una sola Edge Function por acción: cambia el estado y notifica (WhatsApp según modo, Calendar). */
+  const invocar = useCallback(
+    async (nombre: string, body: Record<string, unknown>, accion: "confirmar" | "cancelar", generico: string): Promise<ResultadoAccion> => {
       try {
-        filas = await actualizarEstado(cliente, tallerId, reservaId, nuevoEstado);
-      } catch (fallo: unknown) {
-        console.error("Error actualizando reserva:", fallo);
-        return { ok: false, avisos: ["No se pudo actualizar la reserva"] };
-      }
-
-      if (filas === 0) {
-        console.warn("El cambio de estado no afectó a ninguna reserva:", reservaId, nuevoEstado);
+        const { data, error: fallo } = await cliente.functions.invoke<RespuestaFuncion>(nombre, { body });
+        if (fallo || !data?.ok) {
+          console.error(`${nombre}:`, fallo ?? data);
+          const mensaje = fallo ? await mensajeDeFallo(fallo, generico) : (data?.error ?? generico);
+          await recargar();
+          return { ok: false, logros: [], avisos: [mensaje] };
+        }
         await recargar();
-        return { ok: false, avisos: ["Esta cita ya no se puede cambiar. Si estaba cancelada, hay que crear una cita nueva."] };
+        return { ok: true, reservaId: data.reserva_id, tokenPublico: data.token_publico, ...describirNotificaciones(data.notificaciones, accion) };
+      } catch (fallo: unknown) {
+        console.error(`${nombre}:`, fallo);
+        return { ok: false, logros: [], avisos: [generico] };
       }
-
-      // Cancelar una confirmada: borrar su evento de Google (mejor esfuerzo, la cita ya está cancelada).
-      if (nuevoEstado === "Cancelada" && actual?.estado === "Confirmada") {
-        try {
-          const { data, error } = await cliente.functions.invoke<RespuestaFuncion>(EDGE_FUNCTIONS.cancelarEventoGoogle, { body: { reserva_id: reservaId } });
-          if (error || !data?.ok) {
-            console.error("La cita se canceló, pero falló la llamada a Google Calendar:", error ?? data);
-            avisos.push("La cita está cancelada, pero no se pudo borrar su evento de Google Calendar. Bórralo a mano en el calendario.");
-          } else if (data.aviso) {
-            avisos.push(`La cita está cancelada. ${data.aviso}.`);
-          }
-        } catch (fallo: unknown) {
-          console.error("La cita se canceló, pero ocurrió un error con Google Calendar:", fallo);
-          avisos.push("La cita está cancelada, pero no se pudo contactar con Google Calendar. Bórralo a mano en el calendario.");
-        }
-      }
-
-      if (nuevoEstado === "Confirmada") {
-        try {
-          const { data, error } = await cliente.functions.invoke<RespuestaFuncion>(EDGE_FUNCTIONS.enviarWhatsappConfirmacion, { body: { reserva_id: reservaId } });
-          if (error || data?.ok === false) {
-            console.error("La reserva se confirmó, pero falló la llamada a WhatsApp:", error ?? data);
-            avisos.push("La cita está confirmada, pero no se pudo enviar el WhatsApp al cliente. Avísale por otro medio.");
-          } else if (data?.mensaje && !data.mensaje.includes("activo")) {
-            console.log("Respuesta WhatsApp:", data);
-          }
-        } catch (fallo: unknown) {
-          console.error("La reserva se confirmó, pero ocurrió un error con WhatsApp:", fallo);
-          avisos.push("La cita está confirmada, pero no se pudo contactar con WhatsApp. Avísale por otro medio.");
-        }
-
-        // La función responde con un error claro si el taller no tiene Google conectado.
-        try {
-          const { data, error } = await cliente.functions.invoke<RespuestaFuncion>(EDGE_FUNCTIONS.crearEventoGoogle, { body: { reserva_id: reservaId } });
-          if (error) {
-            console.error("La reserva se confirmó, pero falló Google Calendar:", error);
-            avisos.push(esErrorSinCalendario(error) ? "" : "La cita está confirmada, pero no se pudo crear el evento en Google Calendar.");
-          } else if (data?.ok === false && data.error && !data.error.includes("no está conectado")) {
-            avisos.push(`La cita está confirmada, pero Google Calendar respondió: ${data.error}`);
-          }
-        } catch (fallo: unknown) {
-          console.error("La reserva se confirmó, pero ocurrió un error con Google Calendar:", fallo);
-          avisos.push("La cita está confirmada, pero no se pudo contactar con Google Calendar.");
-        }
-      }
-
-      await recargar();
-      return { ok: true, avisos: avisos.filter(Boolean) };
     },
-    [cliente, tallerId, reservas, recargar],
+    [cliente, recargar],
   );
 
-  return { reservas, cargando, error, recargar, cambiarEstado };
+  const confirmar = useCallback(
+    (reservaId: number) => invocar(EDGE_FUNCTIONS.confirmarReserva, { reserva_id: reservaId }, "confirmar", "No se pudo confirmar la cita. Inténtalo de nuevo."),
+    [invocar],
+  );
+
+  const cancelar = useCallback(
+    (reservaId: number) => invocar(EDGE_FUNCTIONS.cancelarReserva, { reserva_id: reservaId }, "cancelar", "No se pudo cancelar la cita. Inténtalo de nuevo."),
+    [invocar],
+  );
+
+  const crearManual = useCallback(
+    (datos: DatosCitaManual) =>
+      invocar(EDGE_FUNCTIONS.crearReservaTaller, { taller_id: tallerId, ...datos }, "confirmar", "No se pudo guardar la cita. Revisa los datos e inténtalo de nuevo."),
+    [invocar, tallerId],
+  );
+
+  return { reservas, cargando, error, recargar, confirmar, cancelar, crearManual };
 }

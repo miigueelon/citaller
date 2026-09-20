@@ -9,19 +9,23 @@
 - Las Edge Functions están en `supabase/functions/<nombre>/index.ts`, con lo común en `_shared/`; `supabase/config.toml` declara `entrypoint` y `verify_jwt` de cada una. Para desplegar, **sin Docker**: `npx supabase functions deploy <nombre> --use-api`, de una en una (una línea con varios nombres se parte al pegarla en la terminal y no llega a ejecutarse).
 - Secretos añadidos el 19-sep-2026: `CITALLER_APP_URL` (dominio de producción, al que vuelve el callback si no hay URL de vuelta válida) y `GOOGLE_REDIRECT_URI` (debe coincidir letra por letra con la registrada en Google Cloud).
 - Auth: registro público **desactivado** y `site_url` en el dominio de producción, aplicado con `npx supabase config push` el 20-sep-2026.
-- Los slugs que invoca el navegador están centralizados en `src/features/integraciones/edgeFunctions.js`: renombrar una función es cambiar una línea ahí (después de desplegar la nueva).
+- Los slugs que invoca el navegador están centralizados en `src/features/integraciones/edgeFunctions.ts`: renombrar una función es cambiar una línea ahí (después de desplegar la nueva).
 
 ## Edge Functions (desde la fase 1)
-Código en `supabase/functions/<nombre>/index.ts`, con lo común en `supabase/functions/_shared/`. Los nombres que invoca el navegador están en `src/features/integraciones/edgeFunctions.js`.
+Código en `supabase/functions/<nombre>/index.ts`, con lo común en `supabase/functions/_shared/`. Los nombres que invoca el navegador están en `src/features/integraciones/edgeFunctions.ts`. Despliegue (lo hace Miguel, una por línea): `npx supabase functions deploy <nombre> --use-api`; y `npx supabase config push` cuando cambia `verify_jwt` de alguna.
 
 | Nombre | Qué hace | Quién la llama | `verify_jwt` |
 |---|---|---|---|
 | `conectar-google-calendar` | Comprueba que el usuario gestiona el taller, guarda un `state` de un solo uso (10 min) con la URL de vuelta y devuelve `auth_url` de Google | Panel del taller | `true` |
 | `google-calendar-callback` | Consume el `state`, cambia el `code` por tokens, guarda el refresh token en Vault y redirige a la app con `calendar=connected` o `calendar=error&motivo=…` | Google (redirección del navegador) | `false` |
-| `crear-evento-google` | Crea el evento de una reserva confirmada (60 min, `Europe/Madrid`) y guarda `google_event_id`. Idempotente | Panel del taller | `true` |
-| `cancelar-evento-google` | Borra el evento y limpia `google_event_id`. **Mejor esfuerzo**: si Google falla responde `ok: true` con `aviso`, para no bloquear la cancelación | Panel del taller | `true` |
-| `enviar-whatsapp-confirmacion` | Plantilla Meta `confirmacion_cita` (7 parámetros) | Panel del taller | `true` |
-| `enviar-whatsapp-recordatorios` | Citas confirmadas de mañana, plantilla `recordatorio_cita` (5 parámetros) | pg_cron, con la cabecera `x-cron-secret` | `false` |
+| `confirmar-reserva` (fase 3) | `{ reserva_id }`. Pasa la cita a Confirmada (si estaba Pendiente) y ejecuta `_shared/notificar.ts → trasConfirmar`: WhatsApp de confirmación si el taller está en modo `api` (plantilla `confirmacion_cita`, 7 parámetros; con `WHATSAPP_CONFIRMACION_CON_ENLACE=true` añade el botón de URL con `<slug>/cita/<token>`) y evento en Google Calendar si está conectado (60 min, `Europe/Madrid`, descripción con los campos extra etiquetados). Responde `{ ok, estado, notificaciones: { whatsapp: {modo, enviado, motivo?, error?}, calendario: {creado?, borrado?, motivo?, error?} } }`. **Idempotente**: si ya estaba confirmada, solo reintenta lo pendiente (así "reintentar" es volver a pulsar). Una cancelada responde 409 | Panel del taller | `true` |
+| `cancelar-reserva` (fase 3) | `{ reserva_id }`. Cancelada con `cancelada_por='taller'` (venga de Pendiente o de Confirmada), WhatsApp de cancelación en modo `api` (plantilla `cancelacion_cita`, 5 parámetros: nombre, taller, día, hora, servicio) y borrado del evento **a mejor esfuerzo** (si Google falla, la cita queda cancelada y el error en `google_error`) | Panel del taller | `true` |
+| `crear-reserva-taller` (fase 3) | Cita apuntada a mano: `{ taller_id, nombre, telefono?, matricula, vehiculo, servicio, descripcion?, dia, hora, datos_extra? }`. Llama a la función SQL `insertar_reserva_taller` (solo `service_role`: valida como la pública pero sin aforo, sin límites por teléfono y con teléfono opcional) y encadena `trasConfirmar`. Errores de validación: 400 con `codigo` `CTxxx` | Panel del taller | `true` |
+| `cancelar-cita-cliente` (fase 3) | `{ token }` (uuid de la cita; sin sesión). Llama a `cancelar_reserva_cliente` (regla de 24 h en `Europe/Madrid`, `cancelada_por='cliente'`) y borra el evento a mejor esfuerzo. **No avisa a nadie por WhatsApp**: el taller lo ve en el panel. Respuestas: 200, 404 `no_encontrada`, 409 `fuera_de_plazo`, 409 `ya_cancelada` | Página `/<slug>/cita/<token>` | `false` |
+| `enviar-whatsapp-recordatorios` | Citas confirmadas de mañana con teléfono, plantilla `recordatorio_cita` (5 parámetros). **Solo talleres en modo `api`**; para los demás devuelve el motivo sin enviar | pg_cron, con la cabecera `x-cron-secret` | `false` |
+| `crear-evento-google`, `cancelar-evento-google`, `enviar-whatsapp-confirmacion` | **Retiradas en la fase 3**: su lógica vive en `_shared/{calendario,whatsapp,notificar}.ts`. Siguen en la nube hasta borrarlas desde el dashboard una semana después de desplegar | nadie | — |
+
+Módulos compartidos (`_shared/`): `http.ts` (CORS, JSON, cuerpo), `supabaseAdmin.ts`, `autorizar.ts` (usuario y taller), `google.ts` + `tokensCalendario.ts` (OAuth y Calendar, Vault), `origenes.ts` (URLs de vuelta permitidas), `whatsapp.ts` (Meta Cloud API, plantillas y parámetros), `calendario.ts` (crear/borrar el evento de una reserva y registrar `google_error`), `reservas.ts` (lectura de reserva, taller y etiquetas de campos), `enlaces.ts` (`urlCitaCliente`), `notificar.ts` (`trasConfirmar` / `trasCancelar`).
 
 ### Slugs antiguos (legado, pendientes de borrar)
 Los creó el dashboard con nombres que no decían nada. Siguen desplegados pero **ya no los llama nadie**: el frontend de producción no usa Edge Functions, la rama usa los nombres nuevos y el cron apunta a `enviar-whatsapp-recordatorios`. Se borran desde el dashboard cuando se confirme que todo funciona: `dynamic-function` (era una copia de crear evento; el panel la usaba para "Conectar", de ahí que ese botón estuviera roto), `quick-worker` (crear evento), `bright-service` (callback de OAuth; su redirect URI sigue registrada en Google hasta entonces), `bright-processor` (WhatsApp confirmación) y `hyper-processor` (recordatorios; es la que devolvía 401 al cron por tener `verify_jwt=true`).
@@ -37,10 +41,15 @@ Los creó el dashboard con nombres que no decían nada. Siguen desplegados pero 
 - Transición: la conexión de Rik and Roll (17-sep) conserva su token en la columna antigua `refresh_token` en claro hasta que el taller vuelva a conectar; a partir de entonces esa columna queda a null. Las funciones leen primero de Vault y, si no hay secreto, de la columna antigua.
 
 ## WhatsApp (Meta Cloud API)
-- Cada taller necesita: cuenta de WhatsApp Business (WABA), número con `phone_number_id`, token de acceso permanente (System User) y las plantillas aprobadas `confirmacion_cita` y `recordatorio_cita` en español.
-- Datos por taller: `talleres.whatsapp_phone_number_id`, `talleres.whatsapp_business_account_id`, `talleres.whatsapp_activo`; token en el secreto `WHATSAPP_TOKEN_TALLER_<id>` (objetivo: Vault).
-- Teléfonos: se normalizan a E.164 sin `+` (9 cifras → prefijo `34`).
-- Estado: ningún taller tiene WhatsApp activo todavía.
+- **Modo por taller** (`talleres.whatsapp_modo`, fase 3): `api` (envío automático por Meta), `enlace` (el panel abre `wa.me/<telefono>?text=…` con el mensaje escrito y la persona del taller lo envía desde su móvil; textos en `features/panel/textosWhatsapp.ts`, personalizables por taller en `talleres.texto_whatsapp_*`) o `ninguno`. La web solo promete un WhatsApp al cliente en modo `api`. Speedbikes: `enlace` (número personal de la dueña). Rik and Roll: `ninguno` hasta que tenga WhatsApp Business; entonces `api`.
+- Modo `api`: cuenta de WhatsApp Business (WABA), número con `phone_number_id`, token de acceso permanente (System User) en el secreto `WHATSAPP_TOKEN_TALLER_<id>` (objetivo: Vault) y las plantillas aprobadas en español (Meta no permite editar una plantilla aprobada; para cambiar el texto se crea otra y se apunta a ella con `WHATSAPP_PLANTILLA_*`):
+  - `confirmacion_cita` (cuerpo con 7 parámetros: nombre, taller, día largo, hora, vehículo, servicio, matrícula). Versión con **botón de URL** al enlace de la cita: base `https://citaller.vercel.app/` y sufijo dinámico `<slug>/cita/<token>`; activar con `WHATSAPP_CONFIRMACION_CON_ENLACE=true`.
+  - `cancelacion_cita` (5: nombre, taller, día largo, hora, servicio).
+  - `recordatorio_cita` (5: nombre, taller, hora, vehículo, servicio).
+- Datos por taller: `talleres.whatsapp_phone_number_id`, `talleres.whatsapp_business_account_id` (`whatsapp_activo` queda obsoleta: manda `whatsapp_modo`; se borra en la migración de despliegue).
+- Teléfonos: la base de datos los normaliza (trigger `reservas_normalizar_telefono`: solo dígitos, 9 cifras → prefijo `34`) y la RPC pública exige un móvil español (`34[6-9]…`). Las Edge Functions ya no normalizan.
+- Errores de envío: quedan en `reservas.whatsapp_error` y el panel los enseña; reintentar es volver a pulsar Confirmar/Cancelar.
+- Estado: ningún taller está en modo `api` todavía; el primer envío real será la cita de prueba de Rik and Roll cuando tenga la cuenta de Meta (fase 4.3).
 
 ## Cron (pg_cron + pg_net)
 - Job `citaller-recordatorios-whatsapp`, `0 8 * * *` (UTC, o sea 10:00 en Madrid en verano y 09:00 en invierno), creado por la migración `20260919220200`. Hace POST a `enviar-whatsapp-recordatorios` con la cabecera `x-cron-secret`, leyendo el secreto de Vault en cada ejecución: ya no está en claro en el comando del job.

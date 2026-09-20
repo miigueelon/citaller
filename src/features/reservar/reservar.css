@@ -562,3 +562,93 @@
   color: var(--color-error);
   line-height: 1.4;
 }
+
+/* Enlace de la cita (pantalla final) */
+.enlace-cita {
+  margin-top: 24px;
+  padding: 16px;
+  border-radius: var(--radio-m);
+  background: var(--color-primario-suave);
+  border: 1px solid var(--color-primario-borde);
+  text-align: left;
+}
+
+.enlace-cita-titulo {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-titulo);
+}
+
+.enlace-cita-texto {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-texto-suave);
+}
+
+.enlace-cita-url {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 13px;
+  word-break: break-all;
+  color: var(--color-primario-oscuro);
+}
+
+.enlace-cita-copiar {
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--color-primario-borde);
+  border-radius: var(--radio-s);
+  background: var(--color-blanco);
+  color: var(--color-primario-oscuro);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.enlace-cita-copiar:hover {
+  background: var(--color-primario-suave);
+}
+
+/* Página de la cita del cliente */
+.cita-cliente-estado {
+  display: inline-block;
+  margin: 0 auto 16px;
+  padding: 6px 14px;
+  border-radius: var(--radio-pill);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.cita-cliente-estado.estado-pendiente {
+  background: var(--color-pendiente-fondo);
+  color: var(--color-pendiente-texto);
+}
+
+.cita-cliente-estado.estado-confirmada {
+  background: var(--color-ok-fondo);
+  color: var(--color-ok-texto);
+}
+
+.cita-cliente-estado.estado-cancelada {
+  background: var(--color-error-fondo);
+  color: var(--color-error);
+}
+
+.boton-cancelar-cita {
+  background: var(--color-error);
+}
+
+.boton-cancelar-cita:hover {
+  background: var(--color-error);
+  filter: brightness(0.92);
+}
+
+.cita-cliente-enlace {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}

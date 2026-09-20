@@ -1,6 +1,7 @@
 // Validación del formulario de reserva. Lógica pura, probada en validacion.test.ts.
-// La misma normalización de teléfono la aplicará la base de datos en la fase 3 (`normalizar_telefono`).
+// La base de datos aplica las mismas reglas en `validar_datos_reserva` (fase 3.1).
 
+import type { CampoFormulario, ServicioTaller } from "@/features/taller/api";
 import type { ReservaEnCurso } from "./tipos";
 
 /** Solo dígitos; a un móvil español de 9 cifras se le antepone el 34. */
@@ -40,20 +41,32 @@ export function erroresDeFormato(reserva: Pick<ReservaEnCurso, "matricula" | "te
   return errores;
 }
 
-export interface OpcionesValidacion {
-  /** El servicio elegido exige cantidad de neumáticos y medidas (Rik and Roll). */
-  neumaticosConMedidas: boolean;
+export interface ContextoValidacion {
+  /** Servicio elegido (undefined si aún no se ha elegido). */
+  servicio: ServicioTaller | undefined;
+  /** Campos extra que aplican al servicio elegido. */
+  campos: CampoFormulario[];
 }
 
-/** ¿Se puede pasar al siguiente paso? Obligatorios rellenos y sin errores de formato. */
-export function formularioCompleto(reserva: ReservaEnCurso, { neumaticosConMedidas }: OpcionesValidacion): boolean {
+/** ¿Un valor de campo extra es válido para su tipo? (vacío cuenta como válido si no es obligatorio) */
+export function campoValido(campo: CampoFormulario, valor: string | undefined): boolean {
+  const texto = (valor ?? "").trim();
+  if (texto === "") return !campo.obligatorio;
+  if (campo.tipo === "numero") return /^\d{1,9}$/.test(texto);
+  if (campo.tipo === "select") return (campo.opciones ?? []).includes(texto);
+  return texto.length <= 250;
+}
+
+/** ¿Se puede pasar al siguiente paso? Obligatorios rellenos, sin errores de formato y campos extra válidos. */
+export function formularioCompleto(reserva: ReservaEnCurso, { servicio, campos }: ContextoValidacion): boolean {
   const obligatorios =
     reserva.matricula.trim() !== "" &&
     reserva.nombre.trim() !== "" &&
     reserva.telefono.trim() !== "" &&
     reserva.vehiculo.trim() !== "" &&
-    reserva.servicio !== "";
-  const extras = !neumaticosConMedidas || (reserva.cantidad_neumaticos !== "" && reserva.descripcion.trim() !== "");
+    servicio !== undefined;
+  const descripcionOk = servicio?.descripcion_modo !== "obligatoria" || reserva.descripcion.trim() !== "";
+  const camposOk = campos.every((campo) => campoValido(campo, reserva.datos_extra[campo.clave]));
   const sinErrores = Object.keys(erroresDeFormato(reserva)).length === 0;
-  return obligatorios && extras && sinErrores;
+  return obligatorios && descripcionOk && camposOk && sinErrores;
 }

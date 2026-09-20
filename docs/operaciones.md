@@ -12,7 +12,7 @@
 - **Todo cambio de esquema va en una migración** en `supabase/migrations/` (`npx supabase migration new <nombre>` crea el fichero con sello de tiempo) y se aplica con `npx supabase db push` (antes, `npx supabase db push --dry-run` para ver qué se aplicaría). Nunca editar el esquema desde el dashboard ni con SQL suelto.
 - **Antes de cada migración**: `npm run backup` (→ `backups/<fecha>/`, carpeta ignorada por git; necesita `SUPABASE_DB_PASSWORD`), commit y tag.
 - La baseline `20260919210000` está marcada como aplicada con `migration repair` porque reproduce lo que ya existía. Nunca ejecutar `db reset` contra el proyecto remoto.
-- Seeds: `clientes/<slug>/seed.sql` (fase 3), declarados en `supabase/config.toml` (`[db.seed] sql_paths`); se aplican con `npx supabase db push --include-seed`. Deben ser idempotentes y no contener secretos.
+- Seeds: `clientes/<slug>/seed.sql` (fase 3), declarados **uno a uno** en `supabase/config.toml` (`[db.seed] sql_paths`; nunca con `*`, porque cargaría `_plantilla`); se aplican con `npx supabase db push --include-seed`. Deben ser idempotentes y no contener secretos. **Ojo**: la CLI recuerda el hash de cada seed ya aplicado; si se edita un seed que ya se aplicó antes, `db push --include-seed` solo actualiza el hash ("Updating seed hash") y **no lo vuelve a ejecutar**. Para reaplicarlo hay que ejecutar su SQL a mano (SQL Editor del dashboard o `execute_sql`), que es seguro porque los seeds son solo datos e idempotentes.
 - Tipos: `npx supabase gen types typescript --linked > src/lib/supabase/database.types.ts` tras cada migración.
 - Edge Functions: `npx supabase functions deploy <nombre>`; `verify_jwt` se declara en `supabase/config.toml`.
 - Secretos: `npx supabase secrets set NOMBRE=valor` (nunca en el repo).
@@ -20,11 +20,17 @@
 - Nunca borrar datos del proyecto remoto, salvo los del taller de pruebas `e2e`.
 
 ## Dar de alta un taller
-1. Copiar `clientes/_plantilla/` a `clientes/<slug>/`; rellenar `seed.sql` (taller, servicios, campos extra, horarios, festivos) y `README.md`; añadir assets (logo, imágenes de ayuda) en `assets/`.
-2. Aplicar el seed al proyecto (`npx supabase db push --include-seed`). Es idempotente.
-3. Crear el usuario del taller en Supabase Auth (invitación) y darlo de alta en `miembros_taller` (fase 4).
-4. Integraciones: si usa Google Calendar, el taller pulsa "Conectar Google Calendar" en su panel. Si usa WhatsApp, configurar WABA, plantillas y token (ver `integraciones.md`).
-5. Verificar con `docs/checklist-manual.md`.
+1. Copiar `clientes/_plantilla/` a `clientes/<slug>/`; rellenar `seed.sql` (taller, `modo_capacidad` + `capacidad`, `whatsapp_modo`, textos, servicios con su modo de descripción, campos extra, horarios, festivos) y `README.md`; añadir assets (logo, imágenes de ayuda) en `assets/`. Nada de lógica por taller en el código: todo lo que cambia entre talleres vive en el seed.
+2. Añadir la ruta del seed a `sql_paths` en `supabase/config.toml` y aplicarlo (`npx supabase db push --include-seed`). Es idempotente. `npm test` comprueba que el seed no menciona otros slugs ni contiene secretos.
+3. Crear el usuario del taller en Supabase Auth (invitación) y vincularlo (`talleres.user_id`; en la fase 5, `miembros_taller`).
+4. Integraciones: si usa Google Calendar, el taller pulsa "Conectar Google Calendar" en su panel. WhatsApp según `whatsapp_modo`: `api` (WABA, plantillas y token; ver `integraciones.md`), `enlace` (nada que configurar: el panel abre WhatsApp con el mensaje escrito) o `ninguno`.
+5. Promoción: `node scripts/qr.mjs <slug>` genera `clientes/<slug>/assets/qr-reserva.{svg,png}` y el enlace de reserva se pone en Google Business Profile (sección siguiente).
+6. Verificar con `docs/checklist-manual.md` (en la fase 3.7 se hizo con un taller de prueba creado solo desde `_plantilla`).
+
+## Promoción: Google Business Profile y QR
+- **Enlace de reserva**: la URL pública del taller es `https://citaller.vercel.app/<slug>` (con dominio propio, la misma ruta). En Google Business Profile (https://business.google.com → el perfil del taller → "Editar perfil" → "Reservas" / "Enlaces de citas", el nombre cambia según la versión) se pega esa URL como enlace de citas; Google la muestra como botón "Reservar" en la ficha de Maps y en la búsqueda. Sin un proveedor de reservas integrado con Google, este enlace es la vía: el cliente pulsa y llega al formulario del taller.
+- **QR del mostrador**: `node scripts/qr.mjs` (todos los talleres) o `node scripts/qr.mjs <slug>`. Genera `clientes/<slug>/assets/qr-reserva.svg` (para imprenta, escala sin perder calidad) y `qr-reserva.png` (1024 px, para imprimir en casa o pegar en un cartel). Codifican exactamente `<CITALLER_APP_URL>/<slug>`; `npm test` lo comprueba decodificando el PNG. Se pueden pedir a la imprenta con un texto tipo "Reserva tu cita escaneando el código" y probarlos con la cámara del móvil antes de imprimir en cantidad.
+- Si algún día cambia el dominio, se vuelve a ejecutar el script; los QR ya impresos siguen funcionando mientras la URL antigua de Vercel siga activa (no se retira).
 
 ## Despliegue
 - Trabajo en ramas; cada push genera un preview en Vercel (protegido, solo visible con sesión de Vercel).
@@ -32,13 +38,18 @@
 - Rollback: Vercel → Deployments → Promote de un deploy anterior; en BD, restaurar desde `backups/`.
 
 ## Secretos y Vault
-- Secretos de Edge Functions (`npx supabase secrets list` / `set`): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `CITALLER_APP_URL`, `CITALLER_CRON_SECRET`, y `WHATSAPP_TOKEN_TALLER_<id>` cuando se active WhatsApp.
+- Secretos de Edge Functions (`npx supabase secrets list` / `set`): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `CITALLER_APP_URL`, `CITALLER_CRON_SECRET`, y `WHATSAPP_TOKEN_TALLER_<id>` cuando un taller pase a `whatsapp_modo='api'`. Opcionales: `WHATSAPP_PLANTILLA_CONFIRMACION`, `WHATSAPP_PLANTILLA_CANCELACION`, `WHATSAPP_PLANTILLA_RECORDATORIO` (nombres de las plantillas aprobadas en Meta si no son los por defecto), `WHATSAPP_CONFIRMACION_CON_ENLACE=true` cuando la plantilla de confirmación lleve el botón de URL al enlace de la cita, `META_GRAPH_VERSION`.
 - Dentro de la base de datos, en Vault (`vault.secrets`, cifrado): `citaller_cron_secret` (cabecera `x-cron-secret` del job de recordatorios, igual que el secreto de Edge Functions), `citaller_project_url` (URL del proyecto que usan los jobs) y un `citaller_calendario_google_taller_<id>` por taller con Google conectado.
 - Solo `service_role` y el rol `postgres` pueden leerlos: `anon` y `authenticated` no tienen acceso ni a `vault.decrypted_secrets` ni a las funciones `leer_token_calendario` / `guardar_token_calendario`.
 - Ver los nombres (nunca los valores): `select name, description, updated_at from vault.secrets order by name;`.
 
+## Cuando falla un WhatsApp o Google Calendar
+- Cada fallo queda en la reserva (`whatsapp_error`, `google_error`) y la tarjeta del panel lo enseña en un aviso. **Reintentar es volver a pulsar Confirmar** (o Cancelar): las funciones son idempotentes y solo repiten lo que quedó pendiente (no envían dos veces el WhatsApp ni crean dos eventos).
+- "La conexión con Google Calendar ha caducado": el taller pulsa "Conectar Google Calendar" otra vez (con la app de Google en "Prueba" pasa cada 7 días).
+- En modo `enlace` no hay envío automático: el panel enseña el botón "Abrir WhatsApp con el mensaje" tras confirmar o cancelar, "Avisar por WhatsApp" en cada tarjeta y la lista "Recordatorios para mañana". Los textos se pueden personalizar por taller en `talleres.texto_whatsapp_confirmacion/cancelacion/recordatorio` (marcadores `{nombre} {taller} {dia} {hora} {vehiculo} {servicio} {matricula} {enlace_cita} {enlace_reserva}`).
+
 ## Cron de recordatorios
-- Job `citaller-recordatorios-whatsapp` (`0 8 * * *` UTC), creado por migración; lee el secreto de Vault y llama a la Edge Function `enviar-whatsapp-recordatorios`.
+- Job `citaller-recordatorios-whatsapp` (`0 8 * * *` UTC), creado por migración; lee el secreto de Vault y llama a la Edge Function `enviar-whatsapp-recordatorios`, que **solo envía a los talleres en `whatsapp_modo='api'`** (los de modo `enlace` usan la lista "Recordatorios para mañana" del panel).
 - Estado: `select jobname, schedule, active from cron.job;` y últimas ejecuciones: `select status_code, created from net._http_response order by created desc limit 5;`.
 - Prueba manual (no envía nada si ningún taller tiene WhatsApp activo): ejecutar el mismo `net.http_post` del job y consultar `net._http_response`.
 
@@ -46,7 +57,8 @@
 - **Protección de contraseñas filtradas**: el aviso del linter no se puede quitar porque la organización está en el **plan gratuito** (esa función requiere plan Pro). Queda aceptado y documentado; revisarlo si algún día se sube de plan.
 - Secretos de Edge Functions (o `npx supabase secrets set`).
 - Contraseña de la base de datos (Project Settings → Database): solo hace falta para `npm run backup`.
-- Borrar Edge Functions antiguas (la CLI no lo hace): Dashboard → Edge Functions → la función → Delete.
+- Borrar Edge Functions antiguas (la CLI no lo hace): Dashboard → Edge Functions → la función → Delete. Pendientes de borrar: los cinco slugs de antes de la fase 1 (`dynamic-function`, `quick-worker`, `bright-service`, `bright-processor`, `hyper-processor`) y, una semana después de desplegar la fase 3, `enviar-whatsapp-confirmacion`, `crear-evento-google` y `cancelar-evento-google` (sustituidas por `confirmar-reserva` / `cancelar-reserva`).
+- Ejecutar a mano un seed ya aplicado que se haya modificado (ver "Flujo con Supabase").
 
 ## Tareas que se hacen a mano en Google Cloud
 - Publicar la pantalla de consentimiento (hoy en "Testing"; ver `integraciones.md`).

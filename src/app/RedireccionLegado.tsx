@@ -1,23 +1,25 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { cargarTallerPorId } from "@/features/taller/api";
-import { TALLER_POR_DEFECTO_ID } from "@/features/taller/configTemporal";
 import { NoEncontrado } from "./NoEncontrado";
 import { PantallaCargando } from "@/components/PantallaCargando";
 
 /**
  * Las URLs antiguas (`/?taller=2`, `/?taller=2&modo=taller`) siguen funcionando: se traducen a
  * `/<slug>` y `/<slug>/panel` conservando el resto de parámetros (por ejemplo `calendar=connected`,
- * con el que vuelve Google). Sin `?taller=` se abre el taller por defecto, como hasta ahora.
+ * con el que vuelve Google). Sin `?taller=` no hay taller que mostrar: cada taller tiene su enlace.
  */
 export function RedireccionLegado() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const [noExiste, setNoExiste] = useState(false);
 
+  const tallerId = Number(params.get("taller"));
+  const sinTaller = !Number.isInteger(tallerId) || tallerId <= 0;
+
   useEffect(() => {
+    if (sinTaller) return;
     let vigente = true;
-    const tallerId = Number(params.get("taller")) || TALLER_POR_DEFECTO_ID;
     const esPanel = params.get("modo") === "taller";
 
     cargarTallerPorId(tallerId)
@@ -41,8 +43,9 @@ export function RedireccionLegado() {
     return () => {
       vigente = false;
     };
-  }, [params, navigate]);
+  }, [params, navigate, tallerId, sinTaller]);
 
+  if (sinTaller) return <NoEncontrado mensaje="Cada taller tiene su propio enlace de reserva. Usa el que te haya dado el tuyo." />;
   if (noExiste) return <NoEncontrado mensaje="No encontramos ningún taller con esa dirección." />;
   return <PantallaCargando />;
 }

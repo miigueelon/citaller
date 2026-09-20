@@ -7,8 +7,8 @@ export interface ReservaEnCurso {
   vehiculo: string;
   servicio: string;
   descripcion: string;
-  kilometros: string;
-  cantidad_neumaticos: string;
+  /** Valores de los campos extra del taller, por clave (`campos_formulario_taller.clave`). */
+  datos_extra: Record<string, string>;
   dia: string;
   hora: string;
 }
@@ -22,8 +22,7 @@ export function reservaVacia(tallerId: number): ReservaEnCurso {
     vehiculo: "",
     servicio: "",
     descripcion: "",
-    kilometros: "",
-    cantidad_neumaticos: "",
+    datos_extra: {},
     dia: "",
     hora: "",
   };

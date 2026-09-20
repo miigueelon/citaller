@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Alerta } from "@/components/Alerta";
+import { useTaller } from "@/app/providers/useTaller";
+import { camposDelServicio } from "@/features/taller/api";
 import { formatearDiaLargo } from "@/lib/fechas";
 import type { ReservaEnCurso } from "../tipos";
 
@@ -12,8 +14,12 @@ interface Props {
 
 /** Paso 3: revisar la solicitud antes de enviarla. El botón se bloquea mientras se guarda. */
 export function Resumen({ reserva, enviar, volver }: Props) {
+  const taller = useTaller();
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const servicio = taller.servicios.find((s) => s.nombre === reserva.servicio);
+  const camposConValor = camposDelServicio(taller.campos, servicio).filter((campo) => (reserva.datos_extra[campo.clave] ?? "").trim() !== "");
 
   async function confirmar() {
     if (enviando) return;
@@ -66,23 +72,19 @@ export function Resumen({ reserva, enviar, volver }: Props) {
             <strong>{reserva.servicio}</strong>
           </div>
 
-          {reserva.cantidad_neumaticos && (
-            <div className="resumen-item">
-              <span>🛞 Neumáticos</span>
-              <strong>{reserva.cantidad_neumaticos}</strong>
+          {camposConValor.map((campo) => (
+            <div className="resumen-item" key={campo.id}>
+              <span>{campo.etiqueta.replace(/\s*\(opcional\)/i, "")}</span>
+              <strong>
+                {campo.tipo === "numero" ? Number(reserva.datos_extra[campo.clave]).toLocaleString("es-ES") : reserva.datos_extra[campo.clave]}
+                {campo.unidad ? ` ${campo.unidad}` : ""}
+              </strong>
             </div>
-          )}
-
-          {reserva.kilometros && (
-            <div className="resumen-item">
-              <span>🧭 Kilómetros</span>
-              <strong>{Number(reserva.kilometros).toLocaleString("es-ES")} km</strong>
-            </div>
-          )}
+          ))}
 
           {reserva.descripcion && (
             <div className="resumen-item">
-              <span>📝 {reserva.servicio === "Otro" ? "Necesidad" : "Descripción"}</span>
+              <span>📝 {servicio?.descripcion_etiqueta ?? "Descripción"}</span>
               <strong>{reserva.descripcion}</strong>
             </div>
           )}

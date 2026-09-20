@@ -1,5 +1,5 @@
 // Traduce los errores que devuelve la base de datos a mensajes para la persona que usa la app.
-// Los códigos CTxxx los definirán las funciones SQL de la fase 3; mientras, se reconocen por texto.
+// Los códigos CTxxx los lanzan las funciones SQL (validar_datos_reserva, comprobar_capacidad, cancelar_reserva_cliente).
 
 interface ErrorSupabase {
   code?: string | null;
@@ -11,7 +11,7 @@ const POR_CODIGO: Record<string, string> = {
   CT001: "Esa hora acaba de llenarse. Elige otra hora, por favor.",
   CT002: "El taller no atiende a esa hora. Elige una de las horas disponibles.",
   CT003: "Ese día es festivo para el taller. Elige otro día.",
-  CT004: "Esa fecha ya ha pasado. Elige un día a partir de hoy.",
+  CT004: "Esa fecha no está disponible: elige un día entre hoy y los próximos 90 días.",
   CT005: "El teléfono no es válido. Escribe un número español de 9 cifras.",
   CT006: "Ya tienes varias citas activas con este taller. Llama al taller si necesitas otra.",
   CT007: "Ese servicio no está disponible en este taller.",
@@ -20,6 +20,7 @@ const POR_CODIGO: Record<string, string> = {
   CT010: "No encontramos esa cita. Comprueba el enlace.",
   CT011: "Ya no se puede cancelar por internet: faltan menos de 24 horas. Llama al taller.",
   CT012: "Esta cita ya estaba cancelada.",
+  CT013: "La matrícula no es válida. Escríbela sin símbolos, por ejemplo 1234ABC.",
 };
 
 const POR_TEXTO: Array<[RegExp, string]> = [

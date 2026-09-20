@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import type { CampoFormulario, ServicioTaller } from "@/features/taller/api";
 import { reservaVacia } from "./tipos";
-import { erroresDeFormato, esMatriculaValida, esTelefonoValido, formularioCompleto, normalizarMatricula, normalizarTelefono } from "./validacion";
+import { campoValido, erroresDeFormato, esMatriculaValida, esTelefonoValido, formularioCompleto, normalizarMatricula, normalizarTelefono } from "./validacion";
 
 describe("teléfono", () => {
   it("normaliza quitando espacios y guiones y anteponiendo el 34 a 9 cifras", () => {
@@ -35,6 +36,31 @@ describe("matrícula", () => {
   });
 });
 
+const frenos: ServicioTaller = {
+  id: 1,
+  nombre: "Frenos",
+  orden: 3,
+  descripcion_modo: "oculta",
+  descripcion_etiqueta: null,
+  descripcion_placeholder: null,
+  descripcion_ayuda: null,
+  imagen_ayuda_url: null,
+};
+const neumaticos: ServicioTaller = { ...frenos, id: 2, nombre: "Neumáticos", descripcion_modo: "obligatoria" };
+const kilometros: CampoFormulario = { id: 1, servicio_id: null, clave: "kilometros", etiqueta: "Kilómetros", tipo: "numero", opciones: null, obligatorio: false, orden: 1, unidad: "km", ayuda: null };
+const cantidad: CampoFormulario = { id: 2, servicio_id: 2, clave: "cantidad_neumaticos", etiqueta: "¿Cuántos?", tipo: "select", opciones: ["1", "2", "3", "4"], obligatorio: true, orden: 1, unidad: null, ayuda: null };
+
+describe("campos extra", () => {
+  it("valida por tipo y obligatoriedad", () => {
+    expect(campoValido(kilometros, "")).toBe(true);
+    expect(campoValido(kilometros, "45000")).toBe(true);
+    expect(campoValido(kilometros, "45.000")).toBe(false);
+    expect(campoValido(cantidad, "")).toBe(false);
+    expect(campoValido(cantidad, "2")).toBe(true);
+    expect(campoValido(cantidad, "9")).toBe(false);
+  });
+});
+
 describe("formulario", () => {
   const base = { ...reservaVacia(3), matricula: "1234ABC", nombre: "Ana", telefono: "600123123", vehiculo: "Seat León", servicio: "Frenos" };
 
@@ -45,14 +71,17 @@ describe("formulario", () => {
   });
 
   it("está completo con los obligatorios y formatos correctos", () => {
-    expect(formularioCompleto(base, { neumaticosConMedidas: false })).toBe(true);
-    expect(formularioCompleto({ ...base, telefono: "12" }, { neumaticosConMedidas: false })).toBe(false);
-    expect(formularioCompleto({ ...base, nombre: " " }, { neumaticosConMedidas: false })).toBe(false);
+    expect(formularioCompleto(base, { servicio: frenos, campos: [kilometros] })).toBe(true);
+    expect(formularioCompleto({ ...base, telefono: "12" }, { servicio: frenos, campos: [] })).toBe(false);
+    expect(formularioCompleto({ ...base, nombre: " " }, { servicio: frenos, campos: [] })).toBe(false);
+    expect(formularioCompleto(base, { servicio: undefined, campos: [] })).toBe(false);
   });
 
-  it("con neumáticos exige cantidad y medidas", () => {
-    const neumaticos = { ...base, servicio: "Neumáticos" };
-    expect(formularioCompleto(neumaticos, { neumaticosConMedidas: true })).toBe(false);
-    expect(formularioCompleto({ ...neumaticos, cantidad_neumaticos: "2", descripcion: "205/55 R16" }, { neumaticosConMedidas: true })).toBe(true);
+  it("con neumáticos exige la descripción obligatoria y el campo obligatorio", () => {
+    const conNeumaticos = { ...base, servicio: "Neumáticos" };
+    expect(formularioCompleto(conNeumaticos, { servicio: neumaticos, campos: [kilometros, cantidad] })).toBe(false);
+    expect(
+      formularioCompleto({ ...conNeumaticos, descripcion: "205/55 R16", datos_extra: { cantidad_neumaticos: "2" } }, { servicio: neumaticos, campos: [kilometros, cantidad] }),
+    ).toBe(true);
   });
 });

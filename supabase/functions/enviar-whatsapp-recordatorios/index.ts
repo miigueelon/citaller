@@ -1,363 +1,109 @@
-import { createClient } from "jsr:@supabase/supabase-js@2";
+// Recordatorios de WhatsApp para las citas confirmadas de mañana. La llama pg_cron cada día a las
+// 8:00 (job citaller-recordatorios-whatsapp) con la cabecera x-cron-secret. Solo envía a los
+// talleres con whatsapp_modo = 'api'; en modo 'enlace' el panel enseña "Citas de mañana" con un
+// botón por cita, y en modo 'ninguno' no se avisa. Salida: { ok, fecha_buscada, total, resultados }.
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-cron-secret",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { corsHeaders, responderJson, respuestaPreflight } from "../_shared/http.ts";
+import { crearClienteAdmin } from "../_shared/supabaseAdmin.ts";
+import { enviarPlantilla, ErrorWhatsapp, parametrosRecordatorio, PLANTILLAS, type TallerWhatsapp } from "../_shared/whatsapp.ts";
 
-function fechaMananaMadrid() {
-  const ahora = new Date();
-
-  const partes = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Madrid",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(ahora);
-
-  const year = Number(
-    partes.find((p) => p.type === "year")?.value
-  );
-
-  const month = Number(
-    partes.find((p) => p.type === "month")?.value
-  );
-
-  const day = Number(
-    partes.find((p) => p.type === "day")?.value
-  );
-
-  const manana = new Date(
-    Date.UTC(year, month - 1, day + 1)
-  );
-
-  return manana.toISOString().slice(0, 10);
+/** "YYYY-MM-DD" de mañana en la zona del taller (Europe/Madrid). */
+function fechaMananaMadrid(): string {
+  const partes = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+  const valor = (tipo: string) => Number(partes.find((p) => p.type === tipo)?.value);
+  return new Date(Date.UTC(valor("year"), valor("month") - 1, valor("day") + 1)).toISOString().slice(0, 10);
 }
 
-function normalizarTelefono(telefono: string) {
-  let limpio = String(telefono || "").replace(/\D/g, "");
-
-  if (limpio.length === 9) {
-    limpio = `34${limpio}`;
-  }
-
-  return limpio;
+interface ReservaManana {
+  id: number;
+  taller_id: number;
+  nombre: string | null;
+  telefono: string | null;
+  matricula: string | null;
+  vehiculo: string | null;
+  servicio: string | null;
+  dia: string;
+  hora: string;
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", {
-      status: 200,
-      headers: corsHeaders,
-    });
-  }
+  const preflight = respuestaPreflight(req);
+  if (preflight) return preflight;
+  if (req.method !== "POST") return responderJson({ ok: false, error: "Método no permitido" }, 405);
 
   try {
-    // ========================================
-    // SEGURIDAD DEL CRON
-    // ========================================
-
     const cronSecret = Deno.env.get("CITALLER_CRON_SECRET");
-    const recibido = req.headers.get("x-cron-secret");
-
-    if (!cronSecret || recibido !== cronSecret) {
-      return new Response(
-        JSON.stringify({
-          ok: false,
-          error: "Cron no autorizado",
-        }),
-        {
-          status: 401,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+    if (!cronSecret || req.headers.get("x-cron-secret") !== cronSecret) {
+      return responderJson({ ok: false, error: "Cron no autorizado" }, 401);
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
+    const admin = crearClienteAdmin();
     const manana = fechaMananaMadrid();
 
-    // ========================================
-    // BUSCAR CITAS DE MAÑANA
-    // ========================================
-
-    const { data: reservas, error } = await supabase
+    const { data: reservas, error } = await admin
       .from("reservas")
-      .select(`
-        id,
-        taller_id,
-        nombre,
-        telefono,
-        matricula,
-        vehiculo,
-        servicio,
-        dia,
-        hora,
-        estado,
-        whatsapp_recordatorio_enviado
-      `)
+      .select("id, taller_id, nombre, telefono, matricula, vehiculo, servicio, dia, hora")
       .eq("estado", "Confirmada")
       .eq("dia", manana)
-      .eq("whatsapp_recordatorio_enviado", false);
-
+      .eq("whatsapp_recordatorio_enviado", false)
+      .not("telefono", "is", null);
     if (error) {
-      console.error(error);
-
-      return new Response(
-        JSON.stringify({
-          ok: false,
-          error: error.message,
-        }),
-        {
-          status: 500,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      console.error("recordatorios: error leyendo reservas:", error);
+      return responderJson({ ok: false, error: error.message }, 500);
     }
 
-    const resultados = [];
+    const talleres = new Map<number, TallerWhatsapp>();
+    const resultados: Array<{ reserva_id: number; taller_id: number; enviado: boolean; motivo?: string }> = [];
 
-    // ========================================
-    // PROCESAR CADA RESERVA
-    // ========================================
+    for (const reserva of (reservas ?? []) as ReservaManana[]) {
+      let taller = talleres.get(reserva.taller_id);
+      if (!taller) {
+        const { data } = await admin.from("talleres").select("id, nombre, whatsapp_modo, whatsapp_phone_number_id").eq("id", reserva.taller_id).maybeSingle();
+        if (!data) {
+          resultados.push({ reserva_id: reserva.id, taller_id: reserva.taller_id, enviado: false, motivo: "Taller no encontrado" });
+          continue;
+        }
+        taller = data as TallerWhatsapp;
+        talleres.set(reserva.taller_id, taller);
+      }
 
-    for (const reserva of reservas || []) {
+      if (taller.whatsapp_modo !== "api") {
+        resultados.push({ reserva_id: reserva.id, taller_id: taller.id, enviado: false, motivo: `El taller avisa en modo ${taller.whatsapp_modo}` });
+        continue;
+      }
+
       try {
-        const { data: taller, error: tallerError } =
-          await supabase
-            .from("talleres")
-            .select(`
-              id,
-              nombre,
-              whatsapp_phone_number_id,
-              whatsapp_business_account_id,
-              whatsapp_activo
-            `)
-            .eq("id", reserva.taller_id)
-            .single();
-
-        if (tallerError || !taller) {
-          resultados.push({
-            reserva_id: reserva.id,
-            enviado: false,
-            motivo: "Taller no encontrado",
-          });
-
-          continue;
-        }
-
-        if (!taller.whatsapp_activo) {
-          resultados.push({
-            reserva_id: reserva.id,
-            taller_id: reserva.taller_id,
-            enviado: false,
-            motivo:
-              "WhatsApp todavía no está activo para este taller",
-          });
-
-          continue;
-        }
-
-        if (!taller.whatsapp_phone_number_id) {
-          resultados.push({
-            reserva_id: reserva.id,
-            taller_id: reserva.taller_id,
-            enviado: false,
-            motivo:
-              "Falta whatsapp_phone_number_id del taller",
-          });
-
-          continue;
-        }
-
-        const tokenWhatsApp = Deno.env.get(
-          `WHATSAPP_TOKEN_TALLER_${reserva.taller_id}`
+        await enviarPlantilla(
+          taller,
+          reserva.telefono!,
+          PLANTILLAS.recordatorio,
+          parametrosRecordatorio({
+            nombre: reserva.nombre ?? "",
+            taller: taller.nombre,
+            dia: reserva.dia,
+            hora: reserva.hora,
+            vehiculo: reserva.vehiculo ?? "",
+            servicio: reserva.servicio ?? "",
+            matricula: reserva.matricula ?? "",
+            enlaceCita: "",
+          }),
         );
-
-        if (!tokenWhatsApp) {
-          resultados.push({
-            reserva_id: reserva.id,
-            taller_id: reserva.taller_id,
-            enviado: false,
-            motivo:
-              `Falta configurar el token de WhatsApp del taller ${reserva.taller_id}`,
-          });
-
-          continue;
-        }
-
-        const telefonoDestino =
-          normalizarTelefono(reserva.telefono);
-
-        if (!telefonoDestino) {
-          resultados.push({
-            reserva_id: reserva.id,
-            enviado: false,
-            motivo: "Teléfono del cliente no válido",
-          });
-
-          continue;
-        }
-
-        // Puedes cambiar esta versión cuando Meta
-        // requiera una versión Graph más reciente.
-        const graphVersion =
-          Deno.env.get("META_GRAPH_VERSION") || "v23.0";
-
-        // ========================================
-        // ENVÍO REAL A META
-        // ========================================
-
-        const metaResponse = await fetch(
-          `https://graph.facebook.com/${graphVersion}/${taller.whatsapp_phone_number_id}/messages`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${tokenWhatsApp}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              messaging_product: "whatsapp",
-              to: telefonoDestino,
-              type: "template",
-              template: {
-                name: "recordatorio_cita",
-                language: {
-                  code: "es",
-                },
-                components: [
-                  {
-                    type: "body",
-                    parameters: [
-                      {
-                        type: "text",
-                        text: reserva.nombre || "Cliente",
-                      },
-                      {
-                        type: "text",
-                        text: taller.nombre || "Taller",
-                      },
-                      {
-                        type: "text",
-                        text:
-                          (reserva.hora || "").substring(0, 5),
-                      },
-                      {
-                        type: "text",
-                        text: reserva.vehiculo || "-",
-                      },
-                      {
-                        type: "text",
-                        text: reserva.servicio || "-",
-                      },
-                    ],
-                  },
-                ],
-              },
-            }),
-          }
-        );
-
-        const metaData = await metaResponse.json();
-
-        if (!metaResponse.ok) {
-          console.error(
-            "Error Meta recordatorio:",
-            metaData
-          );
-
-          resultados.push({
-            reserva_id: reserva.id,
-            taller_id: reserva.taller_id,
-            enviado: false,
-            motivo: "Meta rechazó el recordatorio",
-          });
-
-          continue;
-        }
-
-        // ========================================
-        // MARCAR COMO ENVIADO
-        // ========================================
-
-        const { error: updateError } = await supabase
+        await admin
           .from("reservas")
-          .update({
-            whatsapp_recordatorio_enviado: true,
-            whatsapp_recordatorio_fecha:
-              new Date().toISOString(),
-          })
+          .update({ whatsapp_recordatorio_enviado: true, whatsapp_recordatorio_fecha: new Date().toISOString(), whatsapp_error: null })
           .eq("id", reserva.id);
-
-        if (updateError) {
-          console.error(
-            "WhatsApp enviado pero error guardando estado:",
-            updateError
-          );
-        }
-
-        resultados.push({
-          reserva_id: reserva.id,
-          taller_id: reserva.taller_id,
-          enviado: true,
-          motivo: "Recordatorio enviado correctamente",
-        });
-      } catch (errorReserva) {
-        console.error(
-          "Error procesando recordatorio:",
-          errorReserva
-        );
-
-        resultados.push({
-          reserva_id: reserva.id,
-          enviado: false,
-          motivo: "Error interno procesando la reserva",
-        });
+        resultados.push({ reserva_id: reserva.id, taller_id: taller.id, enviado: true });
+      } catch (fallo) {
+        const motivo = fallo instanceof Error ? fallo.message : "Error enviando el recordatorio";
+        console.error("recordatorios: fallo en la reserva", reserva.id, fallo instanceof ErrorWhatsapp ? fallo.detalle : fallo);
+        await admin.from("reservas").update({ whatsapp_error: motivo }).eq("id", reserva.id);
+        resultados.push({ reserva_id: reserva.id, taller_id: taller.id, enviado: false, motivo });
       }
     }
 
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        fecha_buscada: manana,
-        total_recordatorios:
-          reservas?.length || 0,
-        resultados,
-      }),
-      {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    return responderJson({ ok: true, fecha_buscada: manana, total: reservas?.length ?? 0, resultados });
   } catch (error) {
-    console.error(error);
-
-    return new Response(
-      JSON.stringify({
-        ok: false,
-        error: "Error interno",
-      }),
-      {
-        status: 500,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    console.error("recordatorios:", error);
+    return new Response(JSON.stringify({ ok: false, error: "Error interno" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

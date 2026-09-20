@@ -1,4 +1,5 @@
 import { AlertCircle, Inbox, Loader2 } from "lucide-react";
+import type { CampoFormulario } from "@/features/taller/api";
 import type { ReservaPanel } from "../tipos";
 import { TarjetaReserva } from "./TarjetaReserva";
 
@@ -8,12 +9,14 @@ interface Props {
   /** Grupos [título, reservas] ya filtrados y ordenados. */
   grupos: Array<[string, ReservaPanel[]]>;
   textoVacio: string;
+  campos: CampoFormulario[];
   ocupado?: boolean;
   onConfirmar: (reserva: ReservaPanel) => void;
   onCancelar: (reserva: ReservaPanel) => void;
+  onAvisarWhatsapp?: (reserva: ReservaPanel) => void;
 }
 
-export function ListaReservas({ cargando, error, grupos, textoVacio, ocupado = false, onConfirmar, onCancelar }: Props) {
+export function ListaReservas({ cargando, error, grupos, textoVacio, campos, ocupado = false, onConfirmar, onCancelar, onAvisarWhatsapp }: Props) {
   if (cargando) {
     return (
       <div className="panel-estado panel-cargando">
@@ -51,7 +54,15 @@ export function ListaReservas({ cargando, error, grupos, textoVacio, ocupado = f
           <h3 className="panel-grupo-titulo">{titulo}</h3>
           <div className="panel-grupo-items">
             {items.map((reserva) => (
-              <TarjetaReserva key={reserva.id} reserva={reserva} ocupado={ocupado} onConfirmar={onConfirmar} onCancelar={onCancelar} />
+              <TarjetaReserva
+                key={reserva.id}
+                reserva={reserva}
+                campos={campos}
+                ocupado={ocupado}
+                onConfirmar={onConfirmar}
+                onCancelar={onCancelar}
+                onAvisarWhatsapp={onAvisarWhatsapp}
+              />
             ))}
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { cargarTallerPorSlug, type Taller } from "@/features/taller/api";
+import { cargarConfiguracion, cargarTallerPorSlug, type TallerConfig } from "@/features/taller/api";
 import { NoEncontrado } from "@/app/NoEncontrado";
 import { PantallaCargando } from "@/components/PantallaCargando";
 import { TallerContext } from "./contextos";
@@ -9,11 +9,11 @@ interface Props {
   children: ReactNode;
 }
 
-type Estado = { fase: "cargando" } | { fase: "listo"; taller: Taller } | { fase: "no-existe" } | { fase: "error" };
+type Estado = { fase: "cargando" } | { fase: "listo"; taller: TallerConfig } | { fase: "no-existe" } | { fase: "error" };
 
 /**
- * Carga el taller de la URL (`/<slug>`) y lo pone a disposición de toda la página.
- * Si el slug no existe o el taller está inactivo, muestra la página de "no encontrado".
+ * Carga el taller de la URL (`/<slug>`) con sus servicios y campos, y lo pone a disposición de
+ * toda la página. Si el slug no existe o el taller está inactivo, muestra "no encontrado".
  * Quien lo monte debe darle `key={slug}` para que un cambio de taller lo reinicie.
  */
 export function TallerProvider({ slug, children }: Props) {
@@ -23,8 +23,9 @@ export function TallerProvider({ slug, children }: Props) {
     let vigente = true;
 
     cargarTallerPorSlug(slug)
-      .then((taller) => {
-        if (vigente) setEstado(taller ? { fase: "listo", taller } : { fase: "no-existe" });
+      .then((taller) => (taller ? cargarConfiguracion(taller) : null))
+      .then((config) => {
+        if (vigente) setEstado(config ? { fase: "listo", taller: config } : { fase: "no-existe" });
       })
       .catch((error: unknown) => {
         console.error("Error cargando el taller:", error);

@@ -4,9 +4,9 @@ Ejecutar en el preview de Vercel de la rama (o en local) antes de cerrar cada fa
 
 ## Comprobación automática: `npm run probar-cadena`
 
-Verifica de extremo a extremo contra el taller de pruebas `e2e` (id 3), sin tocar Speedbikes ni Rik and Roll: login del taller, lecturas públicas, reserva por la RPC, ocupación, aislamiento entre talleres, confirmar, WhatsApp, Calendar, cancelar, que una cita cancelada no se reabre, y el inicio del OAuth de Google (URL, `redirect_uri`, permisos, `state` inventado rechazado, taller ajeno rechazado). Al final borra la reserva de prueba. Necesita `E2E_TALLER_EMAIL` y `E2E_TALLER_PASSWORD` en `.env.local`; para la limpieza, `SR_KEY` con la clave de servicio.
+Verifica de extremo a extremo contra el taller de pruebas `e2e` (id 3), sin tocar Speedbikes ni Rik and Roll. Desde la fase 3 cubre: lecturas públicas (taller, servicios, campos, horarios), reserva por la RPC v2 con `datos_extra` y `token_publico`, **doce rechazos** con su código (`CT001`–`CT013`: festivo, fuera de horario, día pasado, más de 90 días, teléfono, matrícula, servicio, campos obligatorios y opciones, taller inexistente), hueco lleno, límite de 3 activas por teléfono, **concurrencia** (cuatro peticiones a la vez por dos huecos: entran dos), aislamiento entre talleres, confirmar y cancelar por las Edge Functions (`confirmar-reserva`, `cancelar-reserva`: estado, `confirmada_en`/`cancelada_por`, notificaciones, idempotencia, no reabrir), cita manual (`crear-reserva-taller`: sin teléfono, en hora llena, con campo extra, rechazos, taller ajeno), cancelación por el cliente (`consultar_cita_cliente` sin teléfono, `cancelar-cita-cliente` dentro de plazo, dos veces, token inventado, mal formado y a menos de 24 h), inicio del OAuth de Google y el secreto del cron. Al final cancela (y con `SR_KEY`, borra) lo creado; al empezar, cancela restos de ejecuciones anteriores. Necesita `E2E_TALLER_EMAIL` y `E2E_TALLER_PASSWORD` en `.env.local`.
 
-Resultado del 20-sep-2026: **27 de 27 comprobaciones correctas**, con el taller de pruebas conectado a Google Calendar: crea el evento de verdad, no duplica si se confirma dos veces, y al cancelar lo borra y limpia su id.
+Resultado del 20-sep-2026 (fase 1): 27 de 27, con el taller de pruebas conectado a Google Calendar. Fase 3: **44 comprobaciones de 63 en verde antes de desplegar las cuatro Edge Functions nuevas** (las 19 restantes son exactamente las que llaman a `confirmar-reserva`, `cancelar-reserva`, `crear-reserva-taller` y `cancelar-cita-cliente`, que responden 404 hasta el deploy).
 
 Lo único que no puede cubrir es la pantalla de permisos de Google, que exige que una persona autorice con su cuenta (hecho el 20-sep-2026 para el taller de pruebas). Aviso: con la app en estado "Prueba", el permiso caduca a los 7 días, así que hacia el 27-sep habrá que volver a conectar el taller de pruebas para que esta comprobación siga cubriendo Calendar.
 
@@ -23,31 +23,52 @@ Después, con la app en local (`npm run dev`, `http://localhost:5173/?taller=2&m
 - [ ] Borrar después la cita de prueba no hace falta: queda como Cancelada, igual que las demás pruebas.
 
 ## A. Reservar (público)
-- [ ] `/speedbikes` (hoy `/?taller=1`): se ve nombre, dirección y horario del taller.
-- [ ] Aparece el campo Kilómetros (solo Speedbikes). Acepta solo dígitos.
-- [ ] `/rikandroll`: al elegir Neumáticos aparecen cantidad (1-4), medidas obligatorias e imagen de ayuda.
-- [ ] Sin rellenar todos los obligatorios, CONTINUAR está deshabilitado.
+- [ ] `/speedbikes`: se ve nombre, dirección y horario del taller. Los servicios del desplegable son los del seed (7).
+- [ ] Speedbikes: aparece el campo Kilómetros (opcional, solo dígitos) antes del servicio. Rik and Roll y e2e: no.
+- [ ] `/rikandroll` (y `/e2e`): al elegir Neumáticos aparecen cantidad (1-4, obligatoria), medidas obligatorias e imagen de ayuda; al cambiar de servicio se limpian.
+- [ ] "Avería / luz de aviso" y "Otro" tienen descripción opcional con contador; el resto no muestra descripción.
+- [ ] Sin rellenar todos los obligatorios, CONTINUAR está deshabilitado. Teléfono o matrícula mal escritos marcan error bajo el campo.
 - [ ] Calendario: fines de semana y festivos deshabilitados; días sin horario deshabilitados.
-- [ ] Al elegir un día se listan las horas; una hora ya ocupada (o el día completo en Speedbikes) no aparece.
-- [ ] La última hora muestra el aviso de tarde.
-- [ ] Resumen correcto; FINALIZAR crea la reserva **una sola vez** aunque se pulse dos veces; la pantalla de éxito aparece solo después de guardar.
-- [ ] En Supabase: fila en `reservas` con `estado='Pendiente'` y los datos correctos.
+- [ ] Al elegir un día se listan las horas; una hora ya ocupada (o el día completo en Speedbikes, por día) no aparece.
+- [ ] La última hora muestra el aviso de tarde (texto del taller si lo tiene).
+- [ ] Resumen con los campos extra; ENVIAR crea la reserva **una sola vez** aunque se pulse dos veces; la pantalla final aparece solo después de guardar.
+- [ ] Pantalla final: el texto depende del modo de WhatsApp del taller (solo promete WhatsApp en `api`) y muestra el **enlace de la cita** con botón "Copiar enlace".
+- [ ] En Supabase: fila en `reservas` con `estado='Pendiente'`, `creada_por='cliente'`, `datos_extra`, `servicio_id` y teléfono normalizado (`34…`).
 
 ## B. Panel
-- [ ] `/speedbikes/panel` (hoy `/?taller=1&modo=taller`): pide login. Credenciales de otro taller → mensaje de error.
+- [ ] `/speedbikes/panel`: pide login. Credenciales de otro taller → mensaje de error.
 - [ ] Tras login se ven las reservas del taller agrupadas por día; recargar la página mantiene la sesión sin parpadeo.
 - [ ] Filtros Pendientes / Confirmadas / Canceladas, búsqueda por nombre/matrícula/vehículo, Hoy / Mañana / 7 días.
+- [ ] La tarjeta muestra teléfono (enlace `tel:`), los campos extra con su etiqueta y unidad, "Mostrador" en las citas manuales y "Cancelada por el cliente" cuando toca.
 - [ ] Historial muestra reservas pasadas, sin botones de acción.
 - [ ] Cerrar sesión vuelve al login.
 
 ## C. Confirmar
-- [ ] Confirmar una pendiente: pasa a Confirmada; botones deshabilitados durante la operación.
-- [ ] Rik and Roll: la reserva tiene `google_event_id` y el evento aparece en el Google Calendar del taller.
-- [ ] Si el taller tiene WhatsApp activo: el cliente recibe la plantilla; `whatsapp_confirmacion_enviada=true`.
+- [ ] Confirmar una pendiente: pasa a Confirmada; botones deshabilitados durante la operación; aparece el aviso de resultado.
+- [ ] Rik and Roll (Google conectado): la reserva tiene `google_event_id` y el evento aparece en su Google Calendar con los campos extra en la descripción.
+- [ ] Modo `api`: el cliente recibe la plantilla; `whatsapp_confirmacion_enviada=true`. Si Meta falla, el aviso lo dice y la tarjeta muestra el error; volver a pulsar Confirmar reintenta.
+- [ ] Modo `enlace` (Speedbikes): el aviso trae el botón "Abrir WhatsApp con el mensaje", que abre WhatsApp con el texto y el enlace de la cita; la tarjeta tiene "Avisar por WhatsApp".
+- [ ] Confirmar dos veces no duplica el evento ni el WhatsApp.
 
 ## D. Cancelar
-- [ ] Cancelar una confirmada: pide confirmación; pasa a Cancelada; el evento desaparece del calendario; `google_event_id` a null.
-- [ ] Si Google falla, la cita se cancela igualmente y el fallo queda registrado (fase 2.5 en adelante).
+- [ ] Cancelar una confirmada: pide confirmación; pasa a Cancelada (`cancelada_por='taller'`); el evento desaparece del calendario; `google_event_id` a null.
+- [ ] Rechazar una pendiente también avisa al cliente (modo `api`: WhatsApp de cancelación; modo `enlace`: botón para abrir WhatsApp).
+- [ ] Si Google falla, la cita se cancela igualmente y el fallo queda en la tarjeta.
+
+## G. Cita manual
+- [ ] "+ Nueva cita" abre el formulario dentro del panel: mismos campos que el público, servicio del taller, campos extra, teléfono opcional.
+- [ ] Día y hora libres: una hora fuera del horario o ya llena muestra un aviso pero deja guardar. Un día festivo también avisa.
+- [ ] Al guardar nace **Confirmada** con la etiqueta "Mostrador"; con teléfono se avisa según el modo; siempre va al calendario si está conectado.
+
+## H. Cancelación por el cliente
+- [ ] El enlace de la pantalla final (o del WhatsApp) abre `/<slug>/cita/<token>` con los datos de la cita, sin el teléfono.
+- [ ] "Cancelar mi cita" pide confirmación y deja la cita "Cancelada por ti"; el panel la ve como "Cancelada por el cliente"; el evento desaparece del calendario; nadie recibe WhatsApp.
+- [ ] Una cita a menos de 24 h muestra "Ya no se puede cancelar por internet" con el teléfono del taller.
+- [ ] Un enlace inventado o de otro taller muestra "No encontramos ninguna cita".
+
+## I. Promoción
+- [ ] `clientes/<slug>/assets/qr-reserva.png` escaneado con el móvil abre el formulario del taller.
+- [ ] El botón "Reservar" del perfil de Google Business del taller abre el formulario del taller.
 
 ## E. Conectar Google Calendar
 - [ ] En el panel de Rik and Roll: "Conectar Google Calendar" lleva a Google, se acepta, y vuelve al panel con `calendar=connected`.
@@ -57,6 +78,7 @@ Después, con la app en local (`npm run dev`, `http://localhost:5173/?taller=2&m
 - [ ] Invocación manual de la función de recordatorios con el secreto devuelve `ok: true`.
 - [ ] A la mañana siguiente, `net._http_response` muestra 200 para el job del cron.
 
-## G. Despliegue
+## J. Despliegue
 - [ ] Preview de Vercel construye sin errores y carga con las variables de entorno.
-- [ ] `?taller=2&modo=taller` redirige a `/rikandroll/panel` (a partir de la fase 2).
+- [ ] `?taller=2&modo=taller` redirige a `/rikandroll/panel`.
+- [ ] `/rikandroll/cita/<token>` de una reserva real abre la cita.

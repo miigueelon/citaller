@@ -1,11 +1,11 @@
 import type { ChangeEvent } from "react";
 import CampoInput from "@/components/CampoInput";
 import logo from "@/assets/logo.png";
-import guiaNeumatico from "@/assets/guia_neumatico.png";
 import { useTaller } from "@/app/providers/useTaller";
-import { esNeumaticosConMedidas, tallerPideKilometros } from "@/features/taller/configTemporal";
+import { camposDelServicio } from "@/features/taller/api";
 import type { ReservaEnCurso } from "../tipos";
 import { erroresDeFormato, formularioCompleto } from "../validacion";
+import { CamposExtra } from "./CamposExtra";
 
 interface Props {
   reserva: ReservaEnCurso;
@@ -13,31 +13,36 @@ interface Props {
   continuar: () => void;
 }
 
-/** Paso 1: datos del cliente y del vehículo, y servicio (con los campos propios de cada taller). */
+/** Paso 1: datos del cliente y del vehículo, y servicio, con los campos que el taller haya configurado. */
 export function DatosForm({ reserva, actualizar, continuar }: Props) {
   const taller = useTaller();
+  const servicio = taller.servicios.find((s) => s.nombre === reserva.servicio);
+  const campos = camposDelServicio(taller.campos, servicio);
 
   function alCambiar(evento: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value } = evento.target;
-    // Al cambiar de servicio se limpian los campos que dependen de él.
+    // Al cambiar de servicio se limpian la descripción y los campos que dependen de él.
     if (name === "servicio") {
-      actualizar({ servicio: value, descripcion: "", cantidad_neumaticos: "" });
+      const nuevoServicio = taller.servicios.find((s) => s.nombre === value);
+      const generales = Object.fromEntries(
+        Object.entries(reserva.datos_extra).filter(([clave]) => taller.campos.some((c) => c.clave === clave && c.servicio_id === null)),
+      );
+      actualizar({ servicio: nuevoServicio?.nombre ?? "", descripcion: "", datos_extra: generales });
       return;
     }
     actualizar({ [name]: value } as Partial<ReservaEnCurso>);
   }
 
-  // Solo permite números en kilómetros. El campo sigue siendo opcional.
-  function alCambiarKilometros(evento: ChangeEvent<HTMLInputElement>) {
-    actualizar({ kilometros: evento.target.value.replace(/\D/g, "") });
+  function alCambiarExtra(clave: string, valor: string) {
+    actualizar({ datos_extra: { ...reserva.datos_extra, [clave]: valor } });
   }
 
-  const pideKilometros = tallerPideKilometros(reserva.taller_id);
-  const neumaticosConMedidas = esNeumaticosConMedidas(reserva.taller_id, reserva.servicio);
-  const mostrarDescripcion = reserva.servicio === "Avería / luz de aviso" || reserva.servicio === "Otro" || neumaticosConMedidas;
-
   const errores = erroresDeFormato(reserva);
-  const completo = formularioCompleto(reserva, { neumaticosConMedidas });
+  const completo = formularioCompleto(reserva, { servicio, campos });
+  const mostrarDescripcion = servicio !== undefined && servicio.descripcion_modo !== "oculta";
+  const descripcionObligatoria = servicio?.descripcion_modo === "obligatoria";
+  const camposGenerales = campos.filter((c) => c.servicio_id === null);
+  const camposDelServicioElegido = campos.filter((c) => c.servicio_id !== null);
 
   return (
     <div className="container">
@@ -94,13 +99,7 @@ export function DatosForm({ reserva, actualizar, continuar }: Props) {
             </div>
           </div>
 
-          {pideKilometros && (
-            <div className="fila">
-              <div className="campo">
-                <CampoInput label="Kilómetros (opcional)" name="kilometros" type="text" inputMode="numeric" value={reserva.kilometros} onChange={alCambiarKilometros} />
-              </div>
-            </div>
-          )}
+          <CamposExtra campos={camposGenerales} valores={reserva.datos_extra} onCambio={alCambiarExtra} />
 
           <label htmlFor="servicio">Servicio</label>
 
@@ -108,37 +107,20 @@ export function DatosForm({ reserva, actualizar, continuar }: Props) {
             <option value="" disabled>
               Selecciona un servicio
             </option>
-            <option value="Revisión / mantenimiento">Revisión / mantenimiento</option>
-            <option value="Cambio de aceite y filtros">Cambio de aceite y filtros</option>
-            <option value="Frenos">Frenos</option>
-            <option value="Neumáticos">Neumáticos</option>
-            <option value="ITV">ITV</option>
-            <option value="Avería / luz de aviso">Avería / luz de aviso</option>
-            <option value="Otro">Otro</option>
+            {taller.servicios.map((s) => (
+              <option key={s.id} value={s.nombre}>
+                {s.nombre}
+              </option>
+            ))}
           </select>
 
-          {neumaticosConMedidas && (
-            <div className="descripcion-servicio">
-              <label htmlFor="cantidad_neumaticos">¿Cuántos neumáticos quieres cambiar?</label>
+          <CamposExtra campos={camposDelServicioElegido} valores={reserva.datos_extra} onCambio={alCambiarExtra} />
 
-              <select id="cantidad_neumaticos" name="cantidad_neumaticos" value={reserva.cantidad_neumaticos} onChange={alCambiar}>
-                <option value="" disabled>
-                  Selecciona cantidad
-                </option>
-                <option value="1">1 neumático</option>
-                <option value="2">2 neumáticos</option>
-                <option value="3">3 neumáticos</option>
-                <option value="4">4 neumáticos</option>
-              </select>
-            </div>
-          )}
-
-          {mostrarDescripcion && (
+          {mostrarDescripcion && servicio && (
             <div className="descripcion-servicio">
               <label htmlFor="descripcion">
-                {neumaticosConMedidas ? "Medidas / observaciones" : reserva.servicio === "Otro" ? "Cuéntanos qué necesitas" : "Cuéntanos qué ocurre"}
-
-                {neumaticosConMedidas ? (
+                {servicio.descripcion_etiqueta ?? "Cuéntanos qué necesitas"}
+                {descripcionObligatoria ? (
                   <span className="texto-obligatorio">* Obligatorio</span>
                 ) : (
                   <span className="texto-opcional"> (opcional)</span>
@@ -151,33 +133,20 @@ export function DatosForm({ reserva, actualizar, continuar }: Props) {
                   name="descripcion"
                   value={reserva.descripcion}
                   onChange={alCambiar}
-                  maxLength={neumaticosConMedidas ? undefined : 250}
-                  placeholder={
-                    neumaticosConMedidas
-                      ? "Ej.: 225/45 R17 91Y"
-                      : reserva.servicio === "Otro"
-                        ? "Ej.: Quiero revisar el aire acondicionado..."
-                        : "Ej.: Se ha encendido una luz amarilla en el cuadro..."
-                  }
-                  rows={neumaticosConMedidas ? 1 : 4}
-                  required={neumaticosConMedidas}
+                  maxLength={descripcionObligatoria ? undefined : 250}
+                  placeholder={servicio.descripcion_placeholder ?? ""}
+                  rows={descripcionObligatoria ? 1 : 4}
+                  required={descripcionObligatoria}
                 />
 
-                {!neumaticosConMedidas && <span className="contador-descripcion">{reserva.descripcion.length}/250</span>}
+                {!descripcionObligatoria && <span className="contador-descripcion">{reserva.descripcion.length}/250</span>}
               </div>
 
-              <p className="ayuda-descripcion">
-                {neumaticosConMedidas
-                  ? "ⓘ Indica la medida que aparece en el lateral del neumático."
-                  : "ⓘ Cuanta más información nos des, mejor podremos ayudarte."}
-              </p>
+              {servicio.descripcion_ayuda && <p className="ayuda-descripcion">{servicio.descripcion_ayuda}</p>}
 
-              {neumaticosConMedidas && (
+              {servicio.imagen_ayuda_url && (
                 <div className="guia-imagen">
-                  <img src={guiaNeumatico} alt="Ejemplo de medida de neumático: 205/55 R16 91W, destacada en amarillo en el lateral" />
-                  <p>
-                    Ejemplo: <strong>205/55 R16 91W</strong>
-                  </p>
+                  <img src={servicio.imagen_ayuda_url} alt={`Ayuda para ${servicio.nombre}`} />
                 </div>
               )}
             </div>

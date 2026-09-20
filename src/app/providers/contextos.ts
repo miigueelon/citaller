@@ -1,9 +1,9 @@
 import { createContext } from "react";
 import type { User } from "@supabase/supabase-js";
-import type { Taller } from "@/features/taller/api";
+import type { TallerConfig } from "@/features/taller/api";
 import type { ClienteSupabase } from "@/lib/supabase/client";
 
-export const TallerContext = createContext<Taller | null>(null);
+export const TallerContext = createContext<TallerConfig | null>(null);
 
 export interface Sesion {
   /** Cliente de Supabase con la sesión de este taller. */

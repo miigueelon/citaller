@@ -10,12 +10,24 @@ export interface ReservaPanel {
   vehiculo: string | null;
   servicio: string | null;
   descripcion: string | null;
-  kilometros: number | null;
+  /** Valores de los campos extra del taller, por clave. */
+  datos_extra: Record<string, string | number>;
   estado: EstadoReserva;
   /** "YYYY-MM-DD" */
   dia: string;
   /** "HH:MM:SS" */
   hora: string;
+  creada_por: "cliente" | "taller";
+  cancelada_por: "cliente" | "taller" | null;
+  cancelada_en: string | null;
+  confirmada_en: string | null;
+  /** Enlace de la cita para el cliente: /<slug>/cita/<token>. */
+  token_publico: string;
+  whatsapp_confirmacion_enviada: boolean;
+  whatsapp_cancelacion_enviada: boolean;
+  whatsapp_error: string | null;
+  google_event_id: string | null;
+  google_error: string | null;
 }
 
 export type FiltroEstado = EstadoReserva;

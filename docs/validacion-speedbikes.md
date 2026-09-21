@@ -30,10 +30,9 @@ que se sepa quién apuntó cada cita, se cargan los nombres después (`docs/oper
       funcionando, pero enséñales siempre `citaller.es`).
 - [ ] **Email y contraseña** del panel de cada taller: que los tengan ellos o llévalos tú. No hay
       botón de "he olvidado mi contraseña"; si nadie la recuerda, avisa antes de ir y se cambia.
-- [ ] Mira en cada panel si quedan **citas confirmadas de prueba** (el 21-sep había: Speedbikes 22, 23
-      y 24-sep; Rik and Roll 22-sep, con evento en su calendario). Si son pruebas, cancélalas desde
-      el panel antes de la visita: ocupan hueco y saldrían en "Hoy: … por terminar". No uses
-      "Vehículo listo" para quitarlas: eso las da por hechas, no libera el hueco.
+- [x] Talleres sin citas de prueba: las 9 del 21-sep se borraron el 22-sep (copia en
+      `backups/2026-09-21_2343`). Los dos paneles empiezan vacíos. Si hicieras más pruebas antes de
+      ir, cancélalas desde el panel: no uses "Vehículo listo", que las da por hechas y no libera el hueco.
 - [ ] Los QR impresos o en el móvil.
 - [ ] Google: la app ya está publicada (no hace falta "usuario de prueba" y el permiso ya no caduca a
       los 7 días). Google enseña "Google no ha verificado esta aplicación": es normal; se pulsa
@@ -111,8 +110,9 @@ tenemos: que aparezca en su Google Calendar como "PENDIENTE", en rojo en el pane
 - [ ] En cada panel, las citas de prueba salen como canceladas (ni en Confirmadas ni en Finalizadas):
       si no, ocupan hueco y cuentan en el histórico.
 - [ ] Rik and Roll: la cita de mostrador apareció en su Google Calendar (= reconexión hecha; el token
-      ya está en Vault). Borrar a mano los 3 eventos huérfanos antiguos (22-sep 8:30, 23-sep 10:30,
-      19-oct 9:30) y poner el enlace de reserva en su Google Business (plan 4.3).
+      ya está en Vault). Borrar a mano los 4 eventos huérfanos de su calendario (22-sep 8:30 y
+      12:30, 23-sep 10:30, 19-oct 9:30: sus citas ya no existen) y poner el enlace de reserva en su
+      Google Business (plan 4.3).
 - [ ] Pasar las notas literales, sin resumir, a `docs/idea.md` (sección nueva "Validación con
       <taller>, <fecha>"). Con eso se decide el orden de la fase 5 de `docs/plan.md` y qué mejoras
       (M1–M10) se hacen.

@@ -57,6 +57,19 @@ El cliente reserva hasta 90 días vista, así que **cada septiembre** hay que ca
 - Trabajo en ramas; cada push genera un preview en Vercel (protegido, solo visible con sesión de Vercel).
 - `main` despliega a producción automáticamente. Solo se mezcla a `main` una fase verificada (Playwright + checklist) y aprobada.
 - Rollback: Vercel → Deployments → Promote de un deploy anterior; en BD, restaurar desde `backups/`.
+- Playwright contra un preview: `export E2E_BYPASS_SECRET=...` (el valor de `.env.local`) y `E2E_BASE_URL=https://citaller-xxxx-miigueelon.vercel.app npx playwright test`. Sin la variable exportada fallan todas (la protección de Vercel devuelve su página de acceso).
+
+## Volver a una versión guardada (rescate)
+Cada versión buena queda como **etiqueta de git** (en GitHub también) y con su **backup de la BD** en `backups/` (solo en el equipo de Miguel, no en el repo: tiene datos personales).
+
+| Etiqueta | Qué es | Backup de la BD |
+|---|---|---|
+| `v1` | Primera producción (21-sep-2026, mañana) | `backups/2026-09-21_1231` |
+| `v1.1` | Tope diario, festivos 2027, "¿Quién la apunta?", cabecera "Hoy: … · … por responder" e historial de confirmadas (21-sep-2026, tarde). Candidata a producción | `backups/2026-09-21_1736` |
+
+- Ver el código de una versión: `git checkout v1.1` (y `git checkout reestructuracion` para volver).
+- Volver a publicar una versión: en Vercel → Deployments, **Promote** del deploy de esa etiqueta; o `git checkout -b rescate v1.1` y mezclarla a `main` con aprobación.
+- La BD no vuelve atrás sola al cambiar de código: las migraciones son compatibles hacia atrás, así que una web anterior funciona con la BD actual. Solo si hiciera falta recuperar datos, se restaura el backup correspondiente.
 
 ## Secretos y Vault
 - Secretos de Edge Functions (`npx supabase secrets list` / `set`): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `CITALLER_APP_URL`, `CITALLER_CRON_SECRET`, y `WHATSAPP_TOKEN_TALLER_<id>` cuando un taller pase a `whatsapp_modo='api'`. Opcionales: `WHATSAPP_PLANTILLA_CONFIRMACION`, `WHATSAPP_PLANTILLA_CANCELACION`, `WHATSAPP_PLANTILLA_RECORDATORIO` (nombres de las plantillas aprobadas en Meta si no son los por defecto), `WHATSAPP_CONFIRMACION_CON_ENLACE=true` cuando la plantilla de confirmación lleve el botón de URL al enlace de la cita, `META_GRAPH_VERSION`.

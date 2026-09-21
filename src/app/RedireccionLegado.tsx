@@ -3,11 +3,13 @@ import { useNavigate, useSearchParams } from "react-router";
 import { cargarTallerPorId } from "@/features/taller/api";
 import { NoEncontrado } from "./NoEncontrado";
 import { PantallaCargando } from "@/components/PantallaCargando";
+import { InicioPage } from "@/features/sitio/InicioPage";
 
 /**
  * Las URLs antiguas (`/?taller=2`, `/?taller=2&modo=taller`) siguen funcionando: se traducen a
  * `/<slug>` y `/<slug>/panel` conservando el resto de parámetros (por ejemplo `calendar=connected`,
- * con el que vuelve Google). Sin `?taller=` no hay taller que mostrar: cada taller tiene su enlace.
+ * con el que vuelve Google). Sin `?taller=` se muestra la página principal de CiTaller: cada taller
+ * tiene su enlace y los clientes nunca llegan por la raíz.
  */
 export function RedireccionLegado() {
   const [params] = useSearchParams();
@@ -15,7 +17,7 @@ export function RedireccionLegado() {
   const [noExiste, setNoExiste] = useState(false);
 
   const tallerId = Number(params.get("taller"));
-  const sinTaller = !Number.isInteger(tallerId) || tallerId <= 0;
+  const sinTaller = !params.has("taller") || !Number.isInteger(tallerId) || tallerId <= 0;
 
   useEffect(() => {
     if (sinTaller) return;
@@ -45,7 +47,7 @@ export function RedireccionLegado() {
     };
   }, [params, navigate, tallerId, sinTaller]);
 
-  if (sinTaller) return <NoEncontrado mensaje="Cada taller tiene su propio enlace de reserva. Usa el que te haya dado el tuyo." />;
+  if (sinTaller) return <InicioPage />;
   if (noExiste) return <NoEncontrado mensaje="No encontramos ningún taller con esa dirección." />;
   return <PantallaCargando />;
 }

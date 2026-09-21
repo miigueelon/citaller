@@ -82,3 +82,8 @@ Después, con la app en local (`npm run dev`, `http://localhost:5173/?taller=2&m
 - [ ] Preview de Vercel construye sin errores y carga con las variables de entorno.
 - [ ] `?taller=2&modo=taller` redirige a `/rikandroll/panel`.
 - [ ] `/rikandroll/cita/<token>` de una reserva real abre la cita.
+
+## K. Sitio (página principal y privacidad)
+- [ ] `/` sin parámetros abre la página principal de CiTaller (no la de "taller no encontrado") y el botón "Escríbenos" abre el correo de contacto.
+- [ ] `/privacidad` abre la política, con los apartados "Google Calendar" y "Tus derechos", y vuelve a `/` desde el pie.
+- [ ] En la página de reserva de un taller, la firma "Reservas gestionadas con CiTaller · Privacidad" enlaza a `/privacidad`.

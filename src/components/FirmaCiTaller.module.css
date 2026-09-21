@@ -14,3 +14,13 @@
 .firma strong span {
   color: var(--color-primario);
 }
+
+.firma a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.firma a:hover {
+  color: var(--color-primario-oscuro);
+}

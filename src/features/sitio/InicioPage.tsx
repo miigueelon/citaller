@@ -5,7 +5,7 @@ import estilos from "./sitio.module.css";
 
 const VENTAJAS = [
   "Servicios, horarios y capacidad a tu medida: por horas o por citas al día.",
-  "Pide lo que necesites saber antes de que llegue el vehículo: kilómetros, medida del neumático, lo que sea.",
+  "Pide lo que necesites saber antes de que llegue el vehículo: kilómetros, medida del neumático…",
   "Confirmación y recordatorio del día antes por WhatsApp, con el enlace de la cita.",
   "Apunta también las citas de mostrador y del teléfono: todo en la misma agenda.",
   "Sin instalar nada: funciona en el móvil y en el ordenador del taller.",

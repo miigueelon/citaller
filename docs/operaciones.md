@@ -70,7 +70,7 @@ Cada versión buena queda como **etiqueta de git** (en GitHub también) y con su
 | `v1.1` | Tope diario, festivos 2027, "¿Quién la apunta?", cabecera "Hoy: … · … por responder" e historial de confirmadas (21-sep-2026, tarde) | `backups/2026-09-21_1736` |
 | `v1.2` | Lo de `v1.1` más "Vehículo listo: avisar por WhatsApp" y teléfono sin el 34 (21-sep-2026, noche). **En producción desde el 21-sep-2026** | `backups/2026-09-21_1736` (la migración de `v1.2` solo añade una columna de texto) |
 | `v1.3` | Lo de `v1.2` más "Vehículo listo" termina la cita (cabecera "Hoy: N por terminar", marca "✓ Lista" con Deshacer) y los avisos de WhatsApp quedan apuntados en la tarjeta (22-sep-2026, madrugada). **En producción desde el 22-sep-2026** | `backups/2026-09-21_2240` (las dos migraciones de `v1.3` solo añaden una columna y dos funciones) |
-| `v1.4` | Lo de `v1.3` más la pestaña **Finalizadas** (registro histórico con el total), limpieza del repo y robustez (cabeceras, carga por partes, 90 días, cierre de sesión local, páginas de 1000, backup sin tokens). Sin cambios en la BD. Pendiente de publicar | `backups/2026-09-21_2240` (misma BD) |
+| `v1.4` | Lo de `v1.3` más la pestaña **Finalizadas** (registro histórico con el total), limpieza del repo y robustez (cabeceras, carga por partes, 90 días, cierre de sesión local, páginas de 1000, backup sin tokens). Sin cambios en la BD. **En producción desde el 22-sep-2026** | `backups/2026-09-21_2240` (misma BD) |
 
 - Ver el código de una versión: `git checkout v1.1` (y `git checkout reestructuracion` para volver).
 - Volver a publicar una versión: en Vercel → Deployments, **Promote** del deploy de esa etiqueta; o `git checkout -b rescate v1.1` y mezclarla a `main` con aprobación.

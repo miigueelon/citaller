@@ -233,7 +233,7 @@ Miguel ya tiene comprado **`citaller.es`** (21-sep). Mientras la app de Google s
 
 Plan detallado en `docs/planes/2026-09-21-tope-diario-miembros-cabecera.md`. Backup en `backups/2026-09-21_1651`; migraciones `20260921180000_tope_citas_dia` y `20260921180100_miembros_taller`, revisadas por un agente independiente antes del `db push` (de ahí CT018 propio para el tope diario, `on delete restrict` y nombres sin espacios sobrantes). Verificado: `rls-test.sql` 65/65, `probar-cadena` todo OK, Playwright 17/17 en local y en el preview. **Punto de rescate**: etiqueta `v1.1` + backup `backups/2026-09-21_1736` (ver `docs/operaciones.md`, "Volver a una versión guardada").
 
-- [ ] **Producción** (espera el OK de Miguel): merge a `main`, `max_citas_dia = 5` en Rik and Roll y Playwright contra `citaller.es`.
+- [x] *(Hecho el 21-sep-2026, noche: Miguel dijo "publica". `main` = `22858c6` (= `v1.2`), Vercel en producción, `max_citas_dia = 5` en Rik and Roll, Playwright **17/17 contra `citaller.es`**.)* **Producción**: merge a `main`, `max_citas_dia = 5` en Rik and Roll y Playwright contra `citaller.es`.
 
 - [x] **Tope diario** además del modo de capacidad: `talleres.max_citas_dia` (null = sin tope), en la vista pública y en el trigger `comprobar_capacidad` dentro del mismo bloqueo por taller y día (CT018, "elige otro día"). Las citas a mano cuentan pero no se bloquean. Frontend: `motivoCompleta` en `disponibilidad.ts`. Rik and Roll: 2 por hora y **5 al día** (seed); e2e: 7 para probarlo.
 - [x] **Festivos de 2027** (los 12 de Cataluña) en Speedbikes y Rik and Roll, en sus seeds y en la BD.

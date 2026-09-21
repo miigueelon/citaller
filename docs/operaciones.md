@@ -67,7 +67,8 @@ Cada versión buena queda como **etiqueta de git** (en GitHub también) y con su
 | Etiqueta | Qué es | Backup de la BD |
 |---|---|---|
 | `v1` | Primera producción (21-sep-2026, mañana) | `backups/2026-09-21_1231` |
-| `v1.1` | Tope diario, festivos 2027, "¿Quién la apunta?", cabecera "Hoy: … · … por responder" e historial de confirmadas (21-sep-2026, tarde). Candidata a producción | `backups/2026-09-21_1736` |
+| `v1.1` | Tope diario, festivos 2027, "¿Quién la apunta?", cabecera "Hoy: … · … por responder" e historial de confirmadas (21-sep-2026, tarde) | `backups/2026-09-21_1736` |
+| `v1.2` | Lo de `v1.1` más "Vehículo listo: avisar por WhatsApp" y teléfono sin el 34 (21-sep-2026, noche). **Candidata a producción** | `backups/2026-09-21_1736` (la migración de `v1.2` solo añade una columna de texto) |
 
 - Ver el código de una versión: `git checkout v1.1` (y `git checkout reestructuracion` para volver).
 - Volver a publicar una versión: en Vercel → Deployments, **Promote** del deploy de esa etiqueta; o `git checkout -b rescate v1.1` y mezclarla a `main` con aprobación.

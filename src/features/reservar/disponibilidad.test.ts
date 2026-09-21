@@ -33,6 +33,12 @@ describe("días", () => {
     expect(diaSeleccionable(horarios, festivos, "2026-09-26")).toBe(false);
     expect(festivoDelDia(festivos, "2026-09-24")?.nombre).toBe("Fiesta local");
   });
+
+  it("un sábado se puede elegir si el taller tiene horas del sábado (manda horarios_taller)", () => {
+    const conSabado = [...horarios, { dia_semana: 6, hora: "10:00:00", aviso_tarde: false }];
+    expect(diaSeleccionable(conSabado, festivos, "2026-09-26")).toBe(true);
+    expect(diaSeleccionable(conSabado, festivos, "2026-09-27")).toBe(false); // domingo sin horas
+  });
 });
 
 describe("ocupación", () => {

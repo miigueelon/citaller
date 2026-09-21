@@ -247,12 +247,6 @@
   border-radius: 8px;
 }
 
-.guia-imagen p {
-  margin: 8px 0 0;
-  text-align: center;
-  font-size: 13px;
-}
-
 /* Volver */
 .volver-card {
   display: flex;
@@ -518,19 +512,6 @@
   .fila {
     flex-direction: column;
     gap: 14px;
-  }
-
-  .logo {
-    width: 190px;
-  }
-
-  .trust-bar {
-    gap: 8px;
-  }
-
-  .trust-item {
-    font-size: 13px;
-    padding: 8px 14px;
   }
 
   .react-calendar {

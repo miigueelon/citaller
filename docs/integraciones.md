@@ -44,7 +44,7 @@ Antes de la fase 1 las funciones tenían nombres puestos por el dashboard (`dyna
   - `confirmacion_cita` (cuerpo con 7 parámetros: nombre, taller, día largo, hora, vehículo, servicio, matrícula). Versión con **botón de URL** al enlace de la cita: base `https://citaller.es/` y sufijo dinámico `<slug>/cita/<token>`; activar con `WHATSAPP_CONFIRMACION_CON_ENLACE=true`.
   - `cancelacion_cita` (5: nombre, taller, día largo, hora, servicio).
   - `recordatorio_cita` (5: nombre, taller, hora, vehículo, servicio).
-- Datos por taller: `talleres.whatsapp_phone_number_id`, `talleres.whatsapp_business_account_id` (`whatsapp_activo` queda obsoleta: manda `whatsapp_modo`; se borra en la migración de despliegue).
+- Datos por taller: `talleres.whatsapp_phone_number_id`, `talleres.whatsapp_business_account_id` (la antigua `whatsapp_activo` se borró en la fase 4: manda `whatsapp_modo`).
 - Teléfonos: la base de datos los normaliza (trigger `reservas_normalizar_telefono`: solo dígitos, 9 cifras → prefijo `34`) y la RPC pública exige un móvil español (`34[6-9]…`). Las Edge Functions ya no normalizan.
 - Errores de envío: quedan en `reservas.whatsapp_error` y el panel los enseña; reintentar es volver a pulsar Confirmar/Cancelar.
 - Estado: ningún taller está en modo `api` todavía; el primer envío real será la cita de prueba de Rik and Roll cuando tenga la cuenta de Meta (fase 4.3).

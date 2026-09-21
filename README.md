@@ -15,7 +15,7 @@ npm install
 cp .env.example .env.local   # rellenar con la URL y la clave publicable de Supabase
 npm run dev
 ```
-Cliente: `http://localhost:5173/?taller=1` · Panel: `http://localhost:5173/?taller=1&modo=taller` (tras la fase 2: `/speedbikes` y `/speedbikes/panel`).
+Cliente: `http://localhost:5173/speedbikes` · Panel: `http://localhost:5173/speedbikes/panel` (las URLs antiguas `?taller=1` y `?taller=1&modo=taller` siguen redirigiendo).
 
 ## Stack
 React 19 · Vite 8 · Supabase (Postgres, Auth, Edge Functions, pg_cron) · Vercel.

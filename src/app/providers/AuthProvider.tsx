@@ -52,7 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         // Comprobación de pertenencia: el usuario tiene que ser el del taller de la URL.
-        // (En la fase 5 pasa a la tabla `miembros_taller`; este es el único sitio que cambia.)
+        // (`miembros_taller` solo dice quién apunta cada cita; si algún día hay varios usuarios por
+        // taller, este es el único sitio que cambia.)
         const { data: tallerUsuario, error: errorTaller } = await cliente
           .from("talleres")
           .select("id")

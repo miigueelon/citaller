@@ -48,3 +48,6 @@ tests/e2e/.auth/
 
 # Generado por `tsc -b`
 *.tsbuildinfo
+
+# Lo genera la extensión Deno de VS Code al abrir supabase/functions
+deno.lock

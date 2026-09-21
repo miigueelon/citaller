@@ -172,8 +172,9 @@ enable_refresh_token_rotation = true
 # Requires enable_refresh_token_rotation = true.
 refresh_token_reuse_interval = 10
 # Allow/disallow new user signups to your project.
-# CiTaller: sin registro público (los usuarios de taller se crean por invitación). Objetivo de la fase 1.4:
-# hasta entonces NO ejecutar `supabase config push` (empuja toda la sección [auth]; revisar site_url antes).
+# CiTaller: sin registro público (los usuarios de taller se crean a mano en el dashboard).
+# `supabase config push` empuja toda la sección [auth]: revisarla antes. Aplicada el 20-sep-2026 con
+# site_url = citaller.vercel.app; el fichero ya dice citaller.es (pendiente de push; no afecta al panel).
 enable_signup = false
 # Allow/disallow anonymous sign-ins to your project.
 enable_anonymous_sign_ins = false

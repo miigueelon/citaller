@@ -1,16 +1,16 @@
 # Arquitectura
 
 ## Piezas
-- **Frontend**: React 19 + Vite, desplegado en Vercel (`citaller.vercel.app`). SPA con rutas `/<slug>` (reservar) y `/<slug>/panel` (taller). Hoy todavía con `?taller=N&modo=taller` (se migra en la fase 2).
+- **Frontend**: React 19 + Vite, desplegado en Vercel (`citaller.es`; `citaller.vercel.app` sigue apuntando ahí). SPA con rutas `/<slug>` (reservar), `/<slug>/panel` (taller) y `/<slug>/cita/<token>` (el cliente ve o cancela su cita); las URLs antiguas `?taller=N` redirigen.
 - **Backend**: Supabase (proyecto `zrrqqqbgwwovmglhqxwn`, eu-west-3). Postgres con RLS y grants por columna, Auth (email + contraseña para talleres), Edge Functions (Deno) para integraciones, pg_cron para recordatorios, Vault para secretos.
 - **Integraciones**: Google Calendar (OAuth por taller), WhatsApp Cloud API de Meta (plantillas). Ver `integraciones.md`.
 
 ## Flujos (cadena completa)
 1. **Reservar**: navegador → vista pública `talleres_publicos`, `horarios_taller`, `festivos_taller` y RPC `ocupacion_dia` (solo recuentos por hora, ningún dato personal) → RPC `crear_reserva_publica` (SECURITY DEFINER) → fila en `reservas` con `estado='Pendiente'`.
 2. **Panel**: navegador → Supabase Auth → `reservas` del taller (política por pertenencia) → `update estado` (solo esa columna).
-3. **Confirmar**: panel → Edge `enviar-whatsapp-confirmacion` (Meta) y Edge `crear-evento-google` (Google Calendar). En la fase 3 pasa a una única Edge `confirmar-reserva` que hace todo en servidor y lo registra en `eventos_reserva`.
-4. **Cancelar**: panel → Edge `cancelar-evento-google` → `update estado`. En la fase 3, `cancelar-reserva`.
-5. **Conectar Calendar**: panel → Edge `conectar-google-calendar` (devuelve `auth_url`) → Google → Edge `google-calendar-callback` (guarda el refresh token) → vuelta al panel.
+2. **Panel**: navegador → Supabase Auth → `reservas` del taller (política por pertenencia; por REST solo lectura). Los cambios de estado pasan por Edge Functions; las marcas del panel ("Vehículo listo", avisos de WhatsApp) por las RPC `marcar_vehiculo_listo` y `marcar_aviso_whatsapp`.
+3. **Confirmar**: panel → Edge `confirmar-reserva` (una sola llamada: estado + WhatsApp según el modo del taller + evento en Google Calendar; idempotente).
+4. **Cancelar**: panel → Edge `cancelar-reserva` (estado + WhatsApp + borrado del evento a mejor esfuerzo). El cliente, desde su enlace → Edge `cancelar-cita-cliente` (regla de 24 h).
 6. **Recordatorios**: pg_cron 08:00 → Edge `enviar-whatsapp-recordatorios` → Meta.
 
 ## Modelo de datos (actual y objetivo)

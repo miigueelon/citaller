@@ -1,8 +1,8 @@
 // Genera el código QR de reserva de cada taller (para el mostrador y el material impreso):
 //   clientes/<slug>/assets/qr-reserva.svg y qr-reserva.png  →  <CITALLER_APP_URL>/<slug>
 // Uso: node scripts/qr.mjs [slug ...]   (sin argumentos: todos los talleres de clientes/ salvo _plantilla y e2e)
-// La URL base sale de CITALLER_APP_URL (por defecto https://citaller.vercel.app). Con dominio propio,
-// basta con volver a ejecutarlo; los QR impresos antes siguen valiendo mientras la URL vieja redirija.
+// La URL base sale de CITALLER_APP_URL (por defecto https://citaller.es). Los QR de clientes/ ya codifican
+// citaller.es; si cambiara el dominio, volver a ejecutarlo (los impresos valen mientras la URL vieja redirija).
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import QRCode from "qrcode";
@@ -10,7 +10,7 @@ import QRCode from "qrcode";
 const raiz = new URL("..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 const carpetaClientes = join(raiz, "clientes");
 
-export const URL_BASE = (process.env.CITALLER_APP_URL ?? "https://citaller.vercel.app").replace(/\/+$/, "");
+export const URL_BASE = (process.env.CITALLER_APP_URL ?? "https://citaller.es").replace(/\/+$/, "");
 
 export function urlReserva(slug) {
   return `${URL_BASE}/${slug}`;

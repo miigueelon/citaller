@@ -12,7 +12,7 @@ import { readFileSync } from "node:fs";
 
 const URL_BASE = "https://zrrqqqbgwwovmglhqxwn.supabase.co";
 const env = Object.fromEntries(
-  readFileSync("C:/Users/Miguel/citaller/.env.local", "utf8")
+  readFileSync(new URL("../.env.local", import.meta.url), "utf8")
     .split(/\r?\n/)
     .filter((l) => l.includes("=") && !l.trim().startsWith("#"))
     .map((l) => [l.slice(0, l.indexOf("=")).trim(), l.slice(l.indexOf("=") + 1).trim()])
@@ -204,8 +204,8 @@ const internas = await pedir("/rest/v1/integraciones_calendario?select=id", { to
 comprobar("B. No puede leer las integraciones de calendario", internas.status === 401 || internas.status === 403, `HTTP ${internas.status}`);
 
 const ajena = await pedir("/rest/v1/reservas?taller_id=eq.2&estado=eq.Confirmada&limit=1", { token: TOKEN, metodo: "PATCH", cuerpo: { estado: "Cancelada" }, cabeceras: { Prefer: "return=representation" } });
-// Antes de la fase 4: 200 con 0 filas (la política no deja ver las ajenas). Después: 401/403 (sin UPDATE por REST).
-comprobar("B. No puede cambiar reservas de otro taller por REST", (ajena.status === 200 && ajena.datos?.length === 0) || ajena.status === 401 || ajena.status === 403, `HTTP ${ajena.status}, ${Array.isArray(ajena.datos) ? ajena.datos.length : "?"} filas`);
+// Desde la fase 4 nadie escribe en reservas por REST: 401/403.
+comprobar("B. No puede cambiar reservas de otro taller por REST", ajena.status === 401 || ajena.status === 403, `HTTP ${ajena.status}`);
 
 // C. Confirmar por la Edge Function (una sola llamada: estado + WhatsApp según modo + Calendar)
 const confirmar = await pedir("/functions/v1/confirmar-reserva", { token: TOKEN, metodo: "POST", cuerpo: { reserva_id: reserva.reserva_id } });

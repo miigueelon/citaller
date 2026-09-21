@@ -7,11 +7,11 @@ Plataforma SaaS para que talleres de vehículos (coches, motos) reciban reservas
 Los talleres pequeños gestionan citas por teléfono y a mano: llamadas perdidas, agendas en papel o en la cabeza del jefe de taller, clientes que no saben si pueden llevar el vehículo hoy. El taller pierde tiempo y reservas; el cliente pierde paciencia.
 
 ## Para quién
-- **Cliente final**: el conductor. No tiene cuenta. Reserva en menos de un minuto desde un enlace del taller (`citaller.vercel.app/<slug>`) y se le reconoce por su número de teléfono.
+- **Cliente final**: el conductor. No tiene cuenta. Reserva en menos de un minuto desde un enlace del taller (`citaller.es/<slug>`) y se le reconoce por su número de teléfono.
 - **Taller**: uno o varios empleados con acceso al panel del taller (`/<slug>/panel`). Confirman o cancelan citas, ven el día, buscan por matrícula o nombre, consultan el historial.
 - **Plataforma (Miguel)**: da de alta talleres, configura servicios, horarios, festivos e integraciones.
 
-## Cómo funciona (flujos; los marcados con ➜ se construyen en el plan v3, fase 3)
+## Cómo funciona (flujos; ➜ = construido en septiembre de 2026, fases 3 y 4)
 1. **Reservar**: el cliente llega por el enlace del taller (botón "Reservar" de Google Business Profile o QR del mostrador ➜), rellena datos del vehículo y del cliente → servicio, con campos propios del servicio (en neumáticos, la medida obligatoria con imagen de ayuda; en motos, los kilómetros) → fecha y hora según horarios, festivos, capacidad por franja (elevadores o mecánicos disponibles) y huecos ya ocupados → resumen → solicitud creada en estado *Pendiente* → pantalla final con el **enlace de su cita** ➜.
 2. **Gestionar**: el taller entra con email y contraseña, ve las citas agrupadas por día, filtra (pendientes / confirmadas / canceladas; hoy / mañana / 7 días), busca, confirma o cancela, y **apunta a mano** las citas de quien viene en persona (nacen confirmadas, teléfono opcional) ➜.
 3. **Automatizar**: al confirmar, el cliente recibe un WhatsApp con los datos y la cita se crea en el Google Calendar del taller; al cancelar (una confirmada o una pendiente), el cliente recibe un WhatsApp de aviso ➜ y el evento se borra; cada mañana se envían recordatorios de las citas del día siguiente. Cada taller elige su **modo de WhatsApp** ➜: `api` (Meta, automático), `enlace` (el panel abre WhatsApp con el mensaje escrito y el taller lo envía desde su móvil) o `ninguno`.
@@ -35,7 +35,7 @@ Cuota mensual por taller. Servicios opcionales: WhatsApp (coste por mensaje de M
 1. Reestructuración técnica y seguridad (plan actual, fases 0-4).
 2. **Recordatorios automáticos por WhatsApp** (existe, hay que arreglarlo) y aviso al taller de nuevas reservas.
 3. **El cliente puede cancelar o cambiar su cita** desde un enlace en el WhatsApp de confirmación.
-4. **Ficha de cliente e historial por matrícula** (los datos ya se preparan en la fase 4).
+4. **Ficha de cliente e historial por matrícula** (los datos ya están: `datos_extra`, `servicio_id` y matrícula normalizada).
 5. **Panel de administración de la plataforma**: alta de talleres, servicios, horarios y festivos con interfaz.
 6. **Facturación** a partir de los datos de cliente, vehículo y servicio.
 7. Integración con Outlook/Microsoft 365 (Speedbikes), anti-abuso (Turnstile), entorno de staging, Supabase Storage para assets de clientes.

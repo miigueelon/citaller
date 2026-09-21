@@ -15,7 +15,7 @@ export async function usuarioDeLaPeticion(
 
 /**
  * ¿Puede este usuario gestionar este taller? Hoy: es el `user_id` del taller.
- * En la fase 4 pasa a comprobar `miembros_taller`; es el único sitio que hay que cambiar.
+ * (`miembros_taller` solo dice quién apunta cada cita; si algún día hay varios usuarios por taller, este es el único sitio que cambia.)
  */
 export async function puedeGestionarTaller(
   admin: SupabaseClient,

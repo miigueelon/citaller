@@ -1,5 +1,5 @@
 // Lógica pura de disponibilidad de la pantalla de fecha y hora. Sin React ni red: se prueba sola.
-import { diaSemana, esFinDeSemana, esHoraPasada, horaCorta, type Dia, type Hora } from "@/lib/fechas";
+import { diaSemana, esHoraPasada, horaCorta, type Dia, type Hora } from "@/lib/fechas";
 
 export interface Horario {
   /** 0 = domingo … 6 = sábado (como `Date.getDay()`). */
@@ -55,11 +55,12 @@ export function tallerAbre(horarios: Horario[], dia: Dia): boolean {
 }
 
 /**
- * ¿Se puede elegir ese día en el calendario? Ni fin de semana, ni festivo, y con horario.
- * (El bloqueo del fin de semana es una regla heredada; en la fase 3 manda solo `horarios_taller`.)
+ * ¿Se puede elegir ese día en el calendario? Ni festivo, y con horario ese día de la semana.
+ * El mismo criterio que `validar_datos_reserva` en la base de datos: manda `horarios_taller` (un
+ * taller que abra los sábados solo tiene que tener horas del sábado).
  */
 export function diaSeleccionable(horarios: Horario[], festivos: Festivo[], dia: Dia): boolean {
-  return !esFinDeSemana(dia) && !festivoDelDia(festivos, dia) && tallerAbre(horarios, dia);
+  return !festivoDelDia(festivos, dia) && tallerAbre(horarios, dia);
 }
 
 /**

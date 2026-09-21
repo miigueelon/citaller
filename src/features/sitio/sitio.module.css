@@ -88,7 +88,7 @@
   color: var(--color-primario);
 }
 
-.paso h2 {
+.paso h3 {
   margin: 0 0 6px;
   font-size: 17px;
   font-weight: 700;
@@ -188,15 +188,13 @@
   color: var(--color-texto-apagado);
 }
 
-.pie a,
-.enlace {
+.pie a {
   color: var(--color-texto-suave);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
-.pie a:hover,
-.enlace:hover {
+.pie a:hover {
   color: var(--color-primario-oscuro);
 }
 

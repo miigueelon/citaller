@@ -10,7 +10,7 @@ const PREVIEWS_VERCEL = [
 
 /** URL base de la app en producción (secreto CITALLER_APP_URL), sin barra final. */
 export function urlApp(): string {
-  return (Deno.env.get("CITALLER_APP_URL") || "https://citaller.vercel.app").replace(/\/+$/, "");
+  return (Deno.env.get("CITALLER_APP_URL") || "https://citaller.es").replace(/\/+$/, "");
 }
 
 export function origenPermitido(origen: string): boolean {

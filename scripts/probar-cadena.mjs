@@ -93,16 +93,16 @@ comprobar("B. Login del taller de pruebas", login.status === 200 && !!login.dato
 const TOKEN = login.datos?.access_token;
 if (!TOKEN) process.exit(1);
 
-/** Cancela por REST con la sesión del taller (respaldo si la Edge Function no está desplegada). */
-async function cancelarPorRest(id) {
-  const r = await pedir(`/rest/v1/reservas?id=eq.${id}&taller_id=eq.${TALLER_E2E}`, { token: TOKEN, metodo: "PATCH", cuerpo: { estado: "Cancelada" }, cabeceras: { Prefer: "return=representation" } });
-  return r.status === 200 && r.datos?.length === 1;
+/** Cancela como el panel: por la Edge Function. Desde la fase 4 nadie escribe en reservas por REST. */
+async function cancelarComoTaller(id) {
+  const r = await pedir("/functions/v1/cancelar-reserva", { token: TOKEN, metodo: "POST", cuerpo: { reserva_id: id } });
+  return r.status === 200;
 }
 
 // Restos de ejecuciones anteriores (si se interrumpió antes de limpiar): se cancelan para que los
 // huecos del taller de pruebas estén libres y el script sea repetible.
 const restos = await pedir(`/rest/v1/reservas?taller_id=eq.${TALLER_E2E}&estado=in.(Pendiente,Confirmada)&or=(telefono.like.346001*,matricula.in.(E2E1234,MOSTR01,MOSTR02,HOY0001))&select=id`, { token: TOKEN });
-for (const fila of restos.datos ?? []) await cancelarPorRest(fila.id);
+for (const fila of restos.datos ?? []) await cancelarComoTaller(fila.id);
 if ((restos.datos ?? []).length > 0) console.log(`(limpieza previa: ${restos.datos.length} reservas de prueba antiguas canceladas)`);
 
 // A. Lecturas públicas que hace la pantalla de reserva
@@ -186,7 +186,8 @@ const internas = await pedir("/rest/v1/integraciones_calendario?select=id", { to
 comprobar("B. No puede leer las integraciones de calendario", internas.status === 401 || internas.status === 403, `HTTP ${internas.status}`);
 
 const ajena = await pedir("/rest/v1/reservas?taller_id=eq.2&estado=eq.Confirmada&limit=1", { token: TOKEN, metodo: "PATCH", cuerpo: { estado: "Cancelada" }, cabeceras: { Prefer: "return=representation" } });
-comprobar("B. No puede cambiar reservas de otro taller", ajena.status === 200 && ajena.datos?.length === 0, `${ajena.datos?.length ?? "?"} filas`);
+// Antes de la fase 4: 200 con 0 filas (la política no deja ver las ajenas). Después: 401/403 (sin UPDATE por REST).
+comprobar("B. No puede cambiar reservas de otro taller por REST", (ajena.status === 200 && ajena.datos?.length === 0) || ajena.status === 401 || ajena.status === 403, `HTTP ${ajena.status}, ${Array.isArray(ajena.datos) ? ajena.datos.length : "?"} filas`);
 
 // C. Confirmar por la Edge Function (una sola llamada: estado + WhatsApp según modo + Calendar)
 const confirmar = await pedir("/functions/v1/confirmar-reserva", { token: TOKEN, metodo: "POST", cuerpo: { reserva_id: reserva.reserva_id } });
@@ -310,9 +311,7 @@ comprobar("F. Los recordatorios exigen el secreto del cron", cronSinSecreto.stat
 // Limpieza: lo creado en el taller e2e se cancela por el panel (siempre) y se borra (con SR_KEY)
 let canceladas = 0;
 for (const id of creadas) {
-  const r = await pedir("/functions/v1/cancelar-reserva", { token: TOKEN, metodo: "POST", cuerpo: { reserva_id: id } });
-  if (r.status === 200) canceladas++;
-  else if (await cancelarPorRest(id)) canceladas++;
+  if (await cancelarComoTaller(id)) canceladas++;
 }
 comprobar(`Limpieza: ${creadas.length} reservas de prueba canceladas`, canceladas === creadas.length, `${canceladas}/${creadas.length}`);
 if (SERVICE) {

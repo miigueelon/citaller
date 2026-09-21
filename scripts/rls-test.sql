@@ -3,10 +3,9 @@
 -- o `npx supabase db query -f scripts/rls-test.sql`).
 -- Cada fila: qué se comprueba, valor actual, valor esperado y si coincide.
 --
--- "esperado" = estado objetivo al cerrar la fase 3. Las dos comprobaciones marcadas como
--- (despliegue) no pueden cumplirse hasta que el frontend nuevo esté en producción: el que hay
--- hoy en producción inserta directamente en `reservas` y lee (dia, hora, estado) de esa tabla.
--- Ver docs/plan.md, "Pendiente del despliegue".
+-- "esperado" = estado objetivo al cerrar la fase 4 (migración `cierre_permisos_publicos`, que se
+-- aplica después de desplegar el frontend nuevo): anon y authenticated no escriben en `reservas`
+-- por REST; solo las RPC y las Edge Functions (service_role) lo hacen.
 
 with comprobaciones (orden, comprobacion, actual, esperado) as (
   values
@@ -32,8 +31,8 @@ with comprobaciones (orden, comprobacion, actual, esperado) as (
     (17, 'authenticated ejecuta leer_token_calendario',   has_function_privilege('authenticated', 'public.leer_token_calendario(bigint,text)', 'EXECUTE'), false),
     (18, 'authenticated ejecuta guardar_token_calendario', has_function_privilege('authenticated', 'public.guardar_token_calendario(bigint,text,text,text)', 'EXECUTE'), false),
     (19, 'service_role ejecuta leer_token_calendario',    has_function_privilege('service_role', 'public.leer_token_calendario(bigint,text)', 'EXECUTE'), true),
-    -- authenticated: solo actualiza estado; el taller lo limita la política RLS
-    (20, 'authenticated actualiza reservas.estado',       has_column_privilege('authenticated', 'public.reservas', 'estado', 'UPDATE'), true),
+    -- authenticated: lee sus reservas, pero solo escribe por las Edge Functions (fase 4)
+    (20, 'authenticated actualiza reservas.estado por REST', has_column_privilege('authenticated', 'public.reservas', 'estado', 'UPDATE'), false),
     (21, 'authenticated actualiza reservas.telefono',     has_column_privilege('authenticated', 'public.reservas', 'telefono', 'UPDATE'), false),
     -- RLS activa en todas las tablas
     (22, 'RLS activa en reservas',   (select relrowsecurity from pg_class where oid = 'public.reservas'::regclass), true),
@@ -46,15 +45,17 @@ with comprobaciones (orden, comprobacion, actual, esperado) as (
     -- search_path fijo en las funciones propias
     (28, 'trigger comprobar_capacidad con search_path fijo', exists (select 1 from pg_proc where oid = 'public.comprobar_capacidad()'::regprocedure and proconfig is not null), true),
     (29, 'ocupacion_dia con search_path fijo', exists (select 1 from pg_proc where oid = 'public.ocupacion_dia(bigint,date)'::regprocedure and proconfig is not null), true),
-    -- política de transición de estado (no se puede reabrir una reserva cancelada)
-    (30, 'la política UPDATE exige estado previo abierto', exists (
+    -- desde la fase 4 nadie escribe en reservas por REST: ni políticas de INSERT/UPDATE para anon o authenticated
+    (30, 'no queda política de INSERT ni UPDATE en reservas para anon/authenticated', exists (
            select 1 from pg_policies
-           where schemaname = 'public' and tablename = 'reservas' and cmd = 'UPDATE'
-             and qual ilike '%estado%'), true),
-    -- pendientes del despliegue del frontend nuevo
-    (31, 'anon no tiene INSERT de tabla en reservas (solo por columnas hasta la fase 4)', has_table_privilege('anon', 'public.reservas', 'INSERT'), false),
-    (32, '(despliegue) anon lee reservas.hora',               has_column_privilege('anon', 'public.reservas', 'hora', 'SELECT'),        false),
-    (33, '(despliegue) authenticated lee talleres.user_id',   has_column_privilege('authenticated', 'public.talleres', 'user_id', 'SELECT'), false),
+           where schemaname = 'public' and tablename = 'reservas' and cmd in ('INSERT', 'UPDATE')
+             and (roles && array['anon', 'authenticated']::name[])), false),
+    (31, 'anon no tiene INSERT en reservas',              has_table_privilege('anon', 'public.reservas', 'INSERT'),                     false),
+    (32, 'anon lee reservas.hora (la ocupación va por la RPC)', has_column_privilege('anon', 'public.reservas', 'hora', 'SELECT'),      false),
+    (33, 'la política SELECT de talleres para authenticated exige user_id = auth.uid()', exists (
+           select 1 from pg_policies
+           where schemaname = 'public' and tablename = 'talleres' and cmd = 'SELECT' and 'authenticated' = any(roles)
+             and qual ilike '%user_id%' and qual ilike '%auth.uid()%'), true),
     -- correcciones de la revisión independiente de la fase 1
     (34, 'el trigger de aforo es SECURITY DEFINER',       (select prosecdef from pg_proc where oid = 'public.comprobar_capacidad()'::regprocedure), true),
     (35, 'la política pública de talleres exige activo',  exists (
@@ -64,10 +65,9 @@ with comprobaciones (orden, comprobacion, actual, esperado) as (
     (36, 'anon lee reservas.token_publico',               has_column_privilege('anon', 'public.reservas', 'token_publico', 'SELECT'),   false),
     (37, 'anon inserta reservas.creada_por',              has_column_privilege('anon', 'public.reservas', 'creada_por', 'INSERT'),      false),
     (38, 'anon inserta reservas.token_publico',           has_column_privilege('anon', 'public.reservas', 'token_publico', 'INSERT'),   false),
-    (39, 'la política INSERT de anon exige creada_por cliente', exists (
+    (39, 'ya no hay política INSERT de anon en reservas (fase 4)', exists (
            select 1 from pg_policies
-           where schemaname = 'public' and tablename = 'reservas' and cmd = 'INSERT' and 'anon' = any(roles)
-             and with_check ilike '%creada_por%'), true),
+           where schemaname = 'public' and tablename = 'reservas' and cmd = 'INSERT' and 'anon' = any(roles)), false),
     (40, 'anon lee servicios_taller',                     has_table_privilege('anon', 'public.servicios_taller', 'SELECT'),             true),
     (41, 'anon escribe servicios_taller',                 has_table_privilege('anon', 'public.servicios_taller', 'INSERT'),             false),
     (42, 'anon lee campos_formulario_taller',             has_table_privilege('anon', 'public.campos_formulario_taller', 'SELECT'),     true),
@@ -80,7 +80,20 @@ with comprobaciones (orden, comprobacion, actual, esperado) as (
     (49, 'consultar_cita_cliente no devuelve el teléfono del cliente', (
            select pg_get_functiondef('public.consultar_cita_cliente(uuid)'::regprocedure) not ilike '%r.telefono%'), true),
     (50, 'RLS activa en servicios_taller', (select relrowsecurity from pg_class where oid = 'public.servicios_taller'::regclass), true),
-    (51, 'RLS activa en campos_formulario_taller', (select relrowsecurity from pg_class where oid = 'public.campos_formulario_taller'::regclass), true)
+    (51, 'RLS activa en campos_formulario_taller', (select relrowsecurity from pg_class where oid = 'public.campos_formulario_taller'::regclass), true),
+    -- fase 4: cierre de permisos públicos
+    (52, 'anon no tiene INSERT por columnas en reservas', exists (
+           select 1 from information_schema.role_column_grants
+           where grantee = 'anon' and table_schema = 'public' and table_name = 'reservas' and privilege_type = 'INSERT'), false),
+    (53, 'authenticated no tiene INSERT en reservas (solo por Edge Functions)', has_table_privilege('authenticated', 'public.reservas', 'INSERT'), false),
+    (54, 'authenticated no tiene UPDATE en reservas (solo por Edge Functions)', has_table_privilege('authenticated', 'public.reservas', 'UPDATE'), false),
+    (55, 'authenticated sigue leyendo sus reservas',      has_table_privilege('authenticated', 'public.reservas', 'SELECT'),            true),
+    (56, 'la vista pública ya no expone capacidad_simultanea', exists (
+           select 1 from information_schema.columns
+           where table_schema = 'public' and table_name = 'talleres_publicos' and column_name = 'capacidad_simultanea'), false),
+    (57, 'talleres ya no tiene whatsapp_activo',          exists (
+           select 1 from information_schema.columns
+           where table_schema = 'public' and table_name = 'talleres' and column_name = 'whatsapp_activo'), false)
 )
 select orden, comprobacion, actual, esperado, (actual = esperado) as ok
 from comprobaciones

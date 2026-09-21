@@ -53,15 +53,18 @@ async function cancelarRestos(): Promise<void> {
     const { access_token: token } = (await sesion.json()) as { access_token?: string };
     if (!token) return;
 
-    const filtro = `taller_id=eq.${TALLER_E2E.id}&estado=in.(Pendiente,Confirmada)&matricula=in.(${MATRICULAS_DE_PRUEBA.join(",")})`;
-    const respuesta = await contexto.patch(`/rest/v1/reservas?${filtro}`, {
-      headers: { Authorization: `Bearer ${token}`, Prefer: "return=representation" },
-      data: { estado: "Cancelada" },
-    });
-    if (respuesta.ok()) {
-      const canceladas = (await respuesta.json()) as unknown[];
-      if (canceladas.length > 0) console.log(`(limpieza previa: ${canceladas.length} citas de prueba canceladas)`);
+    // Se leen por REST (el panel puede leer sus reservas) y se cancelan por la Edge Function, como
+    // hace el panel: desde la fase 4 nadie escribe en `reservas` por REST.
+    const filtro = `taller_id=eq.${TALLER_E2E.id}&estado=in.(Pendiente,Confirmada)&matricula=in.(${MATRICULAS_DE_PRUEBA.join(",")})&select=id`;
+    const activas = await contexto.get(`/rest/v1/reservas?${filtro}`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!activas.ok()) return;
+    const ids = ((await activas.json()) as Array<{ id: number }>).map((fila) => fila.id);
+    let canceladas = 0;
+    for (const id of ids) {
+      const r = await contexto.post("/functions/v1/cancelar-reserva", { headers: { Authorization: `Bearer ${token}` }, data: { reserva_id: id } });
+      if (r.ok()) canceladas++;
     }
+    if (canceladas > 0) console.log(`(limpieza previa: ${canceladas} citas de prueba canceladas)`);
   } finally {
     await contexto.dispose();
   }

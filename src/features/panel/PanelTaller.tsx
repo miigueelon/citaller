@@ -216,12 +216,12 @@ export function PanelTaller() {
         />
 
         {!mostrarHistorial ? (
-          <button type="button" className="boton-principal panel-btn-historial" onClick={() => setMostrarHistorial(true)}>
-            <History size={18} />
+          <button type="button" className="panel-btn-historial" onClick={() => setMostrarHistorial(true)}>
+            <History size={16} />
             Ver historial de reservas
           </button>
         ) : (
-          <button type="button" className="boton-principal panel-btn-historial" onClick={() => setMostrarHistorial(false)}>
+          <button type="button" className="panel-btn-historial" onClick={() => setMostrarHistorial(false)}>
             <ArrowLeft size={18} />
             Volver a reservas
           </button>

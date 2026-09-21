@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { MapPin } from "lucide-react";
 import { Link, useParams } from "react-router";
 import { useTaller } from "@/app/providers/useTaller";
 import { Alerta } from "@/components/Alerta";
+import { FirmaCiTaller } from "@/components/FirmaCiTaller";
 import { Modal } from "@/components/Modal";
 import { PantallaCargando } from "@/components/PantallaCargando";
 import { formatearDiaLargo, horaCorta } from "@/lib/fechas";
@@ -101,31 +103,38 @@ export function CitaClientePage() {
           {esCancelada && cita.cancelada_por === "cliente" ? "Cancelada por ti" : ETIQUETA_ESTADO[cita.estado]}
         </p>
 
+        {(taller.direccion || taller.ciudad) && (
+          <p className="cita-cliente-direccion">
+            <MapPin aria-hidden="true" />
+            {taller.direccion ? taller.direccion : taller.ciudad}
+          </p>
+        )}
+
         {cancelada && <Alerta tipo="ok">Tu cita ha quedado cancelada. Gracias por avisar.</Alerta>}
 
         <div className="resumen-reserva">
           <div className="resumen-item">
-            <span>📅 Fecha</span>
+            <span>Fecha</span>
             <strong>{formatearDiaLargo(cita.dia, { conAnio: true })}</strong>
           </div>
           <div className="resumen-item">
-            <span>🕒 Hora</span>
+            <span>Hora</span>
             <strong>{horaCorta(cita.hora)}</strong>
           </div>
           <div className="resumen-item">
-            <span>🔧 Servicio</span>
+            <span>Servicio</span>
             <strong>{cita.servicio || "-"}</strong>
           </div>
           <div className="resumen-item">
-            <span>🚙 Vehículo</span>
+            <span>Vehículo</span>
             <strong>{cita.vehiculo || "-"}</strong>
           </div>
           <div className="resumen-item">
-            <span>🚗 Matrícula</span>
+            <span>Matrícula</span>
             <strong>{cita.matricula || "-"}</strong>
           </div>
           <div className="resumen-item">
-            <span>👤 A nombre de</span>
+            <span>A nombre de</span>
             <strong>{cita.nombre || "-"}</strong>
           </div>
         </div>
@@ -166,6 +175,8 @@ export function CitaClientePage() {
             Para cualquier otra cosa, llama al taller: <a href={`tel:${telefonoTaller}`}>{telefonoTaller}</a>.
           </p>
         )}
+
+        <FirmaCiTaller />
 
         {confirmando && (
           <Modal titulo="Cancelar tu cita" textoConfirmar="Sí, cancelar" textoCancelar="No, mantenerla" peligroso ocupado={cancelando} onConfirmar={() => void cancelar()} onCancelar={() => setConfirmando(false)}>

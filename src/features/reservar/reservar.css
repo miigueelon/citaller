@@ -1,50 +1,44 @@
 /* Pantalla pública de reserva: formulario, calendario, horas y resumen. */
 
-.logo {
-  width: 235px;
-  display: block;
-  margin: 0 auto -8px;
-}
-
-/* Chips de confianza */
-.trust-bar {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 22px;
-}
-
-.trust-item {
-  background: var(--color-fondo-chip);
-  border-radius: var(--radio-pill);
-  padding: 10px 18px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #374151;
-  box-shadow: var(--sombra-suave);
-}
-
-/* Ficha del taller */
-.taller-info {
-  background: linear-gradient(180deg, #ffffff, #f8fafc);
-  border: 1px solid #e6ebf2;
-  border-radius: 18px;
-  box-shadow: var(--sombra-media);
-  padding: 20px;
-  margin-bottom: 22px;
+/* Cabecera: el protagonista es el taller (nombre como título); CiTaller firma al pie. */
+.eyebrow {
+  margin: 0 0 6px;
   text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--color-primario-oscuro);
 }
 
-.taller-info h2 {
-  color: var(--color-titulo);
-  font-size: 24px;
-  margin-bottom: 8px;
-}
-
-.taller-info p {
+.taller-datos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 18px;
+  margin: 0 0 26px;
+  padding: 0;
+  list-style: none;
   color: var(--color-texto-suave);
-  margin: 5px 0;
+  font-size: 15px;
+}
+
+.taller-datos li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.taller-datos svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--color-primario);
+}
+
+.taller-datos a {
+  color: inherit;
+  text-decoration: none;
 }
 
 /* Formulario */
@@ -258,27 +252,26 @@
   margin-bottom: 18px;
 }
 
+/* Acción secundaria: sin relleno, para que el naranja quede solo en el botón principal. */
 .volver-menu {
-  width: 110px;
   height: 34px;
-  padding: 0;
+  padding: 0 10px 0 4px;
   margin: 0;
   border: none;
   border-radius: var(--radio-s);
-  background: var(--color-primario);
-  color: var(--color-blanco);
-  font-size: 14px;
-  font-weight: 700;
-  display: flex;
+  background: transparent;
+  color: var(--color-texto-suave);
+  font-size: 15px;
+  font-weight: 600;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  flex: none;
-  box-shadow: var(--sombra-primario-suave);
+  gap: 4px;
   cursor: pointer;
 }
 
-.volver-menu:hover {
-  background: #eb5f00;
+.volver-menu:hover:not(:disabled) {
+  color: var(--color-titulo);
+  background: var(--color-fondo-chip);
 }
 
 /* Calendario (react-calendar) */
@@ -473,10 +466,13 @@
   border-radius: 18px;
 }
 
+/* Etiqueta a la izquierda y valor a la derecha en dos columnas: el valor puede ocupar varias
+   líneas sin pisar la etiqueta (con flex + space-between se solapaban en móvil). */
 .resumen-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 16px;
+  align-items: baseline;
   padding: 11px 0;
   border-bottom: 1px solid var(--color-borde);
 }
@@ -486,14 +482,16 @@
 }
 
 .resumen-item span {
-  text-align: right;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-texto-suave);
+  white-space: nowrap;
 }
 
 .resumen-item strong {
-  min-width: 115px;
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
   color: var(--color-titulo);
   font-size: 15px;
   font-weight: 700;
@@ -637,13 +635,34 @@
   color: var(--color-error);
 }
 
+/* Acción destructiva y poco frecuente: con borde, no rellena, para no dominar la página. */
 .boton-cancelar-cita {
-  background: var(--color-error);
+  background: var(--color-blanco);
+  color: var(--color-error);
+  border: 2px solid var(--color-error);
 }
 
-.boton-cancelar-cita:hover {
-  background: var(--color-error);
-  filter: brightness(0.92);
+.boton-cancelar-cita:hover:not(:disabled) {
+  background: var(--color-error-fondo);
+  box-shadow: none;
+  transform: none;
+}
+
+.cita-cliente-direccion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  color: var(--color-texto-suave);
+  font-size: 15px;
+}
+
+.cita-cliente-direccion svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--color-primario);
 }
 
 .cita-cliente-enlace {

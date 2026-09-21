@@ -1,6 +1,7 @@
 import type { ChangeEvent } from "react";
+import { Clock, MapPin, Phone, Star } from "lucide-react";
 import CampoInput from "@/components/CampoInput";
-import logo from "@/assets/logo.png";
+import { FirmaCiTaller } from "@/components/FirmaCiTaller";
 import { useTaller } from "@/app/providers/useTaller";
 import { camposDelServicio } from "@/features/taller/api";
 import type { ReservaEnCurso } from "../tipos";
@@ -47,36 +48,40 @@ export function DatosForm({ reserva, actualizar, continuar }: Props) {
   return (
     <div className="container">
       <div className="card">
-        <div className="volver-card"></div>
+        <p className="eyebrow">Reserva tu cita en</p>
 
-        <img src={logo} alt="CiTaller" className="logo" />
+        <h1>{taller.nombre}</h1>
 
-        <h1>Reserva tu cita</h1>
-
-        <p className="subtitulo">En menos de un minuto.</p>
-
-        <div className="trust-bar">
-          <div className="trust-item">✅ Sin llamadas</div>
-          <div className="trust-item">⚡ Reserva enviada al instante</div>
-          <div className="trust-item">🕒 Disponible 24/7</div>
-        </div>
-
-        <div className="taller-info">
-          <h2>🔧 {taller.nombre}</h2>
-
-          {(taller.direccion || taller.ciudad) && <p>📍 {taller.direccion ? taller.direccion : taller.ciudad}</p>}
-
-          {taller.horario_texto && <p>🕒 {taller.horario_texto}</p>}
-
-          {taller.valoracion != null && (
-            <p>
-              ⭐ {Number(taller.valoracion).toFixed(1)}
-              {(taller.numero_resenas ?? 0) > 0 ? ` · ${taller.numero_resenas} reseñas` : ""}
-            </p>
+        <ul className="taller-datos">
+          {(taller.direccion || taller.ciudad) && (
+            <li>
+              <MapPin aria-hidden="true" />
+              {taller.direccion ? taller.direccion : taller.ciudad}
+            </li>
           )}
 
-          {taller.telefono && <p>📞 {taller.telefono}</p>}
-        </div>
+          {taller.horario_texto && (
+            <li>
+              <Clock aria-hidden="true" />
+              {taller.horario_texto}
+            </li>
+          )}
+
+          {taller.telefono && (
+            <li>
+              <Phone aria-hidden="true" />
+              <a href={`tel:${taller.telefono}`}>{taller.telefono}</a>
+            </li>
+          )}
+
+          {taller.valoracion != null && (
+            <li>
+              <Star aria-hidden="true" />
+              {Number(taller.valoracion).toFixed(1)}
+              {(taller.numero_resenas ?? 0) > 0 ? ` · ${taller.numero_resenas} reseñas` : ""}
+            </li>
+          )}
+        </ul>
 
         <form className="formulario-reserva">
           <div className="fila">
@@ -156,6 +161,8 @@ export function DatosForm({ reserva, actualizar, continuar }: Props) {
             CONTINUAR
           </button>
         </form>
+
+        <FirmaCiTaller />
       </div>
     </div>
   );

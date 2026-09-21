@@ -22,23 +22,30 @@ export function CamposExtra({ campos, valores, onCambio }: Props) {
     <>
       {campos.map((campo) => {
         const id = `campo-${campo.clave}`;
-        const etiqueta = campo.obligatorio ? campo.etiqueta : `${campo.etiqueta}${campo.etiqueta.includes("opcional") ? "" : " (opcional)"}`;
+        // Si el seed ya escribió "(opcional)" en la etiqueta, se quita: aquí se añade en un solo sitio.
+        const etiqueta = campo.etiqueta.replace(/\s*\(opcional\)/i, "");
+        const opcional = !campo.obligatorio;
         return (
           <div className="descripcion-servicio" key={campo.id}>
-            <label htmlFor={id}>{etiqueta}</label>
-
             {campo.tipo === "select" ? (
-              <select id={id} name={campo.clave} value={valores[campo.clave] ?? ""} onChange={alCambiar(campo)} required={campo.obligatorio}>
-                <option value="" disabled>
-                  Selecciona una opción
-                </option>
-                {(campo.opciones ?? []).map((opcion) => (
-                  <option key={opcion} value={opcion}>
-                    {opcion}
+              <>
+                <label htmlFor={id}>
+                  {etiqueta}
+                  {opcional && " (opcional)"}
+                </label>
+                <select id={id} name={campo.clave} value={valores[campo.clave] ?? ""} onChange={alCambiar(campo)} required={campo.obligatorio}>
+                  <option value="" disabled>
+                    Selecciona una opción
                   </option>
-                ))}
-              </select>
+                  {(campo.opciones ?? []).map((opcion) => (
+                    <option key={opcion} value={opcion}>
+                      {opcion}
+                    </option>
+                  ))}
+                </select>
+              </>
             ) : (
+              // Una sola etiqueta, la flotante, como en el resto de campos del formulario.
               <div className="campo-input">
                 <input
                   id={id}
@@ -50,7 +57,11 @@ export function CamposExtra({ campos, valores, onCambio }: Props) {
                   placeholder=" "
                   required={campo.obligatorio}
                 />
-                <label htmlFor={id}>{campo.unidad ? `${campo.etiqueta} (${campo.unidad})` : campo.etiqueta}</label>
+                <label htmlFor={id}>
+                  {etiqueta}
+                  {campo.unidad && ` (${campo.unidad})`}
+                  {opcional && " · opcional"}
+                </label>
               </div>
             )}
 

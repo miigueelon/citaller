@@ -48,27 +48,27 @@ export function Resumen({ reserva, enviar, volver }: Props) {
 
         <div className="resumen-reserva">
           <div className="resumen-item">
-            <span>🚗 Matrícula</span>
+            <span>Matrícula</span>
             <strong>{reserva.matricula}</strong>
           </div>
 
           <div className="resumen-item">
-            <span>🚙 Vehículo</span>
+            <span>Vehículo</span>
             <strong>{reserva.vehiculo}</strong>
           </div>
 
           <div className="resumen-item">
-            <span>👤 Cliente</span>
+            <span>Cliente</span>
             <strong>{reserva.nombre}</strong>
           </div>
 
           <div className="resumen-item">
-            <span>📱 Teléfono</span>
+            <span>Teléfono</span>
             <strong>{reserva.telefono}</strong>
           </div>
 
           <div className="resumen-item">
-            <span>🔧 Servicio</span>
+            <span>Servicio</span>
             <strong>{reserva.servicio}</strong>
           </div>
 
@@ -84,18 +84,18 @@ export function Resumen({ reserva, enviar, volver }: Props) {
 
           {reserva.descripcion && (
             <div className="resumen-item">
-              <span>📝 {servicio?.descripcion_etiqueta ?? "Descripción"}</span>
+              <span>{servicio?.descripcion_etiqueta ?? "Descripción"}</span>
               <strong>{reserva.descripcion}</strong>
             </div>
           )}
 
           <div className="resumen-item">
-            <span>📅 Fecha</span>
+            <span>Fecha</span>
             <strong>{reserva.dia ? formatearDiaLargo(reserva.dia, { conAnio: true }) : "-"}</strong>
           </div>
 
           <div className="resumen-item">
-            <span>🕒 Hora</span>
+            <span>Hora</span>
             <strong>{reserva.hora}</strong>
           </div>
         </div>

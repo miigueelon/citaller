@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FirmaCiTaller } from "@/components/FirmaCiTaller";
 import { useTaller } from "@/app/providers/useTaller";
 import { formatearDiaLargo } from "@/lib/fechas";
 import type { ReservaEnCurso } from "../tipos";
@@ -64,6 +65,8 @@ export function ReservaConfirmada({ reserva, enlaceCita, otraReserva }: Props) {
         <button type="button" className="boton-principal" onClick={otraReserva}>
           HACER OTRA RESERVA
         </button>
+
+        <FirmaCiTaller />
       </div>
     </div>
   );

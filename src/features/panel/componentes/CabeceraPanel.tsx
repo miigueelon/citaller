@@ -1,4 +1,4 @@
-import { RefreshCw, Wrench } from "lucide-react";
+import { CalendarDays, LogOut, Plus, RefreshCw, Wrench } from "lucide-react";
 
 interface Props {
   nombreTaller: string;
@@ -12,6 +12,10 @@ interface Props {
   onCerrarSesion: () => void;
 }
 
+/**
+ * Cabecera del panel. El nombre del taller es el título; CiTaller queda como marca pequeña arriba.
+ * Una sola acción naranja (Nueva cita): las demás son secundarias o de texto.
+ */
 export function CabeceraPanel({
   nombreTaller,
   modoHistorial,
@@ -38,28 +42,35 @@ export function CabeceraPanel({
             Ci<span className="logo-naranja">Taller</span>
           </span>
         </div>
+
+        <button type="button" className="panel-btn panel-btn-texto" onClick={onCerrarSesion}>
+          <LogOut className="panel-btn-icon" />
+          Cerrar sesión
+        </button>
       </div>
 
       <div className="panel-header">
         <div>
-          <h1 className="panel-titulo">{modoHistorial ? `Historial · ${nombreTaller}` : `Panel · ${nombreTaller}`}</h1>
+          <h1 className="panel-titulo">
+            <span className="panel-eyebrow">{modoHistorial ? "Historial de reservas" : "Panel de reservas"}</span>
+            {nombreTaller}
+          </h1>
           <p className="panel-subtitulo">{subtitulo}</p>
         </div>
 
         <div className="panel-acciones">
-          <button type="button" className="panel-btn-actualizar" onClick={onActualizar} disabled={cargando}>
+          <button type="button" className="panel-btn panel-btn-secundario" onClick={onActualizar} disabled={cargando}>
             <RefreshCw className={`panel-btn-icon ${cargando ? "spin" : ""}`} />
             Actualizar
           </button>
-          <button type="button" className="panel-btn-actualizar" onClick={onNuevaCita}>
-            + Nueva cita
-          </button>
           {/* Disponible para cualquier taller: la conexión se guarda por taller. */}
-          <button type="button" className="panel-btn-actualizar" onClick={onConectarGoogle}>
+          <button type="button" className="panel-btn panel-btn-secundario" onClick={onConectarGoogle}>
+            <CalendarDays className="panel-btn-icon" />
             Conectar Google Calendar
           </button>
-          <button type="button" className="panel-btn-actualizar" onClick={onCerrarSesion}>
-            Cerrar sesión
+          <button type="button" className="panel-btn panel-btn-primario" onClick={onNuevaCita}>
+            <Plus className="panel-btn-icon" />
+            Nueva cita
           </button>
         </div>
       </div>

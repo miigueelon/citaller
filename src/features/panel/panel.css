@@ -12,20 +12,24 @@
   margin: 0 auto;
 }
 
-/* Logo */
+/* Fila superior: marca pequeña a la izquierda y "cerrar sesión" a la derecha. */
 .panel-logo {
-  margin-bottom: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 28px;
 }
 
 .logo-container {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .logo-icon {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--radio-s);
   background: var(--color-primario);
   display: flex;
@@ -34,13 +38,13 @@
 }
 
 .logo-wrench {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   color: var(--color-blanco);
 }
 
 .logo-text {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--color-titulo);
   letter-spacing: -0.5px;
@@ -50,13 +54,23 @@
   color: var(--color-primario);
 }
 
-/* Cabecera */
+/* Cabecera: el nombre del taller es el título; "Panel de reservas" va encima, pequeño. */
 .panel-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
   gap: 20px;
+}
+
+.panel-eyebrow {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--color-primario-oscuro);
 }
 
 .panel-titulo {
@@ -75,38 +89,64 @@
 .panel-acciones {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
-.panel-btn-actualizar {
-  display: flex;
+/* Botones de la cabecera: una sola acción naranja (Nueva cita); el resto, secundarios o de texto. */
+.panel-btn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  flex: 1 1 auto;
-  padding: 12px 20px;
-  background: var(--color-primario);
-  color: var(--color-blanco);
-  border: none;
+  padding: 12px 18px;
   border-radius: 12px;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.25s;
+  transition: all 0.2s;
   white-space: nowrap;
 }
 
-.panel-btn-actualizar:hover:not(:disabled) {
-  background: var(--color-primario-oscuro);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(255, 107, 0, 0.3);
+.panel-btn-primario {
+  background: var(--color-primario);
+  color: var(--color-blanco);
+  border: 1px solid var(--color-primario);
 }
 
-.panel-btn-actualizar:disabled {
-  background: var(--color-deshabilitado);
-  color: var(--color-texto-apagado);
+.panel-btn-primario:hover:not(:disabled) {
+  background: var(--color-primario-oscuro);
+  box-shadow: var(--sombra-primario-suave);
+}
+
+.panel-btn-secundario {
+  background: var(--color-blanco);
+  color: var(--color-titulo);
+  border: 1px solid var(--color-borde);
+  box-shadow: var(--sombra-suave);
+}
+
+.panel-btn-secundario:hover:not(:disabled) {
+  border-color: var(--color-primario-borde);
+  color: var(--color-primario-oscuro);
+}
+
+.panel-btn-texto {
+  padding: 6px 8px;
+  background: transparent;
+  color: var(--color-texto-suave);
+  border: none;
+  font-weight: 600;
+}
+
+.panel-btn-texto:hover:not(:disabled) {
+  color: var(--color-titulo);
+  text-decoration: underline;
+}
+
+.panel-btn:disabled {
+  opacity: 0.55;
   cursor: not-allowed;
-  opacity: 0.6;
 }
 
 .panel-btn-icon {
@@ -114,13 +154,25 @@
   height: 16px;
 }
 
+/* Historial: acción poco frecuente, como enlace a la derecha en vez de botón a todo el ancho. */
 .panel-btn-historial {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
-  margin-top: 12px;
-  margin-bottom: 32px;
+  width: fit-content;
+  margin: 4px 0 20px auto;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  color: var(--color-texto-suave);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.panel-btn-historial:hover {
+  color: var(--color-titulo);
+  text-decoration: underline;
 }
 
 /* Estados de la lista */
@@ -190,9 +242,13 @@
   font-size: 13px;
   font-weight: 700;
   color: var(--color-texto-panel);
-  text-transform: capitalize;
   margin: 0 0 16px 0;
   letter-spacing: 0.5px;
+}
+
+/* Solo la primera letra: `capitalize` ponía "23 De Septiembre". */
+.panel-grupo-titulo::first-letter {
+  text-transform: uppercase;
 }
 
 .panel-grupo-items {
@@ -525,12 +581,18 @@
     gap: 16px;
   }
 
+  /* En móvil: Nueva cita a todo el ancho y primero; los secundarios comparten una fila. */
   .panel-acciones {
     width: 100%;
   }
 
-  .panel-btn-actualizar {
-    flex: 1 1 calc(50% - 6px);
+  .panel-btn-primario {
+    flex: 1 1 100%;
+    order: -1;
+  }
+
+  .panel-btn-secundario {
+    flex: 1 1 calc(50% - 5px);
   }
 
   .panel-titulo {

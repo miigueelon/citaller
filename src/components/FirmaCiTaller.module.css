@@ -1,0 +1,16 @@
+.firma {
+  margin-top: 28px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-texto-apagado);
+}
+
+.firma strong {
+  font-weight: 700;
+  color: var(--color-titulo);
+  letter-spacing: -0.3px;
+}
+
+.firma strong span {
+  color: var(--color-primario);
+}

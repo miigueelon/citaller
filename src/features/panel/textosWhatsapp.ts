@@ -6,12 +6,12 @@
 import { formatearDiaLargo, horaCorta } from "@/lib/fechas";
 import type { ReservaPanel } from "./tipos";
 
-export type TipoMensaje = "confirmacion" | "cancelacion" | "recordatorio";
+export type TipoMensaje = "confirmacion" | "cancelacion" | "recordatorio" | "listo";
 
 /** Textos propios del taller; null = se usa el texto por defecto. */
 export type TextosWhatsapp = Record<TipoMensaje, string | null>;
 
-export const TEXTOS_VACIOS: TextosWhatsapp = { confirmacion: null, cancelacion: null, recordatorio: null };
+export const TEXTOS_VACIOS: TextosWhatsapp = { confirmacion: null, cancelacion: null, recordatorio: null, listo: null };
 
 export const TEXTOS_POR_DEFECTO: Record<TipoMensaje, string> = {
   confirmacion:
@@ -21,6 +21,8 @@ export const TEXTOS_POR_DEFECTO: Record<TipoMensaje, string> = {
     "Hola {nombre}, te escribimos de {taller}. Lamentablemente tenemos que cancelar tu cita del {dia} a las {hora} ({servicio}). " +
     "Puedes pedir otra hora en {enlace_reserva} o llamarnos. Disculpa las molestias.",
   recordatorio: "Hola {nombre}, te recordamos tu cita en {taller} mañana, {dia}, a las {hora}: {servicio} ({vehiculo}). ¡Te esperamos!",
+  // "Vehículo listo": cada taller pone lo suyo en el seed ("tu moto" / "tu coche"); esto es el genérico.
+  listo: "Hola {nombre}, te escribimos de {taller}. Tu vehículo ({vehiculo}, {matricula}) ya está listo: puedes pasar a recogerlo cuando quieras. ¡Gracias!",
 };
 
 export interface DatosMensaje {

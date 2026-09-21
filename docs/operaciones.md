@@ -20,7 +20,7 @@
 - Nunca borrar datos del proyecto remoto, salvo los del taller de pruebas `e2e`.
 
 ## Dar de alta un taller
-1. Copiar `clientes/_plantilla/` a `clientes/<slug>/`; rellenar `seed.sql` (taller, `modo_capacidad` + `capacidad` y, si hace falta, `max_citas_dia` —tope del día además del anterior: Rik and Roll, 2 por hora y 5 al día—, `whatsapp_modo`, textos, servicios con su modo de descripción, campos extra, horarios, festivos) y `README.md`; añadir assets (logo, imágenes de ayuda) en `assets/`. Nada de lógica por taller en el código: todo lo que cambia entre talleres vive en el seed.
+1. Copiar `clientes/_plantilla/` a `clientes/<slug>/`; rellenar `seed.sql` (taller, `modo_capacidad` + `capacidad` y, si hace falta, `max_citas_dia` —tope del día además del anterior: Rik and Roll, 2 por hora y 5 al día—, `whatsapp_modo`, textos de WhatsApp del modo enlace (`texto_whatsapp_{confirmacion,cancelacion,recordatorio,listo}`; en "listo" cada taller dice "tu moto" o "tu coche"), textos, servicios con su modo de descripción, campos extra, horarios, festivos) y `README.md`; añadir assets (logo, imágenes de ayuda) en `assets/`. Nada de lógica por taller en el código: todo lo que cambia entre talleres vive en el seed.
 2. Añadir la ruta del seed a `sql_paths` en `supabase/config.toml` y aplicarlo (`npx supabase db push --include-seed`). Es idempotente. `npm test` comprueba que el seed no menciona otros slugs ni contiene secretos.
 3. Crear el usuario del taller en Supabase Auth (invitación) y vincularlo (`talleres.user_id`; en la fase 5, `miembros_taller`).
 4. Integraciones: si usa Google Calendar, el taller pulsa "Conectar Google Calendar" en su panel. WhatsApp según `whatsapp_modo`: `api` (WABA, plantillas y token; ver `integraciones.md`), `enlace` (nada que configurar: el panel abre WhatsApp con el mensaje escrito) o `ninguno`.
@@ -29,6 +29,8 @@
 
 ## Mecánicos que apuntan citas ("¿Quién la apunta?")
 Si en un taller varias personas usan el mismo panel, al pulsar "Nueva cita" se elige quién la apunta y la tarjeta dice "Mostrador · Nombre". Mientras un taller no tenga ninguno, no se pregunta nada. Los nombres **no van en el seed** (son datos personales): se cargan en el SQL Editor de Supabase.
+
+**Atención**: en cuanto un taller tiene un miembro activo, la base de datos exige decir quién apunta cada cita (CT017). Solo cargar miembros de un taller cuando el panel que usa ya tiene el selector "¿Quién la apunta?" (publicado en `citaller.es` a partir de la versión `v1.1`); si no, su botón "Nueva cita" deja de funcionar.
 
 - Añadir (o reactivar): `insert into public.miembros_taller (taller_id, nombre, orden) select id, 'Juan', 1 from public.talleres where slug = '<slug>' on conflict (taller_id, nombre) do update set activo = true, orden = excluded.orden;`
 - Dar de baja (las citas que apuntó siguen diciendo su nombre): `update public.miembros_taller set activo = false where nombre = 'Juan' and taller_id = (select id from public.talleres where slug = '<slug>');`

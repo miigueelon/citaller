@@ -275,6 +275,7 @@ export function PanelTaller() {
                 }
               : undefined
           }
+          onVehiculoListo={modoEnlace ? (reserva) => abrirWhatsapp(reserva, "listo") : undefined}
         />
 
         {pendienteDeCancelar && (

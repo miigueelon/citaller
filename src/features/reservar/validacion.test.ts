@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CampoFormulario, ServicioTaller } from "@/features/taller/api";
 import { reservaVacia } from "./tipos";
-import { campoValido, erroresDeFormato, esMatriculaValida, esTelefonoValido, formularioCompleto, normalizarMatricula, normalizarTelefono } from "./validacion";
+import { campoValido, erroresDeFormato, esMatriculaValida, esTelefonoValido, formularioCompleto, normalizarMatricula, normalizarTelefono, formatearTelefono } from "./validacion";
 
 describe("teléfono", () => {
   it("normaliza quitando espacios y guiones y anteponiendo el 34 a 9 cifras", () => {
@@ -83,5 +83,16 @@ describe("formulario", () => {
     expect(
       formularioCompleto({ ...conNeumaticos, descripcion: "205/55 R16", datos_extra: { cantidad_neumaticos: "2" } }, { servicio: neumaticos, campos: [kilometros, cantidad] }),
     ).toBe(true);
+  });
+});
+
+describe("formatearTelefono", () => {
+  it("quita el 34 y separa en grupos de tres", () => {
+    expect(formatearTelefono("34600111222")).toBe("600 111 222");
+    expect(formatearTelefono("600111222")).toBe("600 111 222");
+  });
+
+  it("deja tal cual lo que no es un número español de 9 cifras", () => {
+    expect(formatearTelefono("+44 20 7946 0958")).toBe("+44 20 7946 0958");
   });
 });

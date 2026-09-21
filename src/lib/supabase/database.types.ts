@@ -520,6 +520,7 @@ export type Database = {
           texto_confirmacion: string | null
           texto_whatsapp_cancelacion: string | null
           texto_whatsapp_confirmacion: string | null
+          texto_whatsapp_listo: string | null
           texto_whatsapp_recordatorio: string | null
           user_id: string | null
           valoracion: number | null
@@ -545,6 +546,7 @@ export type Database = {
           texto_confirmacion?: string | null
           texto_whatsapp_cancelacion?: string | null
           texto_whatsapp_confirmacion?: string | null
+          texto_whatsapp_listo?: string | null
           texto_whatsapp_recordatorio?: string | null
           user_id?: string | null
           valoracion?: number | null
@@ -570,6 +572,7 @@ export type Database = {
           texto_confirmacion?: string | null
           texto_whatsapp_cancelacion?: string | null
           texto_whatsapp_confirmacion?: string | null
+          texto_whatsapp_listo?: string | null
           texto_whatsapp_recordatorio?: string | null
           user_id?: string | null
           valoracion?: number | null

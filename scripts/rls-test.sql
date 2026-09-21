@@ -110,7 +110,9 @@ with comprobaciones (orden, comprobacion, actual, esperado) as (
            where schemaname = 'public' and tablename = 'miembros_taller' and cmd = 'SELECT' and 'authenticated' = any(roles)
              and qual ilike '%user_id%' and qual ilike '%auth.uid()%'), true),
     (65, 'comprobar_capacidad aplica el tope diario (CT018)', (
-           select pg_get_functiondef('public.comprobar_capacidad()'::regprocedure) ilike '%max_citas_dia%CT018%'), true)
+           select pg_get_functiondef('public.comprobar_capacidad()'::regprocedure) ilike '%max_citas_dia%CT018%'), true),
+    (66, 'anon lee talleres.texto_whatsapp_listo',      has_column_privilege('anon', 'public.talleres', 'texto_whatsapp_listo', 'SELECT'), false),
+    (67, 'authenticated lee talleres.texto_whatsapp_listo (su panel)', has_column_privilege('authenticated', 'public.talleres', 'texto_whatsapp_listo', 'SELECT'), true)
 )
 select orden, comprobacion, actual, esperado, (actual = esperado) as ok
 from comprobaciones

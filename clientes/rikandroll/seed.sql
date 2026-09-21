@@ -66,3 +66,8 @@ cross join (values
 ) as f(fecha, nombre)
 where t.slug = 'rikandroll'
 on conflict (taller_id, fecha) do nothing;
+
+-- Mensaje de "vehículo listo" (botón del panel, modo enlace): aquí se habla de "coche".
+update public.talleres
+set texto_whatsapp_listo = 'Hola {nombre}, te escribimos de {taller}. Tu coche ({vehiculo}, {matricula}) ya está listo: puedes pasar a recogerlo cuando quieras. ¡Gracias!'
+where slug = 'rikandroll';

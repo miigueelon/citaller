@@ -1,6 +1,7 @@
-import { AlertTriangle, Car, Clock, Hash, Phone, Store, User, Wrench } from "lucide-react";
+import { AlertTriangle, Car, CheckCircle2, Clock, Hash, Phone, Store, User, Wrench } from "lucide-react";
 import { horaCorta } from "@/lib/fechas";
 import type { CampoFormulario } from "@/features/taller/api";
+import { formatearTelefono } from "@/features/reservar/validacion";
 import type { ReservaPanel } from "../tipos";
 
 interface Props {
@@ -13,6 +14,8 @@ interface Props {
   onCancelar: (reserva: ReservaPanel) => void;
   /** Modo enlace: abre WhatsApp con el mensaje ya escrito. */
   onAvisarWhatsapp?: (reserva: ReservaPanel) => void;
+  /** Modo enlace: "tu vehículo ya está listo para recoger". No cambia el estado; se puede repetir. */
+  onVehiculoListo?: (reserva: ReservaPanel) => void;
 }
 
 function etiquetaEstado(reserva: ReservaPanel): string {
@@ -20,7 +23,7 @@ function etiquetaEstado(reserva: ReservaPanel): string {
   return reserva.estado;
 }
 
-export function TarjetaReserva({ reserva, campos, ocupado = false, onConfirmar, onCancelar, onAvisarWhatsapp }: Props) {
+export function TarjetaReserva({ reserva, campos, ocupado = false, onConfirmar, onCancelar, onAvisarWhatsapp, onVehiculoListo }: Props) {
   const extras = campos
     .map((campo) => ({ campo, valor: reserva.datos_extra[campo.clave] }))
     .filter(({ valor }) => valor !== undefined && valor !== null && String(valor).trim() !== "");
@@ -57,7 +60,7 @@ export function TarjetaReserva({ reserva, campos, ocupado = false, onConfirmar, 
           <Phone className="campo-icon" size={16} />
           <div className="campo-contenido">
             <p className="campo-label">Teléfono</p>
-            <p className="campo-valor">{reserva.telefono ? <a href={`tel:+${reserva.telefono}`}>{reserva.telefono}</a> : "Sin teléfono"}</p>
+            <p className="campo-valor">{reserva.telefono ? <a href={`tel:+${reserva.telefono}`}>{formatearTelefono(reserva.telefono)}</a> : "Sin teléfono"}</p>
           </div>
         </div>
 
@@ -129,16 +132,25 @@ export function TarjetaReserva({ reserva, campos, ocupado = false, onConfirmar, 
       )}
 
       {reserva.estado === "Confirmada" && (
-        <div className="tarjeta-acciones">
-          {onAvisarWhatsapp && reserva.telefono && (
-            <button type="button" className="btn-whatsapp" onClick={() => onAvisarWhatsapp(reserva)} disabled={ocupado}>
-              Avisar por WhatsApp
-            </button>
+        <>
+          {onVehiculoListo && reserva.telefono && (
+            <div className="tarjeta-acciones">
+              <button type="button" className="btn-whatsapp btn-listo" onClick={() => onVehiculoListo(reserva)} disabled={ocupado}>
+                <CheckCircle2 size={16} /> Vehículo listo: avisar por WhatsApp
+              </button>
+            </div>
           )}
-          <button type="button" className="btn-cancelar" onClick={() => onCancelar(reserva)} disabled={ocupado}>
-            ✕ Cancelar cita
-          </button>
-        </div>
+          <div className="tarjeta-acciones">
+            {onAvisarWhatsapp && reserva.telefono && (
+              <button type="button" className="btn-whatsapp" onClick={() => onAvisarWhatsapp(reserva)} disabled={ocupado}>
+                Avisar por WhatsApp
+              </button>
+            )}
+            <button type="button" className="btn-cancelar" onClick={() => onCancelar(reserva)} disabled={ocupado}>
+              ✕ Cancelar cita
+            </button>
+          </div>
+        </>
       )}
 
       {reserva.estado === "Cancelada" && reserva.cancelada_por === "taller" && onAvisarWhatsapp && reserva.telefono && (

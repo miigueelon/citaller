@@ -83,3 +83,17 @@ describe("tipoMensajeDeReserva", () => {
     expect(tipoMensajeDeReserva({ ...reserva, estado: "Pendiente" })).toBeNull();
   });
 });
+
+describe("vehículo listo", () => {
+  it("el texto por defecto habla del vehículo y de recogerlo", () => {
+    const texto = textoMensaje("listo", TEXTOS_VACIOS, datos);
+    expect(texto).toContain("Seat Ibiza, 1234ABC");
+    expect(texto).toContain("listo");
+    expect(texto).toContain("recogerlo");
+  });
+
+  it("cada taller pone su vehículo: moto para Speedbikes", () => {
+    const texto = textoMensaje("listo", { ...TEXTOS_VACIOS, listo: "Tu moto ({vehiculo}) ya está lista, {nombre}." }, datos);
+    expect(texto).toBe("Tu moto (Seat Ibiza) ya está lista, Ana.");
+  });
+});

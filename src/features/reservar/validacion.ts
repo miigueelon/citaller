@@ -10,6 +10,13 @@ export function normalizarTelefono(texto: string): string {
   return digitos.length === 9 ? `34${digitos}` : digitos;
 }
 
+/** Para enseñar un teléfono guardado (34600111222) como se lee en España: "600 111 222". */
+export function formatearTelefono(telefono: string): string {
+  const digitos = telefono.replace(/\D/g, "");
+  const nacional = digitos.length === 11 && digitos.startsWith("34") ? digitos.slice(2) : digitos;
+  return nacional.length === 9 ? `${nacional.slice(0, 3)} ${nacional.slice(3, 6)} ${nacional.slice(6)}` : telefono;
+}
+
 /** Teléfono español (fijo o móvil) con o sin prefijo 34, admitiendo espacios y guiones. */
 export function esTelefonoValido(texto: string): boolean {
   return /^34[6-9]\d{8}$/.test(normalizarTelefono(texto));

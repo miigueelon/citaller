@@ -828,3 +828,14 @@
     align-items: flex-start;
   }
 }
+
+/* "Vehículo listo": el aviso más frecuente del día va a todo lo ancho y en verde lleno. */
+.btn-listo {
+  width: 100%;
+  background: var(--color-ok);
+  color: var(--color-blanco);
+}
+
+.btn-listo:hover {
+  filter: brightness(0.92);
+}

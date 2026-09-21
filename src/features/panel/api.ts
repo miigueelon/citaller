@@ -44,7 +44,7 @@ export async function cargarMiembros(cliente: ClienteSupabase, tallerId: number)
 export async function cargarTextosWhatsapp(cliente: ClienteSupabase, tallerId: number): Promise<TextosWhatsapp> {
   const { data, error } = await cliente
     .from("talleres")
-    .select("texto_whatsapp_confirmacion, texto_whatsapp_cancelacion, texto_whatsapp_recordatorio")
+    .select("texto_whatsapp_confirmacion, texto_whatsapp_cancelacion, texto_whatsapp_recordatorio, texto_whatsapp_listo")
     .eq("id", tallerId)
     .maybeSingle();
   if (error || !data) return TEXTOS_VACIOS;
@@ -52,6 +52,7 @@ export async function cargarTextosWhatsapp(cliente: ClienteSupabase, tallerId: n
     confirmacion: data.texto_whatsapp_confirmacion,
     cancelacion: data.texto_whatsapp_cancelacion,
     recordatorio: data.texto_whatsapp_recordatorio,
+    listo: data.texto_whatsapp_listo,
   };
 }
 

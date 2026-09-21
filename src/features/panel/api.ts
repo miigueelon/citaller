@@ -1,10 +1,10 @@
 import type { ClienteSupabase } from "@/lib/supabase/client";
-import { esEstadoReserva, type MiembroTaller, type ReservaPanel } from "./tipos";
+import { esEstadoReserva, type MiembroTaller, type ReservaPanel, type TipoAviso } from "./tipos";
 import { TEXTOS_VACIOS, type TextosWhatsapp } from "./textosWhatsapp";
 
 // `miembro` trae el nombre de quien apuntó la cita (también si ya está de baja).
 const COLUMNAS =
-  "id, taller_id, nombre, telefono, matricula, vehiculo, servicio, descripcion, datos_extra, estado, dia, hora, creada_por, cancelada_por, cancelada_en, confirmada_en, token_publico, whatsapp_confirmacion_enviada, whatsapp_cancelacion_enviada, whatsapp_error, google_event_id, google_error, miembro:miembros_taller!creada_por_miembro(nombre)";
+  "id, taller_id, nombre, telefono, matricula, vehiculo, servicio, descripcion, datos_extra, estado, dia, hora, creada_por, cancelada_por, cancelada_en, confirmada_en, listo_en, token_publico, whatsapp_confirmacion_enviada, whatsapp_confirmacion_fecha, whatsapp_cancelacion_enviada, whatsapp_cancelacion_fecha, whatsapp_recordatorio_enviado, whatsapp_recordatorio_fecha, whatsapp_error, google_event_id, google_error, miembro:miembros_taller!creada_por_miembro(nombre)";
 
 /** Reservas del taller, ordenadas por día y hora. La RLS garantiza que solo llegan las suyas. */
 export async function cargarReservasTaller(cliente: ClienteSupabase, tallerId: number): Promise<ReservaPanel[]> {
@@ -25,6 +25,23 @@ export async function cargarReservasTaller(cliente: ClienteSupabase, tallerId: n
     apuntada_por: miembro?.nombre ?? null,
     cancelada_por: fila.cancelada_por === "cliente" || fila.cancelada_por === "taller" ? fila.cancelada_por : null,
   }));
+}
+
+/**
+ * "Vehículo listo": marca (o desmarca) la cita como terminada con la hora del servidor. Devuelve la
+ * marca guardada (null al desmarcar). La función comprueba que la cita es del taller y está confirmada.
+ */
+export async function marcarVehiculoListo(cliente: ClienteSupabase, reservaId: number, listo: boolean): Promise<string | null> {
+  const { data, error } = await cliente.rpc("marcar_vehiculo_listo", { p_reserva_id: reservaId, p_listo: listo });
+  if (error) throw error;
+  return data;
+}
+
+/** Modo enlace: apunta que se mandó ese aviso de WhatsApp. Devuelve la hora guardada (la del servidor). */
+export async function marcarAvisoWhatsapp(cliente: ClienteSupabase, reservaId: number, tipo: TipoAviso): Promise<string> {
+  const { data, error } = await cliente.rpc("marcar_aviso_whatsapp", { p_reserva_id: reservaId, p_tipo: tipo });
+  if (error) throw error;
+  return data;
 }
 
 /** Miembros activos del taller, para "¿Quién la apunta?". Vacío si no tiene (entonces no se pregunta). */

@@ -10,6 +10,7 @@ import {
   formatearDiaCorto,
   formatearDiaLargo,
   horaCorta,
+  horaDeInstante,
   hoy,
   minutosDelDia,
   parsearDia,
@@ -55,6 +56,7 @@ describe("horas", () => {
     expect(horaCorta("09:30")).toBe("09:30");
     expect(minutosDelDia("09:30:00")).toBe(570);
     expect(() => horaCorta("9:30")).toThrow();
+    expect(horaDeInstante(new Date(2026, 8, 21, 7, 5))).toBe("07:05");
   });
 
   it("decide si una hora ya ha pasado según el día", () => {

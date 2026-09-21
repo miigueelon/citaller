@@ -6,6 +6,8 @@ describe("mensajeDeError", () => {
     expect(mensajeDeError({ code: "CT001", message: "Sin hueco" })).toMatch(/acaba de llenarse/);
     expect(mensajeDeError({ code: "CT011" })).toMatch(/24 horas/);
     expect(mensajeDeError({ code: "CT017" })).toMatch(/quién apunta/);
+    expect(mensajeDeError({ code: "CT019" })).toMatch(/marcar como lista/);
+    expect(mensajeDeError({ code: "CT020" })).toMatch(/apuntar el aviso/);
   });
 
   it("el tope diario pide otro día, no otra hora", () => {

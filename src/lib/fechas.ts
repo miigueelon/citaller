@@ -89,6 +89,11 @@ export function esHoraPasada(dia: Dia, hora: Hora, ahora: Date = new Date()): bo
   return minutosDelDia(hora) <= ahora.getHours() * 60 + ahora.getMinutes();
 }
 
+/** Instante (de un timestamptz) → "12:30", en la hora del dispositivo, como el resto del panel. */
+export function horaDeInstante(instante: Date): string {
+  return `${dosCifras(instante.getHours())}:${dosCifras(instante.getMinutes())}`;
+}
+
 /** "2026-09-21" → "21/09/2026". */
 export function formatearDiaCorto(dia: Dia): string {
   const fecha = parsearDia(dia);

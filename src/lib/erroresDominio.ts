@@ -24,6 +24,8 @@ const POR_CODIGO: Record<string, string> = {
   // CT014, CT015 y CT016 están reservados para la fase 5 (docs/plan.md).
   CT017: "Elige quién apunta la cita.",
   CT018: "El taller ya tiene el día completo. Elige otro día, por favor.",
+  CT019: "No se puede marcar como lista: la cita ya no está confirmada o todavía no es su día. Actualiza el panel.",
+  CT020: "WhatsApp se ha abierto, pero no se pudo apuntar el aviso: la cita ha cambiado. Actualiza el panel.",
 };
 
 const POR_TEXTO: Array<[RegExp, string]> = [

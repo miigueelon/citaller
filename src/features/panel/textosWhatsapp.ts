@@ -4,9 +4,9 @@
 //   {nombre} {taller} {dia} {hora} {vehiculo} {servicio} {matricula} {enlace_cita} {enlace_reserva}
 
 import { formatearDiaLargo, horaCorta } from "@/lib/fechas";
-import type { ReservaPanel } from "./tipos";
+import type { ReservaPanel, TipoAviso } from "./tipos";
 
-export type TipoMensaje = "confirmacion" | "cancelacion" | "recordatorio" | "listo";
+export type TipoMensaje = TipoAviso | "listo";
 
 /** Textos propios del taller; null = se usa el texto por defecto. */
 export type TextosWhatsapp = Record<TipoMensaje, string | null>;
@@ -76,7 +76,7 @@ export function datosDeReserva(reserva: ReservaPanel, taller: { nombre: string; 
 }
 
 /** Qué mensaje toca según el estado de la reserva; null si no hay nada que avisar. */
-export function tipoMensajeDeReserva(reserva: ReservaPanel, esRecordatorio = false): TipoMensaje | null {
+export function tipoMensajeDeReserva(reserva: ReservaPanel, esRecordatorio = false): TipoAviso | null {
   if (!reserva.telefono) return null;
   if (reserva.estado === "Confirmada") return esRecordatorio ? "recordatorio" : "confirmacion";
   if (reserva.estado === "Cancelada" && reserva.cancelada_por === "taller") return "cancelacion";

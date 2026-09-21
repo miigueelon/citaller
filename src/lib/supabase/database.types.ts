@@ -334,6 +334,7 @@ export type Database = {
           hora: string
           id: number
           kilometros: number | null
+          listo_en: string | null
           matricula: string | null
           nombre: string | null
           servicio: string | null
@@ -367,6 +368,7 @@ export type Database = {
           hora: string
           id?: number
           kilometros?: number | null
+          listo_en?: string | null
           matricula?: string | null
           nombre?: string | null
           servicio?: string | null
@@ -400,6 +402,7 @@ export type Database = {
           hora?: string
           id?: number
           kilometros?: number | null
+          listo_en?: string | null
           matricula?: string | null
           nombre?: string | null
           servicio?: string | null
@@ -721,6 +724,14 @@ export type Database = {
           conectado: boolean
           refresh_token: string
         }[]
+      }
+      marcar_aviso_whatsapp: {
+        Args: { p_reserva_id: number; p_tipo: string }
+        Returns: string
+      }
+      marcar_vehiculo_listo: {
+        Args: { p_listo?: boolean; p_reserva_id: number }
+        Returns: string
       }
       normalizar_telefono: { Args: { p_telefono: string }; Returns: string }
       ocupacion_dia: {

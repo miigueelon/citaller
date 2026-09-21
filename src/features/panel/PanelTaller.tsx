@@ -13,7 +13,7 @@ import { ListaReservas } from "./componentes/ListaReservas";
 import { NuevaCitaModal } from "./componentes/NuevaCitaModal";
 import { agruparPorDia, filtrarReservas, historial, porEstado, resumenCabecera, reservasFuturas, tituloGrupo, tituloHistorial } from "./filtros";
 import { datosDeReserva, enlaceWhatsapp, TEXTOS_VACIOS, textoMensaje, tipoMensajeDeReserva, type TextosWhatsapp, type TipoMensaje } from "./textosWhatsapp";
-import type { FiltroEstado, FiltroFecha, MiembroTaller, ReservaPanel } from "./tipos";
+import type { FiltroEstado, FiltroFecha, MiembroTaller, ReservaPanel, TipoAviso } from "./tipos";
 import { useConexionGoogle } from "./useConexionGoogle";
 import { useReservasTaller, type ResultadoAccion } from "./useReservasTaller";
 import "./panel.css";
@@ -22,7 +22,7 @@ interface Resultado {
   tipo: "ok" | "aviso" | "error";
   lineas: string[];
   /** Modo enlace: reserva a la que toca avisar por WhatsApp desde el móvil. */
-  whatsappPendiente?: { reserva: ReservaPanel; tipo: TipoMensaje };
+  whatsappPendiente?: { reserva: ReservaPanel; tipo: TipoAviso };
 }
 
 /** Panel del taller: reservas próximas por estado, búsqueda, historial, cita manual y acciones. */
@@ -30,7 +30,7 @@ export function PanelTaller() {
   const taller = useTaller();
   const { cliente, cerrarSesion } = useAuth();
 
-  const { reservas, cargando, error, recargar, confirmar, cancelar, crearManual } = useReservasTaller(cliente, taller.id);
+  const { reservas, cargando, error, recargar, confirmar, cancelar, crearManual, marcarListo, marcarAviso } = useReservasTaller(cliente, taller.id);
   const google = useConexionGoogle(cliente, taller.id, taller.slug);
   const modoEnlace = taller.whatsapp_modo === "enlace";
 
@@ -117,6 +117,14 @@ export function PanelTaller() {
     window.open(enlaceWhatsapp(reserva.telefono, texto), "_blank", "noopener");
   }
 
+  /** Abre WhatsApp y apunta el aviso: la tarjeta pasa a "✓ Confirmación avisada a las 12:30". */
+  async function avisarWhatsapp(reserva: ReservaPanel, tipo: TipoAviso) {
+    if (!reserva.telefono) return;
+    abrirWhatsapp(reserva, tipo);
+    const res = await marcarAviso(reserva.id, tipo);
+    if (!res.ok) setResultado({ tipo: "error", lineas: res.avisos });
+  }
+
   function mostrarResultado(res: ResultadoAccion, reserva: ReservaPanel | undefined, accion: "confirmar" | "cancelar") {
     const lineas = [...res.logros, ...res.avisos];
     const tipoPendiente = modoEnlace && reserva ? tipoMensajeDeReserva(reserva) : null;
@@ -144,6 +152,16 @@ export function PanelTaller() {
     mostrarResultado(res, { ...reserva, estado: "Cancelada", cancelada_por: "taller" }, "cancelar");
   }
 
+  /** "Vehículo listo": la cita queda terminada (deja de contar en "Hoy") y, en modo enlace, se avisa. */
+  async function ejecutarListo(reserva: ReservaPanel, listo: boolean) {
+    // WhatsApp primero, dentro del clic: abierto después de esperar a la base de datos, el navegador lo bloquea.
+    if (listo && modoEnlace) abrirWhatsapp(reserva, "listo");
+    setOperando(true);
+    const res = await marcarListo(reserva.id, listo);
+    setOperando(false);
+    if (!res.ok) setResultado({ tipo: "error", lineas: res.avisos });
+  }
+
   async function guardarCitaManual(datos: Parameters<typeof crearManual>[0]): Promise<ResultadoAccion> {
     setOperando(true);
     const res = await crearManual(datos);
@@ -164,9 +182,14 @@ export function PanelTaller() {
             cancelada_por: null,
             cancelada_en: null,
             confirmada_en: null,
+            listo_en: null,
             token_publico: res.tokenPublico ?? "",
             whatsapp_confirmacion_enviada: false,
+            whatsapp_confirmacion_fecha: null,
             whatsapp_cancelacion_enviada: false,
+            whatsapp_cancelacion_fecha: null,
+            whatsapp_recordatorio_enviado: false,
+            whatsapp_recordatorio_fecha: null,
             whatsapp_error: null,
             google_event_id: null,
             google_error: null,
@@ -216,7 +239,7 @@ export function PanelTaller() {
                 onClick={() => {
                   const { reserva, tipo } = resultado.whatsappPendiente!;
                   const actual = reservas.find((r) => r.id === reserva.id) ?? reserva;
-                  abrirWhatsapp(actual, tipo);
+                  void avisarWhatsapp(actual, tipo);
                 }}
               >
                 Abrir WhatsApp con el mensaje
@@ -225,7 +248,7 @@ export function PanelTaller() {
           </Alerta>
         )}
 
-        {modoEnlace && !mostrarHistorial && <CitasManana reservas={citasManana} onRecordar={(reserva) => abrirWhatsapp(reserva, "recordatorio")} />}
+        {modoEnlace && !mostrarHistorial && <CitasManana reservas={citasManana} onRecordar={(reserva) => void avisarWhatsapp(reserva, "recordatorio")} />}
 
         <FiltrosReservas
           filtroEstado={filtroEstado}
@@ -271,11 +294,12 @@ export function PanelTaller() {
             modoEnlace
               ? (reserva) => {
                   const tipo = tipoMensajeDeReserva(reserva);
-                  if (tipo) abrirWhatsapp(reserva, tipo);
+                  if (tipo) void avisarWhatsapp(reserva, tipo);
                 }
               : undefined
           }
-          onVehiculoListo={modoEnlace ? (reserva) => abrirWhatsapp(reserva, "listo") : undefined}
+          onVehiculoListo={(reserva) => void ejecutarListo(reserva, true)}
+          onDeshacerListo={(reserva) => void ejecutarListo(reserva, false)}
         />
 
         {pendienteDeCancelar && (

@@ -327,6 +327,44 @@ if (paraHoy.status === 200 && paraHoy.datos?.token_publico) {
   comprobar("H. (no se pudo crear la cita de hoy para probar el plazo)", false, `HTTP ${paraHoy.status} ${JSON.stringify(paraHoy.datos).slice(0, 100)}`);
 }
 
+// I. "Vehículo listo" y avisos de WhatsApp apuntados desde el panel (22-sep). Usa la cita de hoy
+// del bloque anterior (confirmada, con teléfono) y la manual de la sección G (confirmada, futura).
+const marcar = (cuerpo, token = TOKEN) => pedir("/rest/v1/rpc/marcar_vehiculo_listo", { token, metodo: "POST", cuerpo });
+const avisar = (cuerpo, token = TOKEN) => pedir("/rest/v1/rpc/marcar_aviso_whatsapp", { token, metodo: "POST", cuerpo });
+const ID_HOY = paraHoy.datos?.reserva_id;
+if (ID_HOY) {
+  const listo = await marcar({ p_reserva_id: ID_HOY, p_listo: true });
+  const filaListo = await pedir(`/rest/v1/reservas?id=eq.${ID_HOY}&select=estado,listo_en`, { token: TOKEN });
+  comprobar("I. Vehículo listo: guarda la hora y la cita sigue Confirmada", listo.status === 200 && !!listo.datos && filaListo.datos?.[0]?.listo_en === listo.datos && filaListo.datos?.[0]?.estado === "Confirmada", `HTTP ${listo.status} ${JSON.stringify(filaListo.datos?.[0])}`);
+  const otraVezListo = await marcar({ p_reserva_id: ID_HOY, p_listo: true });
+  comprobar("I. Volver a pulsar actualiza la hora sin fallar", otraVezListo.status === 200 && otraVezListo.datos >= listo.datos, `HTTP ${otraVezListo.status}`);
+  const deshacer = await marcar({ p_reserva_id: ID_HOY, p_listo: false });
+  const filaDeshecha = await pedir(`/rest/v1/reservas?id=eq.${ID_HOY}&select=listo_en`, { token: TOKEN });
+  comprobar("I. Deshacer deja la cita por terminar", deshacer.status === 200 && deshacer.datos === null && filaDeshecha.datos?.[0]?.listo_en === null, `HTTP ${deshacer.status} ${JSON.stringify(filaDeshecha.datos?.[0])}`);
+
+  const aviso = await avisar({ p_reserva_id: ID_HOY, p_tipo: "confirmacion" });
+  const filaAviso = await pedir(`/rest/v1/reservas?id=eq.${ID_HOY}&select=whatsapp_confirmacion_enviada,whatsapp_confirmacion_fecha,whatsapp_recordatorio_enviado`, { token: TOKEN });
+  comprobar("I. Aviso de confirmación apuntado con su hora (y el recordatorio sigue sin marcar)", aviso.status === 200 && filaAviso.datos?.[0]?.whatsapp_confirmacion_enviada === true && filaAviso.datos?.[0]?.whatsapp_confirmacion_fecha === aviso.datos && filaAviso.datos?.[0]?.whatsapp_recordatorio_enviado === false, `HTTP ${aviso.status} ${JSON.stringify(filaAviso.datos?.[0])}`);
+  const avisoCancelacion = await avisar({ p_reserva_id: ID_HOY, p_tipo: "cancelacion" });
+  comprobar("I. Apuntar 'cancelación avisada' en una cita confirmada se rechaza (CT020)", avisoCancelacion.status === 400 && codigo(avisoCancelacion) === "CT020", `HTTP ${avisoCancelacion.status} ${codigo(avisoCancelacion)}`);
+  const avisoRaro = await avisar({ p_reserva_id: ID_HOY, p_tipo: "otro" });
+  comprobar("I. Un tipo de aviso desconocido se rechaza", avisoRaro.status === 400, `HTTP ${avisoRaro.status}`);
+  const listoAnon = await marcar({ p_reserva_id: ID_HOY, p_listo: true }, ANON);
+  const avisoAnon = await avisar({ p_reserva_id: ID_HOY, p_tipo: "confirmacion" }, ANON);
+  comprobar("I. El público no puede marcar ni apuntar avisos", [401, 403, 404].includes(listoAnon.status) && [401, 403, 404].includes(avisoAnon.status), `HTTP ${listoAnon.status} / ${avisoAnon.status}`);
+} else {
+  comprobar("I. (sin cita de hoy no se puede probar 'Vehículo listo')", false);
+}
+if (manual.datos?.reserva_id) {
+  const listoFuturo = await marcar({ p_reserva_id: manual.datos.reserva_id, p_listo: true });
+  comprobar("I. Una cita de otro día (futura) no se puede marcar como lista (CT019)", listoFuturo.status === 400 && codigo(listoFuturo) === "CT019", `HTTP ${listoFuturo.status} ${codigo(listoFuturo)}`);
+}
+const listoAjena = await marcar({ p_reserva_id: 1, p_listo: true });
+const avisoAjena = await avisar({ p_reserva_id: 1, p_tipo: "confirmacion" });
+comprobar("I. No puede marcar ni apuntar avisos en citas de otro taller (CT019 / CT020)", codigo(listoAjena) === "CT019" && codigo(avisoAjena) === "CT020", `${codigo(listoAjena)} / ${codigo(avisoAjena)}`);
+const listoCancelada = await marcar({ p_reserva_id: reserva.reserva_id, p_listo: true });
+comprobar("I. Una cita cancelada no se puede marcar como lista (CT019)", codigo(listoCancelada) === "CT019", `HTTP ${listoCancelada.status} ${codigo(listoCancelada)}`);
+
 // E. Conectar Google: la función crea el state y devuelve una URL de Google
 const conectar = await pedir("/functions/v1/conectar-google-calendar", { token: TOKEN, metodo: "POST", cuerpo: { taller_id: TALLER_E2E, volver_a: `http://localhost:5173/${SLUG}/panel` } });
 const authUrl = conectar.datos?.auth_url || "";

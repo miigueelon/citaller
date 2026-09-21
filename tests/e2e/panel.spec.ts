@@ -99,4 +99,52 @@ test.describe("Panel del taller", () => {
     await page.getByRole("button", { name: /sí, cancelar la cita/i }).click();
     await expect(page.getByText(/cita cancelada/i)).toBeVisible();
   });
+
+  test("vehículo listo: la cita se descuenta de Hoy, queda marcada y se puede deshacer", async ({ page }) => {
+    const nombre = `Cliente Listo ${String(Date.now()).slice(-5)}`;
+    await entrar(page);
+
+    // Cita a mano para hoy a última hora (el taller no valida horario): nace confirmada y es de hoy.
+    await page.getByRole("button", { name: /nueva cita/i }).click();
+    const dialogo = page.getByRole("dialog");
+    await dialogo.locator('select[name="miembro_id"]').selectOption({ label: "Mecánico A" });
+    await dialogo.locator('input[name="nombre"]').fill(nombre);
+    await dialogo.locator('input[name="matricula"]').fill("9999ZZZ");
+    await dialogo.locator('input[name="vehiculo"]').fill("Furgoneta");
+    await dialogo.locator('select[name="servicio"]').selectOption("Frenos");
+    await dialogo.locator('input[name="dia"]').fill(hoyLocal());
+    await dialogo.locator('input[name="hora"]').fill("23:59");
+    await dialogo.getByRole("button", { name: /guardar cita confirmada/i }).click();
+    await expect(page.getByText(/cita confirmada/i)).toBeVisible();
+
+    await page.getByRole("button", { name: /^Confirmadas/ }).click();
+    const tarjeta = page.locator(".tarjeta-reserva", { hasText: nombre }).first();
+    await expect(tarjeta).toBeVisible();
+
+    const subtitulo = page.locator(".panel-subtitulo");
+    await expect(subtitulo).toHaveText(/^Hoy: \d+ por terminar/);
+    const porTerminar = Number(/Hoy: (\d+) por terminar/.exec((await subtitulo.textContent()) ?? "")?.[1]);
+
+    // El taller e2e no tiene WhatsApp: el botón solo termina la cita.
+    await tarjeta.getByRole("button", { name: /^Vehículo listo$/ }).click();
+    await expect(tarjeta.locator(".tarjeta-marca")).toContainText(/✓ Lista a las \d{2}:\d{2}/);
+    await expect(subtitulo).toHaveText(porTerminar === 1 ? /^Hoy: todo terminado/ : new RegExp(`^Hoy: ${porTerminar - 1} por terminar`));
+    // Terminada: ya no se ofrece cancelarla.
+    await expect(tarjeta.getByRole("button", { name: /cancelar cita/i })).toHaveCount(0);
+
+    await tarjeta.getByRole("button", { name: /deshacer/i }).click();
+    await expect(tarjeta.locator(".tarjeta-marca")).toHaveCount(0);
+    await expect(subtitulo).toHaveText(new RegExp(`^Hoy: ${porTerminar} por terminar`));
+
+    // Limpieza.
+    await tarjeta.getByRole("button", { name: /cancelar cita/i }).click();
+    await page.getByRole("button", { name: /sí, cancelar la cita/i }).click();
+    await expect(page.getByText(/cita cancelada/i)).toBeVisible();
+  });
 });
+
+/** Hoy en la zona del equipo que ejecuta la prueba (la misma que el navegador), "YYYY-MM-DD". */
+function hoyLocal(): string {
+  const f = new Date();
+  return `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, "0")}-${String(f.getDate()).padStart(2, "0")}`;
+}

@@ -15,9 +15,10 @@ interface Props {
   onCancelar: (reserva: ReservaPanel) => void;
   onAvisarWhatsapp?: (reserva: ReservaPanel) => void;
   onVehiculoListo?: (reserva: ReservaPanel) => void;
+  onDeshacerListo?: (reserva: ReservaPanel) => void;
 }
 
-export function ListaReservas({ cargando, error, grupos, textoVacio, campos, ocupado = false, onConfirmar, onCancelar, onAvisarWhatsapp, onVehiculoListo }: Props) {
+export function ListaReservas({ cargando, error, grupos, textoVacio, campos, ocupado = false, onConfirmar, onCancelar, onAvisarWhatsapp, onVehiculoListo, onDeshacerListo }: Props) {
   if (cargando) {
     return (
       <div className="panel-estado panel-cargando">
@@ -64,6 +65,7 @@ export function ListaReservas({ cargando, error, grupos, textoVacio, campos, ocu
                 onCancelar={onCancelar}
                 onAvisarWhatsapp={onAvisarWhatsapp}
                 onVehiculoListo={onVehiculoListo}
+                onDeshacerListo={onDeshacerListo}
               />
             ))}
           </div>

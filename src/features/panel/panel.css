@@ -850,3 +850,47 @@
 .btn-listo:hover {
   filter: brightness(0.92);
 }
+
+/* Marca de hecho ("✓ Lista…", "✓ Confirmación avisada…"); la de lista lleva "Deshacer" por si se pulsó en la que no era. */
+.tarjeta-marca {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 10px 14px;
+  border-radius: var(--radio-s);
+  background: var(--color-ok-fondo);
+  color: var(--color-ok-texto);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.tarjeta-marca-deshacer {
+  padding: 4px;
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.tarjeta-marca-deshacer:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* La marca va pegada al botón que la repite. */
+.tarjeta-marca + .tarjeta-acciones {
+  margin-top: 10px;
+}
+
+.citas-manana-hecho {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-ok-texto);
+  font-size: 13px;
+  font-weight: 600;
+}

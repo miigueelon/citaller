@@ -1,7 +1,8 @@
 import { AlertTriangle, Car, CheckCircle2, Clock, Hash, Phone, Store, User, Wrench } from "lucide-react";
-import { horaCorta } from "@/lib/fechas";
+import { horaCorta, hoy } from "@/lib/fechas";
 import type { CampoFormulario } from "@/features/taller/api";
 import { formatearTelefono } from "@/features/reservar/validacion";
+import { marcaAviso, textoLista } from "../filtros";
 import type { ReservaPanel } from "../tipos";
 
 interface Props {
@@ -12,10 +13,12 @@ interface Props {
   ocupado?: boolean;
   onConfirmar: (reserva: ReservaPanel) => void;
   onCancelar: (reserva: ReservaPanel) => void;
-  /** Modo enlace: abre WhatsApp con el mensaje ya escrito. */
+  /** Modo enlace: abre WhatsApp con el mensaje ya escrito y lo apunta como avisado. */
   onAvisarWhatsapp?: (reserva: ReservaPanel) => void;
-  /** Modo enlace: "tu vehículo ya está listo para recoger". No cambia el estado; se puede repetir. */
+  /** Marca la cita como terminada y, en modo enlace, abre WhatsApp con "ya está listo". Se puede repetir. */
   onVehiculoListo?: (reserva: ReservaPanel) => void;
+  /** Quita la marca de terminada (por si se pulsó en la cita que no era). */
+  onDeshacerListo?: (reserva: ReservaPanel) => void;
 }
 
 function etiquetaEstado(reserva: ReservaPanel): string {
@@ -23,7 +26,14 @@ function etiquetaEstado(reserva: ReservaPanel): string {
   return reserva.estado;
 }
 
-export function TarjetaReserva({ reserva, campos, ocupado = false, onConfirmar, onCancelar, onAvisarWhatsapp, onVehiculoListo }: Props) {
+export function TarjetaReserva({ reserva, campos, ocupado = false, onConfirmar, onCancelar, onAvisarWhatsapp, onVehiculoListo, onDeshacerListo }: Props) {
+  // Solo hay WhatsApp en modo enlace (onAvisarWhatsapp) y si la cita tiene teléfono.
+  const avisaPorWhatsapp = !!onAvisarWhatsapp && !!reserva.telefono;
+  // Se termina el día de la cita o después (la base de datos tampoco deja marcar una de mañana).
+  const puedeTerminar = reserva.dia <= hoy();
+  // Avisos ya mandados: "✓ Confirmación avisada a las 12:30" (null si no).
+  const confirmacionAvisada = marcaAviso(reserva, "confirmacion");
+  const cancelacionAvisada = marcaAviso(reserva, "cancelacion");
   const extras = campos
     .map((campo) => ({ campo, valor: reserva.datos_extra[campo.clave] }))
     .filter(({ valor }) => valor !== undefined && valor !== null && String(valor).trim() !== "");
@@ -133,32 +143,54 @@ export function TarjetaReserva({ reserva, campos, ocupado = false, onConfirmar, 
 
       {reserva.estado === "Confirmada" && (
         <>
-          {onVehiculoListo && reserva.telefono && (
+          {reserva.listo_en && (
+            <div className="tarjeta-marca">
+              <span>{textoLista(reserva.listo_en, avisaPorWhatsapp)}</span>
+              {onDeshacerListo && (
+                <button type="button" className="tarjeta-marca-deshacer" onClick={() => onDeshacerListo(reserva)} disabled={ocupado}>
+                  Deshacer
+                </button>
+              )}
+            </div>
+          )}
+          {/* Lista y sin WhatsApp, volver a pulsar no haría nada nuevo: el botón desaparece. */}
+          {puedeTerminar && onVehiculoListo && (!reserva.listo_en || avisaPorWhatsapp) && (
             <div className="tarjeta-acciones">
-              <button type="button" className="btn-whatsapp btn-listo" onClick={() => onVehiculoListo(reserva)} disabled={ocupado}>
-                <CheckCircle2 size={16} /> Vehículo listo: avisar por WhatsApp
+              <button type="button" className={reserva.listo_en ? "btn-whatsapp" : "btn-whatsapp btn-listo"} onClick={() => onVehiculoListo(reserva)} disabled={ocupado}>
+                <CheckCircle2 size={16} /> {reserva.listo_en ? "Volver a avisar por WhatsApp" : avisaPorWhatsapp ? "Vehículo listo: avisar por WhatsApp" : "Vehículo listo"}
               </button>
             </div>
           )}
-          <div className="tarjeta-acciones">
-            {onAvisarWhatsapp && reserva.telefono && (
-              <button type="button" className="btn-whatsapp" onClick={() => onAvisarWhatsapp(reserva)} disabled={ocupado}>
-                Avisar por WhatsApp
-              </button>
-            )}
-            <button type="button" className="btn-cancelar" onClick={() => onCancelar(reserva)} disabled={ocupado}>
-              ✕ Cancelar cita
-            </button>
-          </div>
+          {/* Terminada, ya no toca recordar la cita ni cancelarla (si fue un error, "Deshacer"). */}
+          {!reserva.listo_en && (
+            <>
+              {confirmacionAvisada && <div className="tarjeta-marca">{confirmacionAvisada}</div>}
+              <div className="tarjeta-acciones">
+                {avisaPorWhatsapp && onAvisarWhatsapp && (
+                  <button type="button" className="btn-whatsapp" onClick={() => onAvisarWhatsapp(reserva)} disabled={ocupado}>
+                    {confirmacionAvisada ? "Volver a avisar" : "Avisar por WhatsApp"}
+                  </button>
+                )}
+                <button type="button" className="btn-cancelar" onClick={() => onCancelar(reserva)} disabled={ocupado}>
+                  ✕ Cancelar cita
+                </button>
+              </div>
+            </>
+          )}
         </>
       )}
 
-      {reserva.estado === "Cancelada" && reserva.cancelada_por === "taller" && onAvisarWhatsapp && reserva.telefono && (
-        <div className="tarjeta-acciones">
-          <button type="button" className="btn-whatsapp" onClick={() => onAvisarWhatsapp(reserva)} disabled={ocupado}>
-            Avisar de la cancelación
-          </button>
-        </div>
+      {reserva.estado === "Cancelada" && reserva.cancelada_por === "taller" && (
+        <>
+          {cancelacionAvisada && <div className="tarjeta-marca">{cancelacionAvisada}</div>}
+          {avisaPorWhatsapp && onAvisarWhatsapp && (
+            <div className="tarjeta-acciones">
+              <button type="button" className="btn-whatsapp" onClick={() => onAvisarWhatsapp(reserva)} disabled={ocupado}>
+                {cancelacionAvisada ? "Volver a avisar de la cancelación" : "Avisar de la cancelación"}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

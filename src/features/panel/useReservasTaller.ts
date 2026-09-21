@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import type { ClienteSupabase } from "@/lib/supabase/client";
 import { mensajeDeError } from "@/lib/erroresDominio";
 import { EDGE_FUNCTIONS, type RespuestaFuncion, type ResultadoNotificaciones } from "@/features/integraciones/edgeFunctions";
-import { cargarReservasTaller } from "./api";
-import type { ReservaPanel } from "./tipos";
+import { cargarReservasTaller, marcarAvisoWhatsapp, marcarVehiculoListo } from "./api";
+import { conAviso } from "./filtros";
+import type { ReservaPanel, TipoAviso } from "./tipos";
 
 export interface ResultadoAccion {
   ok: boolean;
@@ -151,5 +152,37 @@ export function useReservasTaller(cliente: ClienteSupabase, tallerId: number) {
     [invocar, tallerId],
   );
 
-  return { reservas, cargando, error, recargar, confirmar, cancelar, crearManual };
+  /** "Vehículo listo" (o deshacerlo): guarda la marca y la cambia en la lista sin recargar todo. */
+  const marcarListo = useCallback(
+    async (reservaId: number, listo: boolean): Promise<ResultadoAccion> => {
+      try {
+        const listoEn = await marcarVehiculoListo(cliente, reservaId, listo);
+        setReservas((actuales) => actuales.map((reserva) => (reserva.id === reservaId ? { ...reserva, listo_en: listoEn } : reserva)));
+        return { ok: true, reservaId, logros: [], avisos: [] };
+      } catch (fallo: unknown) {
+        console.error("marcar_vehiculo_listo:", fallo);
+        await recargar();
+        return { ok: false, logros: [], avisos: [mensajeDeError(fallo)] };
+      }
+    },
+    [cliente, recargar],
+  );
+
+  /** Modo enlace: tras abrir WhatsApp, apunta el aviso para que la tarjeta lo marque como hecho. */
+  const marcarAviso = useCallback(
+    async (reservaId: number, tipo: TipoAviso): Promise<ResultadoAccion> => {
+      try {
+        const fecha = await marcarAvisoWhatsapp(cliente, reservaId, tipo);
+        setReservas((actuales) => actuales.map((reserva) => (reserva.id === reservaId ? conAviso(reserva, tipo, fecha) : reserva)));
+        return { ok: true, reservaId, logros: [], avisos: [] };
+      } catch (fallo: unknown) {
+        console.error("marcar_aviso_whatsapp:", fallo);
+        await recargar();
+        return { ok: false, logros: [], avisos: [mensajeDeError(fallo)] };
+      }
+    },
+    [cliente, recargar],
+  );
+
+  return { reservas, cargando, error, recargar, confirmar, cancelar, crearManual, marcarListo, marcarAviso };
 }

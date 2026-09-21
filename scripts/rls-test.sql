@@ -112,7 +112,21 @@ with comprobaciones (orden, comprobacion, actual, esperado) as (
     (65, 'comprobar_capacidad aplica el tope diario (CT018)', (
            select pg_get_functiondef('public.comprobar_capacidad()'::regprocedure) ilike '%max_citas_dia%CT018%'), true),
     (66, 'anon lee talleres.texto_whatsapp_listo',      has_column_privilege('anon', 'public.talleres', 'texto_whatsapp_listo', 'SELECT'), false),
-    (67, 'authenticated lee talleres.texto_whatsapp_listo (su panel)', has_column_privilege('authenticated', 'public.talleres', 'texto_whatsapp_listo', 'SELECT'), true)
+    (67, 'authenticated lee talleres.texto_whatsapp_listo (su panel)', has_column_privilege('authenticated', 'public.talleres', 'texto_whatsapp_listo', 'SELECT'), true),
+    -- 22-sep: "Vehículo listo" termina la cita
+    (68, 'anon ejecuta marcar_vehiculo_listo',            has_function_privilege('anon', 'public.marcar_vehiculo_listo(bigint,boolean)', 'EXECUTE'), false),
+    (69, 'authenticated ejecuta marcar_vehiculo_listo (su panel)', has_function_privilege('authenticated', 'public.marcar_vehiculo_listo(bigint,boolean)', 'EXECUTE'), true),
+    (70, 'marcar_vehiculo_listo tiene search_path fijo',  (select proconfig is not null from pg_proc where oid = 'public.marcar_vehiculo_listo(bigint,boolean)'::regprocedure), true),
+    (71, 'marcar_vehiculo_listo solo toca citas del taller de auth.uid()', (
+           select pg_get_functiondef('public.marcar_vehiculo_listo(bigint,boolean)'::regprocedure) ilike '%user_id = (select auth.uid())%'), true),
+    (72, 'authenticated sigue sin UPDATE en reservas.listo_en (solo por la función)', has_column_privilege('authenticated', 'public.reservas', 'listo_en', 'UPDATE'), false),
+    -- 22-sep: avisos de WhatsApp apuntados desde el panel (modo enlace)
+    (73, 'anon ejecuta marcar_aviso_whatsapp',            has_function_privilege('anon', 'public.marcar_aviso_whatsapp(bigint,text)', 'EXECUTE'), false),
+    (74, 'authenticated ejecuta marcar_aviso_whatsapp (su panel)', has_function_privilege('authenticated', 'public.marcar_aviso_whatsapp(bigint,text)', 'EXECUTE'), true),
+    (75, 'marcar_aviso_whatsapp tiene search_path fijo y filtra por auth.uid()', (
+           select proconfig is not null and pg_get_functiondef(oid) ilike '%user_id = (select auth.uid())%'
+           from pg_proc where oid = 'public.marcar_aviso_whatsapp(bigint,text)'::regprocedure), true),
+    (76, 'authenticated lee reservas.whatsapp_recordatorio_fecha (su panel)', has_column_privilege('authenticated', 'public.reservas', 'whatsapp_recordatorio_fecha', 'SELECT'), true)
 )
 select orden, comprobacion, actual, esperado, (actual = esperado) as ok
 from comprobaciones

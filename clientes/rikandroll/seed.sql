@@ -1,8 +1,8 @@
 -- ============================================================================
 -- Rik and Roll: taller de coches. Capacidad por hora (2 a la vez) y como mucho 5 citas al día
 -- (pedido del 21-sep-2026); en Neumáticos pide cantidad y
--- medidas con imagen de ayuda. WhatsApp: 'ninguno' hasta que exista su cuenta de Meta Business
--- (entonces pasa a 'api' y se rellena whatsapp_phone_number_id desde el dashboard).
+-- medidas con imagen de ayuda. WhatsApp: modo 'enlace' (el panel abre WhatsApp con el mensaje escrito)
+-- hasta que exista su cuenta de Meta Business (entonces 'api' y whatsapp_phone_number_id desde el dashboard).
 -- Idempotente. Sin secretos.
 -- ============================================================================
 

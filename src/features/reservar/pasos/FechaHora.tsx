@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { useTaller } from "@/app/providers/useTaller";
-import { formatearDia, parsearDia } from "@/lib/fechas";
+import { formatearDia, hoy, parsearDia, sumarDias } from "@/lib/fechas";
 import { diaSeleccionable, festivoDelDia, horaSigueDisponible, horasDisponibles, type ParametrosDisponibilidad } from "../disponibilidad";
 import { useDisponibilidad } from "../useDisponibilidad";
 import type { ReservaEnCurso } from "../tipos";
@@ -74,6 +74,8 @@ export function FechaHora({ reserva, actualizar, volver, continuar }: Props) {
         onChange={cambiarFecha}
         value={reserva.dia ? parsearDia(reserva.dia) : null}
         minDate={new Date()}
+        // La base de datos admite citas hasta 90 días vista (CT004): el calendario no ofrece más.
+        maxDate={parsearDia(sumarDias(hoy(ahora), 90))}
         prev2Label={null}
         next2Label={null}
         showNeighboringMonth={false}

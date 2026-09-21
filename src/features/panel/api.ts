@@ -6,18 +6,32 @@ import { TEXTOS_VACIOS, type TextosWhatsapp } from "./textosWhatsapp";
 const COLUMNAS =
   "id, taller_id, nombre, telefono, matricula, vehiculo, servicio, descripcion, datos_extra, estado, dia, hora, creada_por, cancelada_por, cancelada_en, confirmada_en, listo_en, token_publico, whatsapp_confirmacion_enviada, whatsapp_confirmacion_fecha, whatsapp_cancelacion_enviada, whatsapp_cancelacion_fecha, whatsapp_recordatorio_enviado, whatsapp_recordatorio_fecha, whatsapp_error, google_event_id, google_error, miembro:miembros_taller!creada_por_miembro(nombre)";
 
+// PostgREST devuelve como mucho 1000 filas por petición.
+const PAGINA = 1000;
+
 /** Reservas del taller, ordenadas por día y hora. La RLS garantiza que solo llegan las suyas. */
 export async function cargarReservasTaller(cliente: ClienteSupabase, tallerId: number): Promise<ReservaPanel[]> {
-  const { data, error } = await cliente
-    .from("reservas")
-    .select(COLUMNAS)
-    .eq("taller_id", tallerId)
-    .order("dia", { ascending: true })
-    .order("hora", { ascending: true });
+  const pagina = (desde: number) =>
+    cliente
+      .from("reservas")
+      .select(COLUMNAS)
+      .eq("taller_id", tallerId)
+      .order("dia", { ascending: true })
+      .order("hora", { ascending: true })
+      .order("id", { ascending: true })
+      .range(desde, desde + PAGINA - 1);
 
-  if (error) throw new Error(error.message);
+  // Se pide por páginas hasta la última: el histórico (Finalizadas) crece sin límite y, como van
+  // ordenadas por día, con una sola petición las que se perderían serían las futuras.
+  const filas: NonNullable<Awaited<ReturnType<typeof pagina>>["data"]> = [];
+  for (let desde = 0; ; desde += PAGINA) {
+    const { data, error } = await pagina(desde);
+    if (error) throw new Error(error.message);
+    filas.push(...(data ?? []));
+    if ((data?.length ?? 0) < PAGINA) break;
+  }
 
-  return (data ?? []).map(({ miembro, ...fila }) => ({
+  return filas.map(({ miembro, ...fila }) => ({
     ...fila,
     estado: esEstadoReserva(fila.estado) ? fila.estado : "Pendiente",
     datos_extra: esObjeto(fila.datos_extra) ? fila.datos_extra : {},

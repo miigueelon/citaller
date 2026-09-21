@@ -20,7 +20,7 @@
 - Nunca borrar datos del proyecto remoto, salvo los del taller de pruebas `e2e`.
 
 ## Dar de alta un taller
-1. Copiar `clientes/_plantilla/` a `clientes/<slug>/`; rellenar `seed.sql` (taller, `modo_capacidad` + `capacidad` y, si hace falta, `max_citas_dia` —tope del día además del anterior: Rik and Roll, 2 por hora y 5 al día—, `whatsapp_modo`, textos de WhatsApp del modo enlace (`texto_whatsapp_{confirmacion,cancelacion,recordatorio,listo}`; en "listo" cada taller dice "tu moto" o "tu coche"), textos, servicios con su modo de descripción, campos extra, horarios, festivos) y `README.md`; añadir assets (logo, imágenes de ayuda) en `assets/`. Nada de lógica por taller en el código: todo lo que cambia entre talleres vive en el seed.
+1. Copiar `clientes/_plantilla/` a `clientes/<slug>/`; rellenar `seed.sql` (taller, `modo_capacidad` + `capacidad` y, si hace falta, `max_citas_dia` —tope del día además del anterior: Rik and Roll, 2 por hora y 5 al día—, `whatsapp_modo`, textos de WhatsApp del modo enlace (`texto_whatsapp_{confirmacion,cancelacion,recordatorio,listo}`; en "listo" cada taller dice "tu moto" o "tu coche"), textos, servicios con su modo de descripción, campos extra, horarios, festivos); añadir assets (logo, imágenes de ayuda, QR) en `assets/`. Nada de lógica por taller en el código: todo lo que cambia entre talleres vive en el seed.
 2. Añadir la ruta del seed a `sql_paths` en `supabase/config.toml` y aplicarlo (`npx supabase db push --include-seed`). Es idempotente. `npm test` comprueba que el seed no menciona otros slugs ni contiene secretos.
 3. Crear el usuario del taller en Supabase Auth (invitación) y vincularlo (`talleres.user_id`; en la fase 5, `miembros_taller`).
 4. Integraciones: si usa Google Calendar, el taller pulsa "Conectar Google Calendar" en su panel. WhatsApp según `whatsapp_modo`: `api` (WABA, plantillas y token; ver `integraciones.md`), `enlace` (nada que configurar: el panel abre WhatsApp con el mensaje escrito) o `ninguno`.
@@ -97,7 +97,7 @@ Cada versión buena queda como **etiqueta de git** (en GitHub también) y con su
 - **Protección de contraseñas filtradas**: el aviso del linter no se puede quitar porque la organización está en el **plan gratuito** (esa función requiere plan Pro). Queda aceptado y documentado; revisarlo si algún día se sube de plan.
 - Secretos de Edge Functions (o `npx supabase secrets set`).
 - Contraseña de la base de datos (Project Settings → Database): solo hace falta para `npm run backup`.
-- Borrar Edge Functions antiguas (la CLI no lo hace): Dashboard → Edge Functions → la función → Delete. Pendientes de borrar: los cinco slugs de antes de la fase 1 (`dynamic-function`, `quick-worker`, `bright-service`, `bright-processor`, `hyper-processor`) y, una semana después de desplegar la fase 3, `enviar-whatsapp-confirmacion`, `crear-evento-google` y `cancelar-evento-google` (sustituidas por `confirmar-reserva` / `cancelar-reserva`).
+- Borrar una Edge Function (la CLI no lo hace): Dashboard → Edge Functions → la función → Delete. Las ocho antiguas ya están borradas (21-sep-2026); en la nube quedan solo las 7 de `supabase/config.toml`.
 - Ejecutar a mano un seed ya aplicado que se haya modificado (ver "Flujo con Supabase").
 
 ## Tareas que se hacen a mano en Google Cloud

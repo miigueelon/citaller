@@ -155,11 +155,11 @@ enabled = false  # CiTaller: valor real de la nube
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "https://citaller.vercel.app"
+site_url = "https://citaller.es"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://citaller.vercel.app", "http://localhost:5173"]
+additional_redirect_urls = ["https://citaller.es", "https://citaller.vercel.app", "http://localhost:5173"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.
@@ -416,18 +416,12 @@ enabled = true
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
 
-# ============================================================
-# Edge Functions descargadas de la nube el 19-sep-2026.
-# entrypoint: fichero original de cada función (no usan index.ts).
-# verify_jwt: valor que tiene HOY cada función en la nube, para que un
-# `functions deploy` no cambie el comportamiento sin querer.
-# Nombres y verify_jwt se corrigen en la fase 1 (ver docs/plan.md).
-# ============================================================
-
 # ---------------------------------------------------------------------------
-# Edge Functions de CiTaller (nombres objetivo, fase 1 de docs/plan.md).
+# Edge Functions de CiTaller (las 7 desplegadas; ver docs/integraciones.md).
 # verify_jwt = true: el gateway exige un JWT válido y además el código comprueba el taller.
-# verify_jwt = false: las llama Google (callback) o pg_cron (recordatorios, con x-cron-secret).
+# verify_jwt = false: las llama Google (callback), el cliente sin sesión (cancelar-cita-cliente,
+# autoriza por el token de la cita) o pg_cron (recordatorios, con x-cron-secret).
+# Despliegue: `npx supabase functions deploy <nombre> --use-api`, una por línea (lo hace Miguel).
 # ---------------------------------------------------------------------------
 [functions.conectar-google-calendar]
 entrypoint = "./functions/conectar-google-calendar/index.ts"
@@ -457,28 +451,3 @@ verify_jwt = false
 [functions.enviar-whatsapp-recordatorios]
 entrypoint = "./functions/enviar-whatsapp-recordatorios/index.ts"
 verify_jwt = false
-
-# ---------------------------------------------------------------------------
-# LEGADO: slugs antiguos que siguen desplegados en la nube hasta que se borren (fin de la
-# fase 1, con aprobación). Nadie los llama ya: ni el frontend de producción (no usa Edge
-# Functions) ni la rama (usa los nombres de arriba) ni el cron. No volver a desplegarlos.
-# ---------------------------------------------------------------------------
-[functions.dynamic-function]
-entrypoint = "./functions/dynamic-function/crear-evento-google.ts"
-verify_jwt = true
-
-[functions.quick-worker]
-entrypoint = "./functions/quick-worker/cancelar-evento-google.ts"
-verify_jwt = true
-
-[functions.bright-service]
-entrypoint = "./functions/bright-service/google-calendar-callback.ts"
-verify_jwt = false
-
-[functions.bright-processor]
-entrypoint = "./functions/bright-processor/enviar-whatsapp.ts"
-verify_jwt = false
-
-[functions.hyper-processor]
-entrypoint = "./functions/hyper-processor/recordatorios-whatsapp.ts"
-verify_jwt = true

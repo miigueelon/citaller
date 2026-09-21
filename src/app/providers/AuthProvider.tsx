@@ -61,7 +61,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .maybeSingle();
 
         if (errorTaller || !tallerUsuario) {
-          await cliente.auth.signOut();
+          // Solo en este navegador: un despiste aquí no debe cerrar el panel en el móvil del taller.
+          await cliente.auth.signOut({ scope: "local" });
           return "Estas credenciales pertenecen a otro taller.";
         }
 
@@ -74,8 +75,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [cliente, taller.id],
   );
 
+  // "Cerrar sesión" cierra este dispositivo; la cuenta del taller la comparten móvil y ordenador.
   const cerrarSesion = useCallback(async () => {
-    await cliente.auth.signOut();
+    await cliente.auth.signOut({ scope: "local" });
     setUsuario(null);
   }, [cliente]);
 

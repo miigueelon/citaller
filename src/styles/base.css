@@ -130,3 +130,10 @@ textarea {
     font-size: 30px;
   }
 }
+
+/* Mientras se descarga una página cargada bajo demanda (panel, cita del cliente, privacidad). */
+.cargando-pagina {
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--color-texto-suave);
+}

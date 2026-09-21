@@ -45,3 +45,6 @@ playwright-report/
 
 # Cookie de acceso a los previews protegidos de Vercel (la genera Playwright)
 tests/e2e/.auth/
+
+# Generado por `tsc -b`
+*.tsbuildinfo

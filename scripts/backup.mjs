@@ -58,9 +58,18 @@ const { rows: tablas } = await cliente.query(
   `select table_name from information_schema.tables where table_schema = 'public' and table_type = 'BASE TABLE' order by 1`
 );
 
+// Columnas que nunca se vuelcan: tokens que pudieran quedar en claro (la copia vive en el disco de
+// Miguel, sin cifrar). El refresh token de Google vive en Vault; esta columna es la antigua.
+const COLUMNAS_EXCLUIDAS = new Set(["refresh_token", "access_token"]);
+
 const resumen = { fecha: ahora.toISOString(), tablas: {} };
 for (const { table_name } of tablas) {
-  const { rows } = await cliente.query(`select * from public."${table_name}" order by 1`);
+  const { rows: columnas } = await cliente.query(
+    `select column_name from information_schema.columns where table_schema = 'public' and table_name = $1 order by ordinal_position`,
+    [table_name]
+  );
+  const lista = columnas.map((c) => c.column_name).filter((c) => !COLUMNAS_EXCLUIDAS.has(c)).map((c) => `"${c}"`).join(", ");
+  const { rows } = await cliente.query(`select ${lista} from public."${table_name}" order by 1`);
   writeFileSync(join(carpeta, `${table_name}.json`), JSON.stringify(rows, null, 1));
   resumen.tablas[table_name] = rows.length;
 }

@@ -23,15 +23,15 @@ test.describe("Panel del taller", () => {
     await expect(page.locator(".panel-subtitulo")).toHaveText(/^Hoy: .+ · (todo al día|\d+ por responder)$/);
   });
 
-  test("el historial solo tiene buscador y cuenta las citas pasadas", async ({ page }) => {
+  test("la pestaña Finalizadas es el histórico: total en el botón, buscador y sin filtros de fecha", async ({ page }) => {
     await entrar(page);
-    await page.getByRole("button", { name: /ver historial/i }).click();
-    await expect(page.locator(".panel-subtitulo")).toHaveText(/^\d+ citas? pasadas?$/);
-    await expect(page.getByRole("button", { name: /^Pendientes/ })).toHaveCount(0);
+    const pestana = page.getByRole("button", { name: /^Finalizadas \(\d+\)$/ });
+    await expect(pestana).toBeVisible();
+    await pestana.click();
     await expect(page.getByRole("button", { name: /^Próximos 7 días$/ })).toHaveCount(0);
     await expect(page.getByLabel("Buscar reservas")).toBeVisible();
     await page.getByLabel("Buscar reservas").fill("zzz-no-existe");
-    await expect(page.getByText(/no hay citas pasadas que coincidan/i)).toBeVisible();
+    await expect(page.getByText(/no hay citas finalizadas que coincidan/i)).toBeVisible();
   });
 
   test("con una contraseña incorrecta no entra", async ({ page }) => {
@@ -100,7 +100,7 @@ test.describe("Panel del taller", () => {
     await expect(page.getByText(/cita cancelada/i)).toBeVisible();
   });
 
-  test("vehículo listo: la cita se descuenta de Hoy, queda marcada y se puede deshacer", async ({ page }) => {
+  test("vehículo listo: la cita se descuenta de Hoy, pasa a Finalizadas y se puede deshacer", async ({ page }) => {
     const nombre = `Cliente Listo ${String(Date.now()).slice(-5)}`;
     await entrar(page);
 
@@ -125,16 +125,28 @@ test.describe("Panel del taller", () => {
     await expect(subtitulo).toHaveText(/^Hoy: \d+ por terminar/);
     const porTerminar = Number(/Hoy: (\d+) por terminar/.exec((await subtitulo.textContent()) ?? "")?.[1]);
 
-    // El taller e2e no tiene WhatsApp: el botón solo termina la cita.
-    await tarjeta.getByRole("button", { name: /^Vehículo listo$/ }).click();
-    await expect(tarjeta.locator(".tarjeta-marca")).toContainText(/✓ Lista a las \d{2}:\d{2}/);
-    await expect(subtitulo).toHaveText(porTerminar === 1 ? /^Hoy: todo terminado/ : new RegExp(`^Hoy: ${porTerminar - 1} por terminar`));
-    // Terminada: ya no se ofrece cancelarla.
-    await expect(tarjeta.getByRole("button", { name: /cancelar cita/i })).toHaveCount(0);
+    const finalizadas = Number(/\((\d+)\)/.exec((await page.getByRole("button", { name: /^Finalizadas/ }).textContent()) ?? "")?.[1]);
 
-    await tarjeta.getByRole("button", { name: /deshacer/i }).click();
-    await expect(tarjeta.locator(".tarjeta-marca")).toHaveCount(0);
+    // El taller e2e no tiene WhatsApp: el botón solo termina la cita, que sale de Confirmadas.
+    await tarjeta.getByRole("button", { name: /^Vehículo listo$/ }).click();
+    await expect(subtitulo).toHaveText(porTerminar === 1 ? /^Hoy: todo terminado/ : new RegExp(`^Hoy: ${porTerminar - 1} por terminar`));
+    await expect(page.locator(".tarjeta-reserva", { hasText: nombre })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^Finalizadas/ })).toHaveText(`Finalizadas (${finalizadas + 1})`);
+
+    await page.getByRole("button", { name: /^Finalizadas/ }).click();
+    const hecha = page.locator(".tarjeta-reserva", { hasText: nombre }).first();
+    await expect(hecha.getByText("Finalizada", { exact: true })).toBeVisible();
+    await expect(hecha.locator(".tarjeta-marca")).toContainText(/✓ Lista a las \d{2}:\d{2}/);
+    // Terminada: ya no se ofrece cancelarla.
+    await expect(hecha.getByRole("button", { name: /cancelar cita/i })).toHaveCount(0);
+
+    // Deshacer la devuelve a Confirmadas.
+    await hecha.getByRole("button", { name: /deshacer/i }).click();
+    await expect(page.locator(".tarjeta-reserva", { hasText: nombre })).toHaveCount(0);
     await expect(subtitulo).toHaveText(new RegExp(`^Hoy: ${porTerminar} por terminar`));
+    await page.getByRole("button", { name: /^Confirmadas/ }).click();
+    await expect(tarjeta).toBeVisible();
+    await expect(tarjeta.locator(".tarjeta-marca")).toHaveCount(0);
 
     // Limpieza.
     await tarjeta.getByRole("button", { name: /cancelar cita/i }).click();

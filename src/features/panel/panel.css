@@ -154,27 +154,6 @@
   height: 16px;
 }
 
-/* Historial: acción poco frecuente, como enlace a la derecha en vez de botón a todo el ancho. */
-.panel-btn-historial {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: fit-content;
-  margin: 4px 0 20px auto;
-  padding: 8px 10px;
-  border: none;
-  background: transparent;
-  color: var(--color-texto-suave);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.panel-btn-historial:hover {
-  color: var(--color-titulo);
-  text-decoration: underline;
-}
-
 /* Estados de la lista */
 .panel-estado {
   display: flex;

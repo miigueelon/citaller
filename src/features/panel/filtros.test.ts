@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { agruparPorDia, conAviso, filtrarReservas, historial, marcaAviso, porEstado, resumenCabecera, reservasFuturas, textoLista, textoResumen, tituloGrupo } from "./filtros";
+import { agruparPorDia, conAviso, estaFinalizada, filtrarReservas, finalizadas, marcaAviso, porEstado, porPestana, resumenCabecera, reservasFuturas, textoLista, textoResumen, tituloGrupo } from "./filtros";
 import type { ReservaPanel } from "./tipos";
 
 // Lunes 21 de septiembre de 2026, 10:00.
@@ -57,14 +57,26 @@ describe("futuras, estados e historial", () => {
     expect(porEstado(futuras, "Confirmada").map((r) => r.id)).toEqual([3, 4]);
   });
 
-  it("el historial son las confirmadas pasadas, de la más reciente a la más antigua", () => {
-    const conMasPasadas = [
+  it("las finalizadas son las confirmadas pasadas o marcadas listas, de la más reciente a la más antigua", () => {
+    const conMas = [
       ...lista,
-      reserva({ id: 7, dia: "2026-09-17", estado: "Confirmada", creada_por: "taller" }), // a mano
+      reserva({ id: 7, dia: "2026-09-17", estado: "Confirmada", creada_por: "taller" }), // a mano, pasada
       reserva({ id: 8, dia: "2026-09-17", estado: "Pendiente" }), // nadie la respondió
+      reserva({ id: 9, dia: "2026-09-21", estado: "Confirmada", hora: "09:00:00", listo_en: "2026-09-21T07:30:00Z" }), // hoy, lista
+      reserva({ id: 10, dia: "2026-09-21", estado: "Confirmada", hora: "12:00:00" }), // hoy, por hacer
     ];
-    // La 6 (cancelada) y la 8 (pendiente) no salen.
-    expect(historial(conMasPasadas, ahora).map((r) => r.id)).toEqual([1, 7]);
+    // La 6 (cancelada), la 8 (pendiente) y la 10 (hoy sin terminar) no salen.
+    expect(finalizadas(conMas, ahora).map((r) => r.id)).toEqual([9, 1, 7]);
+    expect(estaFinalizada(conMas[3], ahora)).toBe(false); // futura confirmada
+  });
+
+  it("cada pestaña enseña lo suyo: la lista de hoy sale de Confirmadas y entra en Finalizadas", () => {
+    const hoyLista = reserva({ id: 9, dia: "2026-09-21", estado: "Confirmada", hora: "09:00:00", listo_en: "2026-09-21T07:30:00Z" });
+    const conLista = [...lista, hoyLista];
+    expect(porPestana(conLista, "Confirmada", ahora).map((r) => r.id)).toEqual([3, 4]);
+    expect(porPestana(conLista, "Finalizada", ahora).map((r) => r.id)).toEqual([9, 1]);
+    expect(porPestana(conLista, "Pendiente", ahora).map((r) => r.id)).toEqual([2]);
+    expect(porPestana(conLista, "Cancelada", ahora).map((r) => r.id)).toEqual([5]);
   });
 });
 

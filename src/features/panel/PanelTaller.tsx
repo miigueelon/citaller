@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, History } from "lucide-react";
 import { useAuth } from "@/app/providers/useAuth";
 import { useTaller } from "@/app/providers/useTaller";
 import { Alerta } from "@/components/Alerta";
@@ -11,7 +10,7 @@ import { CitasManana } from "./componentes/CitasManana";
 import { FiltrosReservas } from "./componentes/FiltrosReservas";
 import { ListaReservas } from "./componentes/ListaReservas";
 import { NuevaCitaModal } from "./componentes/NuevaCitaModal";
-import { agruparPorDia, filtrarReservas, historial, porEstado, resumenCabecera, reservasFuturas, tituloGrupo, tituloHistorial } from "./filtros";
+import { agruparPorDia, filtrarReservas, porPestana, resumenCabecera, tituloGrupo, tituloHistorial } from "./filtros";
 import { datosDeReserva, enlaceWhatsapp, TEXTOS_VACIOS, textoMensaje, tipoMensajeDeReserva, type TextosWhatsapp, type TipoMensaje } from "./textosWhatsapp";
 import type { FiltroEstado, FiltroFecha, MiembroTaller, ReservaPanel, TipoAviso } from "./tipos";
 import { useConexionGoogle } from "./useConexionGoogle";
@@ -58,7 +57,6 @@ export function PanelTaller() {
     };
   }, [cliente, taller.id]);
 
-  const [mostrarHistorial, setMostrarHistorial] = useState(false);
   const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>("Pendiente");
   const [busqueda, setBusqueda] = useState("");
   const [filtroFecha, setFiltroFecha] = useState<FiltroFecha>("todas");
@@ -74,35 +72,27 @@ export function PanelTaller() {
     return () => clearInterval(intervalo);
   }, []);
 
-  const futuras = useMemo(() => reservasFuturas(reservas, ahora), [reservas, ahora]);
+  // Pestañas: pendientes, confirmadas y canceladas de hoy en adelante; finalizadas, todas (el histórico).
   const contadores = useMemo(
     () => ({
-      Pendiente: porEstado(futuras, "Pendiente").length,
-      Confirmada: porEstado(futuras, "Confirmada").length,
-      Cancelada: porEstado(futuras, "Cancelada").length,
+      Pendiente: porPestana(reservas, "Pendiente", ahora).length,
+      Confirmada: porPestana(reservas, "Confirmada", ahora).length,
+      Finalizada: porPestana(reservas, "Finalizada", ahora).length,
+      Cancelada: porPestana(reservas, "Cancelada", ahora).length,
     }),
-    [futuras],
+    [reservas, ahora],
   );
 
-  const gruposProximas = useMemo(
+  const esHistorico = filtroEstado === "Finalizada";
+  const grupos = useMemo(
     () =>
-      agruparPorDia(filtrarReservas(porEstado(futuras, filtroEstado), { busqueda, filtroFecha }, ahora)).map(
-        ([dia, items]) => [tituloGrupo(dia, ahora), items] as [string, ReservaPanel[]],
+      agruparPorDia(filtrarReservas(porPestana(reservas, filtroEstado, ahora), { busqueda, filtroFecha: esHistorico ? "todas" : filtroFecha }, ahora)).map(
+        ([dia, items]) => [esHistorico ? tituloHistorial(dia) : tituloGrupo(dia, ahora), items] as [string, ReservaPanel[]],
       ),
-    [futuras, filtroEstado, busqueda, filtroFecha, ahora],
+    [reservas, filtroEstado, esHistorico, busqueda, filtroFecha, ahora],
   );
 
   const resumen = useMemo(() => resumenCabecera(reservas, ahora), [reservas, ahora]);
-
-  // Historial: solo confirmadas, agrupadas por día; el buscador también vale aquí.
-  const pasadas = useMemo(() => historial(reservas, ahora), [reservas, ahora]);
-  const gruposHistorial = useMemo(
-    () =>
-      agruparPorDia(filtrarReservas(pasadas, { busqueda, filtroFecha: "todas" }, ahora)).map(
-        ([dia, items]) => [tituloHistorial(dia), items] as [string, ReservaPanel[]],
-      ),
-    [pasadas, busqueda, ahora],
-  );
 
   const citasManana = useMemo(() => {
     if (!modoEnlace) return [];
@@ -211,9 +201,7 @@ export function PanelTaller() {
       <div className="panel-taller-contenido">
         <CabeceraPanel
           nombreTaller={taller.nombre}
-          modoHistorial={mostrarHistorial}
           resumen={resumen}
-          totalHistorial={pasadas.length}
           cargando={cargando}
           onActualizar={() => void recargar()}
           onNuevaCita={() => setNuevaCita(true)}
@@ -248,7 +236,7 @@ export function PanelTaller() {
           </Alerta>
         )}
 
-        {modoEnlace && !mostrarHistorial && <CitasManana reservas={citasManana} onRecordar={(reserva) => void avisarWhatsapp(reserva, "recordatorio")} />}
+        {modoEnlace && <CitasManana reservas={citasManana} onRecordar={(reserva) => void avisarWhatsapp(reserva, "recordatorio")} />}
 
         <FiltrosReservas
           filtroEstado={filtroEstado}
@@ -258,32 +246,19 @@ export function PanelTaller() {
           onBusqueda={setBusqueda}
           filtroFecha={filtroFecha}
           onFiltroFecha={setFiltroFecha}
-          soloBusqueda={mostrarHistorial}
         />
-
-        {!mostrarHistorial ? (
-          <button type="button" className="panel-btn-historial" onClick={() => setMostrarHistorial(true)}>
-            <History size={16} />
-            Ver historial de reservas
-          </button>
-        ) : (
-          <button type="button" className="panel-btn-historial" onClick={() => setMostrarHistorial(false)}>
-            <ArrowLeft size={18} />
-            Volver a reservas
-          </button>
-        )}
 
         <ListaReservas
           cargando={cargando}
           error={error}
-          grupos={mostrarHistorial ? gruposHistorial : gruposProximas}
+          grupos={grupos}
           campos={taller.campos}
           ocupado={operando}
           textoVacio={
-            mostrarHistorial
+            esHistorico
               ? busqueda
-                ? "No hay citas pasadas que coincidan con la búsqueda."
-                : "Todavía no hay citas pasadas."
+                ? "No hay citas finalizadas que coincidan con la búsqueda."
+                : "Todavía no hay citas finalizadas."
               : busqueda || filtroFecha !== "todas"
                 ? "No hay reservas que coincidan con los filtros."
                 : "No hay reservas próximas."

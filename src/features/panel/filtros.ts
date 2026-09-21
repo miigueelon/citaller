@@ -1,6 +1,6 @@
 // Filtros y agrupaciones del panel. Lógica pura, sin React: se prueba sola.
 import { esDiaPasado, formatearDia, formatearDiaCorto, formatearDiaLargo, horaDeInstante, hoy, sumarDias, type Dia } from "@/lib/fechas";
-import type { EstadoReserva, FiltroFecha, ReservaPanel, TipoAviso } from "./tipos";
+import type { EstadoReserva, FiltroEstado, FiltroFecha, ReservaPanel, TipoAviso } from "./tipos";
 
 /** Reservas de hoy en adelante, cualquier día de la semana. */
 export function reservasFuturas(reservas: ReservaPanel[], ahora: Date = new Date()): ReservaPanel[] {
@@ -80,14 +80,24 @@ export function conAviso(reserva: ReservaPanel, tipo: TipoAviso, fecha: string):
 }
 
 /**
- * Historial: las citas confirmadas de días anteriores a hoy (de la web y apuntadas a mano), de la más
- * reciente a la más antigua. Las canceladas y las que nadie respondió no cuentan (decisión de Miguel,
- * 21-sep-2026).
+ * Cita hecha: confirmada y con "Vehículo listo" pulsado, o confirmada de un día ya pasado (aunque
+ * nadie pulsara el botón). Las canceladas y las que nadie respondió no cuentan (decisiones de Miguel,
+ * 21 y 22-sep-2026).
  */
-export function historial(reservas: ReservaPanel[], ahora: Date = new Date()): ReservaPanel[] {
-  return reservas
-    .filter((reserva) => !!reserva.dia && esDiaPasado(reserva.dia, ahora) && reserva.estado === "Confirmada")
-    .sort((a, b) => `${b.dia} ${b.hora ?? ""}`.localeCompare(`${a.dia} ${a.hora ?? ""}`));
+export function estaFinalizada(reserva: ReservaPanel, ahora: Date = new Date()): boolean {
+  return reserva.estado === "Confirmada" && (reserva.listo_en !== null || (!!reserva.dia && esDiaPasado(reserva.dia, ahora)));
+}
+
+/** Pestaña "Finalizadas": el registro histórico de todas las citas hechas, de la más reciente a la más antigua. */
+export function finalizadas(reservas: ReservaPanel[], ahora: Date = new Date()): ReservaPanel[] {
+  return reservas.filter((reserva) => estaFinalizada(reserva, ahora)).sort((a, b) => `${b.dia} ${b.hora ?? ""}`.localeCompare(`${a.dia} ${a.hora ?? ""}`));
+}
+
+/** Lo que enseña cada pestaña. Confirmadas son las que faltan por hacer; las hechas pasan a Finalizadas. */
+export function porPestana(reservas: ReservaPanel[], filtro: FiltroEstado, ahora: Date = new Date()): ReservaPanel[] {
+  if (filtro === "Finalizada") return finalizadas(reservas, ahora);
+  const futuras = porEstado(reservasFuturas(reservas, ahora), filtro);
+  return filtro === "Confirmada" ? futuras.filter((reserva) => reserva.listo_en === null) : futuras;
 }
 
 export interface CriteriosFiltro {
@@ -137,7 +147,7 @@ export function tituloGrupo(dia: Dia, ahora: Date = new Date()): string {
   return formatearDiaLargo(dia);
 }
 
-/** "lunes, 21 de septiembre de 2026", para el historial. */
+/** "lunes, 21 de septiembre de 2026", para las finalizadas (pueden ser de otro año). */
 export function tituloHistorial(dia: Dia): string {
   return formatearDiaLargo(dia, { conAnio: true });
 }

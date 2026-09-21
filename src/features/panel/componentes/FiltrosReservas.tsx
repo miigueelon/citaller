@@ -9,9 +9,14 @@ interface Props {
   onBusqueda: (texto: string) => void;
   filtroFecha: FiltroFecha;
   onFiltroFecha: (filtro: FiltroFecha) => void;
-  /** En el historial solo hay citas confirmadas y pasadas: ahí solo sirve el buscador. */
-  soloBusqueda?: boolean;
 }
+
+const PESTANAS: Array<[FiltroEstado, string]> = [
+  ["Pendiente", "Pendientes"],
+  ["Confirmada", "Confirmadas"],
+  ["Finalizada", "Finalizadas"],
+  ["Cancelada", "Canceladas"],
+];
 
 const FECHAS: Array<[FiltroFecha, string]> = [
   ["todas", "Todas"],
@@ -20,22 +25,16 @@ const FECHAS: Array<[FiltroFecha, string]> = [
   ["7dias", "Próximos 7 días"],
 ];
 
-export function FiltrosReservas({ filtroEstado, onFiltroEstado, contadores, busqueda, onBusqueda, filtroFecha, onFiltroFecha, soloBusqueda = false }: Props) {
+export function FiltrosReservas({ filtroEstado, onFiltroEstado, contadores, busqueda, onBusqueda, filtroFecha, onFiltroFecha }: Props) {
   return (
     <>
-      {!soloBusqueda && (
-        <div className="filtros-reservas">
-          <button type="button" className={filtroEstado === "Pendiente" ? "filtro-activo" : ""} onClick={() => onFiltroEstado("Pendiente")}>
-            Pendientes ({contadores.Pendiente})
+      <div className="filtros-reservas">
+        {PESTANAS.map(([valor, etiqueta]) => (
+          <button key={valor} type="button" className={filtroEstado === valor ? "filtro-activo" : ""} onClick={() => onFiltroEstado(valor)}>
+            {etiqueta} ({contadores[valor]})
           </button>
-          <button type="button" className={filtroEstado === "Confirmada" ? "filtro-activo" : ""} onClick={() => onFiltroEstado("Confirmada")}>
-            Confirmadas ({contadores.Confirmada})
-          </button>
-          <button type="button" className={filtroEstado === "Cancelada" ? "filtro-activo" : ""} onClick={() => onFiltroEstado("Cancelada")}>
-            Canceladas ({contadores.Cancelada})
-          </button>
-        </div>
-      )}
+        ))}
+      </div>
 
       <div className="buscador-reservas">
         <Search className="buscador-reservas-icono" size={18} />
@@ -53,7 +52,8 @@ export function FiltrosReservas({ filtroEstado, onFiltroEstado, contadores, busq
         )}
       </div>
 
-      {!soloBusqueda && (
+      {/* Las finalizadas son el histórico (días pasados): "hoy", "mañana" y "próximos 7 días" no aplican. */}
+      {filtroEstado !== "Finalizada" && (
         <div className="filtro-fecha-rapido">
           {FECHAS.map(([valor, etiqueta]) => (
             <button key={valor} type="button" className={filtroFecha === valor ? "activo" : ""} onClick={() => onFiltroFecha(valor)}>

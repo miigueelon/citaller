@@ -3,9 +3,7 @@ import { textoResumen, type ResumenCabecera } from "../filtros";
 
 interface Props {
   nombreTaller: string;
-  modoHistorial: boolean;
   resumen: ResumenCabecera;
-  totalHistorial: number;
   cargando: boolean;
   onActualizar: () => void;
   onNuevaCita: () => void;
@@ -19,17 +17,13 @@ interface Props {
  */
 export function CabeceraPanel({
   nombreTaller,
-  modoHistorial,
   resumen,
-  totalHistorial,
   cargando,
   onActualizar,
   onNuevaCita,
   onConectarGoogle,
   onCerrarSesion,
 }: Props) {
-  const subtitulo = modoHistorial ? `${totalHistorial} ${totalHistorial === 1 ? "cita pasada" : "citas pasadas"}` : textoResumen(resumen);
-
   return (
     <>
       <div className="panel-logo">
@@ -51,10 +45,10 @@ export function CabeceraPanel({
       <div className="panel-header">
         <div>
           <h1 className="panel-titulo">
-            <span className="panel-eyebrow">{modoHistorial ? "Historial de reservas" : "Panel de reservas"}</span>
+            <span className="panel-eyebrow">Panel de reservas</span>
             {nombreTaller}
           </h1>
-          <p className="panel-subtitulo">{subtitulo}</p>
+          <p className="panel-subtitulo">{textoResumen(resumen)}</p>
         </div>
 
         <div className="panel-acciones">

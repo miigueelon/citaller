@@ -48,7 +48,8 @@ export interface MiembroTaller {
 /** Avisos por WhatsApp que quedan apuntados en la cita ("Vehículo listo" va aparte, en `listo_en`). */
 export type TipoAviso = "confirmacion" | "cancelacion" | "recordatorio";
 
-export type FiltroEstado = EstadoReserva;
+/** Pestañas del panel: los tres estados más "Finalizada" (confirmadas ya hechas, ver `estaFinalizada`). */
+export type FiltroEstado = EstadoReserva | "Finalizada";
 export type FiltroFecha = "todas" | "hoy" | "manana" | "7dias";
 
 export function esEstadoReserva(valor: string | null): valor is EstadoReserva {

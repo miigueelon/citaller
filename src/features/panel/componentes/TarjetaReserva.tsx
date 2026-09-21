@@ -2,7 +2,7 @@ import { AlertTriangle, Car, CheckCircle2, Clock, Hash, Phone, Store, User, Wren
 import { horaCorta, hoy } from "@/lib/fechas";
 import type { CampoFormulario } from "@/features/taller/api";
 import { formatearTelefono } from "@/features/reservar/validacion";
-import { marcaAviso, textoLista } from "../filtros";
+import { estaFinalizada, marcaAviso, textoLista } from "../filtros";
 import type { ReservaPanel } from "../tipos";
 
 interface Props {
@@ -23,6 +23,7 @@ interface Props {
 
 function etiquetaEstado(reserva: ReservaPanel): string {
   if (reserva.estado === "Cancelada" && reserva.cancelada_por === "cliente") return "Cancelada por el cliente";
+  if (estaFinalizada(reserva)) return "Finalizada";
   return reserva.estado;
 }
 

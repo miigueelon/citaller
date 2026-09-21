@@ -38,9 +38,12 @@ Después, con la app en local (`npm run dev`, `http://localhost:5173/?taller=2&m
 ## B. Panel
 - [ ] `/speedbikes/panel`: pide login. Credenciales de otro taller → mensaje de error.
 - [ ] Tras login se ven las reservas del taller agrupadas por día; recargar la página mantiene la sesión sin parpadeo.
-- [ ] Filtros Pendientes / Confirmadas / Canceladas, búsqueda por nombre/matrícula/vehículo, Hoy / Mañana / 7 días.
-- [ ] La tarjeta muestra teléfono (enlace `tel:`), los campos extra con su etiqueta y unidad, "Mostrador" en las citas manuales y "Cancelada por el cliente" cuando toca.
-- [ ] Historial muestra reservas pasadas, sin botones de acción.
+- [ ] Cabecera "Hoy: N por terminar · M por responder" (o "Hoy: todo terminado" / "todo al día").
+- [ ] Pestañas Pendientes / Confirmadas / Finalizadas / Canceladas con su número, búsqueda por nombre/matrícula/vehículo, Hoy / Mañana / 7 días (no en Finalizadas).
+- [ ] La tarjeta muestra teléfono (enlace `tel:`, sin el 34), los campos extra con su etiqueta y unidad, "Mostrador · Nombre" en las citas manuales y "Cancelada por el cliente" cuando toca.
+- [ ] "Vehículo listo" en una confirmada de hoy: en modo `enlace` abre WhatsApp con "ya puedes recogerlo"; la cita pasa a Finalizadas con "✓ Lista · avisado a las HH:MM", "Deshacer" la devuelve a Confirmadas; la cabecera resta una.
+- [ ] Finalizadas es el histórico: todas las hechas (también las confirmadas de días pasados sin marcar), el total en el botón, de la más reciente a la más antigua.
+- [ ] Al pulsar "Avisar por WhatsApp" (o el recordatorio de mañana) la tarjeta queda "✓ Confirmación avisada a las HH:MM" y el botón pasa a "Volver a avisar".
 - [ ] Cerrar sesión vuelve al login.
 
 ## C. Confirmar

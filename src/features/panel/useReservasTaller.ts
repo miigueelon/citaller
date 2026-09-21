@@ -28,6 +28,8 @@ export interface DatosCitaManual {
   dia: string;
   hora: string;
   datos_extra: Record<string, string>;
+  /** Quién la apunta (`miembros_taller.id`); null si el taller no tiene miembros. */
+  miembro_id: number | null;
 }
 
 /** Traduce el resultado de las notificaciones a frases para la persona del taller. */

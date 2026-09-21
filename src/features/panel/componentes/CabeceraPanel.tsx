@@ -1,9 +1,10 @@
 import { CalendarDays, LogOut, Plus, RefreshCw, Wrench } from "lucide-react";
+import { textoResumen, type ResumenCabecera } from "../filtros";
 
 interface Props {
   nombreTaller: string;
   modoHistorial: boolean;
-  totalReservas: number;
+  resumen: ResumenCabecera;
   totalHistorial: number;
   cargando: boolean;
   onActualizar: () => void;
@@ -19,7 +20,7 @@ interface Props {
 export function CabeceraPanel({
   nombreTaller,
   modoHistorial,
-  totalReservas,
+  resumen,
   totalHistorial,
   cargando,
   onActualizar,
@@ -27,9 +28,7 @@ export function CabeceraPanel({
   onConectarGoogle,
   onCerrarSesion,
 }: Props) {
-  const subtitulo = modoHistorial
-    ? `${totalHistorial} ${totalHistorial === 1 ? "reserva pasada" : "reservas pasadas"}`
-    : `${totalReservas} ${totalReservas === 1 ? "reserva" : "reservas"}`;
+  const subtitulo = modoHistorial ? `${totalHistorial} ${totalHistorial === 1 ? "cita pasada" : "citas pasadas"}` : textoResumen(resumen);
 
   return (
     <>

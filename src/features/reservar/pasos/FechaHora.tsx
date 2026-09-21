@@ -31,9 +31,9 @@ export function FechaHora({ reserva, actualizar, volver, continuar }: Props) {
   const parametros: ParametrosDisponibilidad | null = useMemo(
     () =>
       reserva.dia
-        ? { horarios, dia: reserva.dia, ocupacion, capacidad: taller.capacidad, modo: taller.modo_capacidad, ahora }
+        ? { horarios, dia: reserva.dia, ocupacion, capacidad: taller.capacidad, modo: taller.modo_capacidad, maxDia: taller.max_citas_dia, ahora }
         : null,
-    [horarios, reserva.dia, ocupacion, taller.capacidad, taller.modo_capacidad, ahora],
+    [horarios, reserva.dia, ocupacion, taller.capacidad, taller.modo_capacidad, taller.max_citas_dia, ahora],
   );
 
   const horas = useMemo(() => (parametros ? horasDisponibles(parametros) : []), [parametros]);

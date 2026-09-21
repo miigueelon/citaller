@@ -1,5 +1,6 @@
 -- ============================================================================
--- Rik and Roll: taller de coches. Capacidad por hora (2 a la vez); en Neumáticos pide cantidad y
+-- Rik and Roll: taller de coches. Capacidad por hora (2 a la vez) y como mucho 5 citas al día
+-- (pedido del 21-sep-2026); en Neumáticos pide cantidad y
 -- medidas con imagen de ayuda. WhatsApp: 'ninguno' hasta que exista su cuenta de Meta Business
 -- (entonces pasa a 'api' y se rellena whatsapp_phone_number_id desde el dashboard).
 -- Idempotente. Sin secretos.
@@ -8,6 +9,7 @@
 update public.talleres
 set modo_capacidad = 'por_hora',
     capacidad      = 2,
+    max_citas_dia  = 5,
     whatsapp_modo  = case when whatsapp_modo = 'api' then 'api' else 'enlace' end
 where slug = 'rikandroll';
 
@@ -41,3 +43,26 @@ update public.reservas r
 set servicio_id = s.id
 from public.servicios_taller s, public.talleres t
 where t.slug = 'rikandroll' and r.taller_id = t.id and s.taller_id = t.id and s.nombre = r.servicio and r.servicio_id is null;
+
+-- Festivos de 2027: los 12 del calendario oficial de Cataluña (treball.gencat.cat). Los de 2026 ya
+-- estaban en la base de datos. Faltan los 2 locales de Castelldefels de 2027: se añaden aquí cuando
+-- el Ayuntamiento los publique (en 2026 fueron el 14 de agosto y el 7 de diciembre).
+insert into public.festivos_taller (taller_id, fecha, nombre)
+select t.id, f.fecha, f.nombre
+from public.talleres t
+cross join (values
+  (date '2027-01-01', 'Año Nuevo'),
+  (date '2027-01-06', 'Reyes'),
+  (date '2027-03-26', 'Viernes Santo'),
+  (date '2027-03-29', 'Lunes de Pascua'),
+  (date '2027-05-01', 'Fiesta del Trabajo'),
+  (date '2027-06-24', 'San Juan'),
+  (date '2027-09-11', 'Diada Nacional de Catalunya'),
+  (date '2027-10-12', 'Fiesta Nacional de España'),
+  (date '2027-11-01', 'Todos los Santos'),
+  (date '2027-12-06', 'Día de la Constitución'),
+  (date '2027-12-08', 'Inmaculada'),
+  (date '2027-12-25', 'Navidad')
+) as f(fecha, nombre)
+where t.slug = 'rikandroll'
+on conflict (taller_id, fecha) do nothing;

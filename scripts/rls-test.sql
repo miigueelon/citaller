@@ -71,8 +71,8 @@ with comprobaciones (orden, comprobacion, actual, esperado) as (
     (40, 'anon lee servicios_taller',                     has_table_privilege('anon', 'public.servicios_taller', 'SELECT'),             true),
     (41, 'anon escribe servicios_taller',                 has_table_privilege('anon', 'public.servicios_taller', 'INSERT'),             false),
     (42, 'anon lee campos_formulario_taller',             has_table_privilege('anon', 'public.campos_formulario_taller', 'SELECT'),     true),
-    (43, 'anon ejecuta insertar_reserva_taller',          has_function_privilege('anon', 'public.insertar_reserva_taller(bigint,text,text,text,text,text,text,date,time,jsonb)', 'EXECUTE'), false),
-    (44, 'authenticated ejecuta insertar_reserva_taller', has_function_privilege('authenticated', 'public.insertar_reserva_taller(bigint,text,text,text,text,text,text,date,time,jsonb)', 'EXECUTE'), false),
+    (43, 'anon ejecuta insertar_reserva_taller',          has_function_privilege('anon', 'public.insertar_reserva_taller(bigint,text,text,text,text,text,text,date,time,jsonb,bigint)', 'EXECUTE'), false),
+    (44, 'authenticated ejecuta insertar_reserva_taller', has_function_privilege('authenticated', 'public.insertar_reserva_taller(bigint,text,text,text,text,text,text,date,time,jsonb,bigint)', 'EXECUTE'), false),
     (45, 'anon ejecuta consultar_cita_cliente',           has_function_privilege('anon', 'public.consultar_cita_cliente(uuid)', 'EXECUTE'), true),
     (46, 'anon ejecuta cancelar_reserva_cliente',         has_function_privilege('anon', 'public.cancelar_reserva_cliente(uuid)', 'EXECUTE'), false),
     (47, 'authenticated ejecuta cancelar_reserva_cliente', has_function_privilege('authenticated', 'public.cancelar_reserva_cliente(uuid)', 'EXECUTE'), false),
@@ -93,7 +93,24 @@ with comprobaciones (orden, comprobacion, actual, esperado) as (
            where table_schema = 'public' and table_name = 'talleres_publicos' and column_name = 'capacidad_simultanea'), false),
     (57, 'talleres ya no tiene whatsapp_activo',          exists (
            select 1 from information_schema.columns
-           where table_schema = 'public' and table_name = 'talleres' and column_name = 'whatsapp_activo'), false)
+           where table_schema = 'public' and table_name = 'talleres' and column_name = 'whatsapp_activo'), false),
+    -- 21-sep: tope diario y miembros del taller
+    (58, 'anon lee talleres.max_citas_dia (vista security_invoker)', has_column_privilege('anon', 'public.talleres', 'max_citas_dia', 'SELECT'), true),
+    (59, 'la vista pública expone max_citas_dia',         exists (
+           select 1 from information_schema.columns
+           where table_schema = 'public' and table_name = 'talleres_publicos' and column_name = 'max_citas_dia'), true),
+    (60, 'RLS activa en miembros_taller', (select relrowsecurity from pg_class where oid = 'public.miembros_taller'::regclass), true),
+    (61, 'anon no lee miembros_taller (nombres del personal)', has_table_privilege('anon', 'public.miembros_taller', 'SELECT'), false),
+    (62, 'authenticated lee miembros_taller',             has_table_privilege('authenticated', 'public.miembros_taller', 'SELECT'),     true),
+    (63, 'authenticated no escribe miembros_taller',      has_table_privilege('authenticated', 'public.miembros_taller', 'INSERT')
+           or has_table_privilege('authenticated', 'public.miembros_taller', 'UPDATE')
+           or has_table_privilege('authenticated', 'public.miembros_taller', 'DELETE'), false),
+    (64, 'SELECT de miembros_taller exige user_id = auth.uid()', exists (
+           select 1 from pg_policies
+           where schemaname = 'public' and tablename = 'miembros_taller' and cmd = 'SELECT' and 'authenticated' = any(roles)
+             and qual ilike '%user_id%' and qual ilike '%auth.uid()%'), true),
+    (65, 'comprobar_capacidad aplica el tope diario (CT018)', (
+           select pg_get_functiondef('public.comprobar_capacidad()'::regprocedure) ilike '%max_citas_dia%CT018%'), true)
 )
 select orden, comprobacion, actual, esperado, (actual = esperado) as ok
 from comprobaciones

@@ -62,10 +62,26 @@ export function diaSeleccionable(horarios: Horario[], festivos: Festivo[], dia: 
   return !esFinDeSemana(dia) && !festivoDelDia(festivos, dia) && tallerAbre(horarios, dia);
 }
 
-/** ¿La hora está llena según la capacidad y el modo del taller? */
-export function estaCompleta(ocupacion: Ocupacion, hora: string, capacidad: number, modo: ModoCapacidad): boolean {
-  if (modo === "por_dia") return ocupacion.total >= capacidad;
-  return (ocupacion.porHora[hora] ?? 0) >= capacidad;
+/**
+ * ¿Por qué está llena una hora? `"dia"` si el día ya no admite más citas (por el modo `por_dia` o por
+ * el tope diario `maxDia`), `"hora"` si esa franja está llena, `null` si queda sitio.
+ * El mismo criterio que el trigger `comprobar_capacidad` de la base de datos.
+ */
+export function motivoCompleta(
+  ocupacion: Ocupacion,
+  hora: string,
+  capacidad: number,
+  modo: ModoCapacidad,
+  maxDia: number | null = null,
+): "dia" | "hora" | null {
+  if (maxDia !== null && ocupacion.total >= maxDia) return "dia";
+  if (modo === "por_dia") return ocupacion.total >= capacidad ? "dia" : null;
+  return (ocupacion.porHora[hora] ?? 0) >= capacidad ? "hora" : null;
+}
+
+/** ¿La hora está llena según la capacidad, el modo y el tope diario del taller? */
+export function estaCompleta(ocupacion: Ocupacion, hora: string, capacidad: number, modo: ModoCapacidad, maxDia: number | null = null): boolean {
+  return motivoCompleta(ocupacion, hora, capacidad, modo, maxDia) !== null;
 }
 
 export interface ParametrosDisponibilidad {
@@ -74,16 +90,18 @@ export interface ParametrosDisponibilidad {
   ocupacion: Ocupacion;
   capacidad: number;
   modo: ModoCapacidad;
+  /** Tope de citas en todo el día además del modo; null = sin tope. */
+  maxDia?: number | null;
   ahora: Date;
 }
 
 /** Horas del día que se pueden reservar: las del horario, que no estén llenas ni hayan pasado. */
-export function horasDisponibles({ horarios, dia, ocupacion, capacidad, modo, ahora }: ParametrosDisponibilidad): HoraDisponible[] {
+export function horasDisponibles({ horarios, dia, ocupacion, capacidad, modo, maxDia = null, ahora }: ParametrosDisponibilidad): HoraDisponible[] {
   const dow = diaSemana(dia);
   return horarios
     .filter((horario) => Number(horario.dia_semana) === dow)
     .map((horario) => ({ hora: horaCorta(horario.hora), aviso_tarde: horario.aviso_tarde === true }))
-    .filter((franja) => !estaCompleta(ocupacion, franja.hora, capacidad, modo) && !esHoraPasada(dia, franja.hora, ahora));
+    .filter((franja) => !estaCompleta(ocupacion, franja.hora, capacidad, modo, maxDia) && !esHoraPasada(dia, franja.hora, ahora));
 }
 
 /** ¿La hora elegida sigue siendo válida (no llena, no pasada)? */

@@ -5,15 +5,15 @@ import { useTaller } from "@/app/providers/useTaller";
 import { Alerta } from "@/components/Alerta";
 import { Modal } from "@/components/Modal";
 import { hoy, sumarDias } from "@/lib/fechas";
-import { cargarTextosWhatsapp } from "./api";
+import { cargarMiembros, cargarTextosWhatsapp } from "./api";
 import { CabeceraPanel } from "./componentes/CabeceraPanel";
 import { CitasManana } from "./componentes/CitasManana";
 import { FiltrosReservas } from "./componentes/FiltrosReservas";
 import { ListaReservas } from "./componentes/ListaReservas";
 import { NuevaCitaModal } from "./componentes/NuevaCitaModal";
-import { agruparPorDia, filtrarReservas, historial, porEstado, reservasFuturas, tituloGrupo, tituloHistorial, totalValidas } from "./filtros";
+import { agruparPorDia, filtrarReservas, historial, porEstado, resumenCabecera, reservasFuturas, tituloGrupo, tituloHistorial } from "./filtros";
 import { datosDeReserva, enlaceWhatsapp, TEXTOS_VACIOS, textoMensaje, tipoMensajeDeReserva, type TextosWhatsapp, type TipoMensaje } from "./textosWhatsapp";
-import type { FiltroEstado, FiltroFecha, ReservaPanel } from "./tipos";
+import type { FiltroEstado, FiltroFecha, MiembroTaller, ReservaPanel } from "./tipos";
 import { useConexionGoogle } from "./useConexionGoogle";
 import { useReservasTaller, type ResultadoAccion } from "./useReservasTaller";
 import "./panel.css";
@@ -45,6 +45,18 @@ export function PanelTaller() {
       vigente = false;
     };
   }, [cliente, taller.id, modoEnlace]);
+
+  // Quién puede apuntar citas a mano. Sin miembros, "Nueva cita" no pregunta quién la apunta.
+  const [miembros, setMiembros] = useState<MiembroTaller[]>([]);
+  useEffect(() => {
+    let vigente = true;
+    void cargarMiembros(cliente, taller.id).then((datos) => {
+      if (vigente) setMiembros(datos);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [cliente, taller.id]);
 
   const [mostrarHistorial, setMostrarHistorial] = useState(false);
   const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>("Pendiente");
@@ -80,8 +92,17 @@ export function PanelTaller() {
     [futuras, filtroEstado, busqueda, filtroFecha, ahora],
   );
 
+  const resumen = useMemo(() => resumenCabecera(reservas, ahora), [reservas, ahora]);
+
+  // Historial: solo confirmadas, agrupadas por día; el buscador también vale aquí.
   const pasadas = useMemo(() => historial(reservas, ahora), [reservas, ahora]);
-  const gruposHistorial = useMemo(() => pasadas.map((reserva) => [tituloHistorial(reserva.dia), [reserva]] as [string, ReservaPanel[]]), [pasadas]);
+  const gruposHistorial = useMemo(
+    () =>
+      agruparPorDia(filtrarReservas(pasadas, { busqueda, filtroFecha: "todas" }, ahora)).map(
+        ([dia, items]) => [tituloHistorial(dia), items] as [string, ReservaPanel[]],
+      ),
+    [pasadas, busqueda, ahora],
+  );
 
   const citasManana = useMemo(() => {
     if (!modoEnlace) return [];
@@ -139,6 +160,7 @@ export function PanelTaller() {
             descripcion: datos.descripcion || null,
             estado: "Confirmada",
             creada_por: "taller",
+            apuntada_por: miembros.find((miembro) => miembro.id === datos.miembro_id)?.nombre ?? null,
             cancelada_por: null,
             cancelada_en: null,
             confirmada_en: null,
@@ -167,7 +189,7 @@ export function PanelTaller() {
         <CabeceraPanel
           nombreTaller={taller.nombre}
           modoHistorial={mostrarHistorial}
-          totalReservas={totalValidas(futuras)}
+          resumen={resumen}
           totalHistorial={pasadas.length}
           cargando={cargando}
           onActualizar={() => void recargar()}
@@ -213,6 +235,7 @@ export function PanelTaller() {
           onBusqueda={setBusqueda}
           filtroFecha={filtroFecha}
           onFiltroFecha={setFiltroFecha}
+          soloBusqueda={mostrarHistorial}
         />
 
         {!mostrarHistorial ? (
@@ -235,7 +258,9 @@ export function PanelTaller() {
           ocupado={operando}
           textoVacio={
             mostrarHistorial
-              ? "Todavía no hay reservas pasadas."
+              ? busqueda
+                ? "No hay citas pasadas que coincidan con la búsqueda."
+                : "Todavía no hay citas pasadas."
               : busqueda || filtroFecha !== "todas"
                 ? "No hay reservas que coincidan con los filtros."
                 : "No hay reservas próximas."
@@ -270,7 +295,7 @@ export function PanelTaller() {
           </Modal>
         )}
 
-        {nuevaCita && <NuevaCitaModal ocupado={operando} onGuardar={guardarCitaManual} onCerrar={() => setNuevaCita(false)} />}
+        {nuevaCita && <NuevaCitaModal miembros={miembros} ocupado={operando} onGuardar={guardarCitaManual} onCerrar={() => setNuevaCita(false)} />}
       </div>
     </div>
   );

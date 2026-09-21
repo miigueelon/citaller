@@ -20,12 +20,22 @@
 - Nunca borrar datos del proyecto remoto, salvo los del taller de pruebas `e2e`.
 
 ## Dar de alta un taller
-1. Copiar `clientes/_plantilla/` a `clientes/<slug>/`; rellenar `seed.sql` (taller, `modo_capacidad` + `capacidad`, `whatsapp_modo`, textos, servicios con su modo de descripción, campos extra, horarios, festivos) y `README.md`; añadir assets (logo, imágenes de ayuda) en `assets/`. Nada de lógica por taller en el código: todo lo que cambia entre talleres vive en el seed.
+1. Copiar `clientes/_plantilla/` a `clientes/<slug>/`; rellenar `seed.sql` (taller, `modo_capacidad` + `capacidad` y, si hace falta, `max_citas_dia` —tope del día además del anterior: Rik and Roll, 2 por hora y 5 al día—, `whatsapp_modo`, textos, servicios con su modo de descripción, campos extra, horarios, festivos) y `README.md`; añadir assets (logo, imágenes de ayuda) en `assets/`. Nada de lógica por taller en el código: todo lo que cambia entre talleres vive en el seed.
 2. Añadir la ruta del seed a `sql_paths` en `supabase/config.toml` y aplicarlo (`npx supabase db push --include-seed`). Es idempotente. `npm test` comprueba que el seed no menciona otros slugs ni contiene secretos.
 3. Crear el usuario del taller en Supabase Auth (invitación) y vincularlo (`talleres.user_id`; en la fase 5, `miembros_taller`).
 4. Integraciones: si usa Google Calendar, el taller pulsa "Conectar Google Calendar" en su panel. WhatsApp según `whatsapp_modo`: `api` (WABA, plantillas y token; ver `integraciones.md`), `enlace` (nada que configurar: el panel abre WhatsApp con el mensaje escrito) o `ninguno`.
 5. Promoción: `node scripts/qr.mjs <slug>` genera `clientes/<slug>/assets/qr-reserva.{svg,png}` y el enlace de reserva se pone en Google Business Profile (sección siguiente).
 6. Verificar con `docs/checklist-manual.md` (en la fase 3.7 se hizo con un taller de prueba creado solo desde `_plantilla`).
+
+## Mecánicos que apuntan citas ("¿Quién la apunta?")
+Si en un taller varias personas usan el mismo panel, al pulsar "Nueva cita" se elige quién la apunta y la tarjeta dice "Mostrador · Nombre". Mientras un taller no tenga ninguno, no se pregunta nada. Los nombres **no van en el seed** (son datos personales): se cargan en el SQL Editor de Supabase.
+
+- Añadir (o reactivar): `insert into public.miembros_taller (taller_id, nombre, orden) select id, 'Juan', 1 from public.talleres where slug = '<slug>' on conflict (taller_id, nombre) do update set activo = true, orden = excluded.orden;`
+- Dar de baja (las citas que apuntó siguen diciendo su nombre): `update public.miembros_taller set activo = false where nombre = 'Juan' and taller_id = (select id from public.talleres where slug = '<slug>');`
+- No se borran: un miembro con citas no se puede borrar (`on delete restrict`).
+
+## Festivos de cada año
+El cliente reserva hasta 90 días vista, así que **cada septiembre** hay que cargar los festivos del año siguiente de cada taller (en su `seed.sql`, con `on conflict (taller_id, fecha) do nothing`, y aplicados con `execute_sql`). Los de Cataluña los publica la Generalitat (treball.gencat.cat → calendario laboral); los 2 locales de cada municipio salen más tarde. 2027: cargados los 12 de Cataluña en Speedbikes y Rik and Roll; faltan los 2 locales de Castelldefels.
 
 ## Promoción: Google Business Profile y QR
 - **Enlace de reserva**: la URL pública del taller es `https://citaller.es/<slug>` (dominio propio desde el 21-sep-2026; `https://citaller.vercel.app/<slug>` sigue funcionando y no se retira, así que los QR impresos antes valen). En Google Business Profile (https://business.google.com → el perfil del taller → "Editar perfil" → "Reservas" / "Enlaces de citas", el nombre cambia según la versión) se pega esa URL como enlace de citas; Google la muestra como botón "Reservar" en la ficha de Maps y en la búsqueda. Sin un proveedor de reservas integrado con Google, este enlace es la vía: el cliente pulsa y llega al formulario del taller.

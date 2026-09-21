@@ -21,7 +21,7 @@ Los talleres pequeños gestionan citas por teléfono y a mano: llamadas perdidas
 | Slug | Nombre | Particularidades |
 |---|---|---|
 | `speedbikes` | Speedbikes Moto | Taller de motos. Pide kilómetros. Capacidad **por día** (6 citas/día). Usa Outlook (integración futura). |
-| `rikandroll` | Rik and Roll | Neumáticos: pide cantidad y medidas, con imagen de ayuda. Capacidad **por hora** (2). Google Calendar conectado. |
+| `rikandroll` | Rik and Roll | Neumáticos: pide cantidad y medidas, con imagen de ayuda. Capacidad **por hora** (2) y como mucho **5 citas al día**. Google Calendar conectado. |
 
 ## Principios de producto
 - **Alta de un taller sin tocar código**: toda la variación por taller (servicios, campos extra, capacidad, textos, integraciones) vive en la base de datos; en el repo solo su seed, sus assets y sus notas (`clientes/<slug>/`).

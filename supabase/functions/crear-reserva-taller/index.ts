@@ -46,6 +46,8 @@ Deno.serve(async (req) => {
       p_dia: texto(cuerpo.dia),
       p_hora: texto(cuerpo.hora),
       p_datos_extra: datosExtra,
+      // Quién la apunta. La función SQL exige uno activo del taller si el taller tiene miembros (CT017).
+      p_miembro_id: idPositivo(cuerpo.miembro_id),
     });
 
     if (error) {

@@ -4,7 +4,9 @@
 // Flujos (docs/plan.md §4): A reservar y sus rechazos, B panel y aislamiento, C confirmar por la
 // Edge `confirmar-reserva` (WhatsApp según modo + Calendar), D cancelar por `cancelar-reserva`,
 // E conectar Google, G cita manual por `crear-reserva-taller`, H cancelación por el cliente por
-// `consultar_cita_cliente` + `cancelar-cita-cliente`. Necesita E2E_TALLER_EMAIL/PASSWORD en
+// `consultar_cita_cliente` + `cancelar-cita-cliente`. Desde el 21-sep: tope diario (e2e tiene
+// max_citas_dia = 7) y "¿quién la apunta?" (e2e tiene los miembros "Mecánico A" y "Mecánico B").
+// Necesita E2E_TALLER_EMAIL/PASSWORD en
 // .env.local. Con SR_KEY (clave de servicio) borra al final lo creado; sin ella, lo deja cancelado.
 import { readFileSync } from "node:fs";
 
@@ -34,11 +36,12 @@ function hoyMadrid() {
 }
 const DIA = diaLaborable(2);
 const DIA_2 = diaLaborable(9);
+const DIA_3 = diaLaborable(16); // solo para el tope diario
 // Teléfonos distintos por escenario y por ejecución: la RPC limita a 3 citas activas y 5 creaciones
 // al día por teléfono, así que repetir la prueba el mismo día con números fijos daría CT006.
 // El prefijo 6001 se conserva para que la limpieza previa siga reconociéndolos.
-const SELLO = Math.floor(Date.now() / 60000) % 4000;
-const telefono = (n) => `6001${String((SELLO * 25 + n) % 100000).padStart(5, "0")}`;
+const SELLO = Math.floor(Date.now() / 60000) % 2500;
+const telefono = (n) => `6001${String((SELLO * 40 + n) % 100000).padStart(5, "0")}`; // hasta 40 por ejecución
 const creadas = [];
 
 let fallos = 0;
@@ -106,8 +109,8 @@ for (const fila of restos.datos ?? []) await cancelarComoTaller(fila.id);
 if ((restos.datos ?? []).length > 0) console.log(`(limpieza previa: ${restos.datos.length} reservas de prueba antiguas canceladas)`);
 
 // A. Lecturas públicas que hace la pantalla de reserva
-const vista = await pedir(`/rest/v1/talleres_publicos?id=eq.${TALLER_E2E}&select=id,nombre,slug,modo_capacidad,capacidad,whatsapp_modo`);
-comprobar("A. La web pública ve el taller y su configuración", vista.status === 200 && vista.datos?.[0]?.modo_capacidad === "por_hora" && vista.datos[0].capacidad === 2, JSON.stringify(vista.datos?.[0]));
+const vista = await pedir(`/rest/v1/talleres_publicos?id=eq.${TALLER_E2E}&select=id,nombre,slug,modo_capacidad,capacidad,max_citas_dia,whatsapp_modo`);
+comprobar("A. La web pública ve el taller y su configuración", vista.status === 200 && vista.datos?.[0]?.modo_capacidad === "por_hora" && vista.datos[0].capacidad === 2 && vista.datos[0].max_citas_dia === 7, JSON.stringify(vista.datos?.[0]));
 const SLUG = vista.datos?.[0]?.slug ?? "e2e";
 
 const servicios = await pedir(`/rest/v1/servicios_taller?taller_id=eq.${TALLER_E2E}&select=id,nombre,descripcion_modo&order=orden`);
@@ -171,6 +174,21 @@ const [c3, c4] = await Promise.all([reservar({ p_telefono: telefono(18), p_dia: 
 const entraron = [c1, c2, c3, c4].filter((r) => r.status === 200).length;
 comprobar("A. Concurrencia: cuatro peticiones por dos huecos → entran exactamente dos", entraron === 2, `${entraron} creadas`);
 
+// A. Tope diario (e2e: 2 por hora y 7 al día). En un día aparte: 2+2+2+1 entran y la octava, a
+// una hora que aún tiene sitio (las 12:00 con 1), se rechaza por el día (CT018), no por la hora.
+const HUECOS_TOPE = ["09:00", "09:00", "10:00", "10:00", "11:00", "11:00", "12:00"];
+const llenado = [];
+for (const [i, hora] of HUECOS_TOPE.entries()) llenado.push(await reservar({ p_telefono: telefono(23 + i), p_dia: DIA_3, p_hora: hora }));
+const octava = await reservar({ p_telefono: telefono(30), p_dia: DIA_3, p_hora: "12:00" });
+comprobar(
+  "A. Tope diario: entran 7 y la octava, con sitio en su hora, se rechaza (CT018)",
+  llenado.every((r) => r.status === 200) && octava.status === 400 && codigo(octava) === "CT018",
+  `${llenado.filter((r) => r.status === 200).length}/7 · HTTP ${octava.status} ${codigo(octava)}`,
+);
+const ocupacionTope = await pedir("/rest/v1/rpc/ocupacion_dia", { metodo: "POST", cuerpo: { p_taller_id: TALLER_E2E, p_dia: DIA_3 } });
+const totalTope = (ocupacionTope.datos ?? []).reduce((suma, f) => suma + f.total, 0);
+comprobar("A. La ocupación pública del día lleno suma 7 (la web no ofrece más horas)", totalTope === 7, `${totalTope} activas`);
+
 // B. El panel ve su reserva y nada de otros talleres
 const mias = await pedir(`/rest/v1/reservas?id=eq.${reserva.reserva_id}&select=id,estado,datos_extra,creada_por,servicio_id,telefono`, { token: TOKEN });
 const fila = mias.datos?.[0];
@@ -223,27 +241,44 @@ comprobar("D. Una cita cancelada no se puede reabrir", reabrir.status === 409, `
 const cancelarPendiente = await pedir("/functions/v1/cancelar-reserva", { token: TOKEN, metodo: "POST", cuerpo: { reserva_id: segunda.fila.reserva_id } });
 comprobar("D. Rechazar una pendiente la cancela igual", cancelarPendiente.status === 200 && cancelarPendiente.datos?.estado === "Cancelada", `HTTP ${cancelarPendiente.status}`);
 
-// G. Cita manual desde el panel
-const manual = await pedir("/functions/v1/crear-reserva-taller", {
-  token: TOKEN,
-  metodo: "POST",
-  cuerpo: { taller_id: TALLER_E2E, nombre: "Cliente mostrador", telefono: "", matricula: "MOSTR01", vehiculo: "Furgoneta", servicio: "Frenos", descripcion: "", dia: DIA, hora: "10:00", datos_extra: {} },
-});
+// G. Cita manual desde el panel. El taller e2e tiene miembros: hay que decir quién la apunta.
+const miembros = await pedir(`/rest/v1/miembros_taller?taller_id=eq.${TALLER_E2E}&select=id,nombre&activo=eq.true&order=orden`, { token: TOKEN });
+const MIEMBRO_A = miembros.datos?.find((m) => m.nombre === "Mecánico A")?.id;
+comprobar("G. El panel ve los miembros de su taller", miembros.status === 200 && miembros.datos?.length === 2 && !!MIEMBRO_A, JSON.stringify(miembros.datos));
+const miembrosAnon = await pedir(`/rest/v1/miembros_taller?select=id,nombre`);
+comprobar("G. El público no ve los nombres del personal", miembrosAnon.status === 401 || miembrosAnon.status === 403, `HTTP ${miembrosAnon.status}`);
+const miembrosAjenos = await pedir(`/rest/v1/miembros_taller?taller_id=neq.${TALLER_E2E}&select=id`, { token: TOKEN });
+comprobar("G. No ve los miembros de otros talleres", miembrosAjenos.status === 200 && miembrosAjenos.datos?.length === 0, `${miembrosAjenos.datos?.length ?? "?"} filas`);
+
+const citaMostrador = { taller_id: TALLER_E2E, nombre: "Cliente mostrador", telefono: "", matricula: "MOSTR01", vehiculo: "Furgoneta", servicio: "Frenos", descripcion: "", dia: DIA, hora: "10:00", datos_extra: {} };
+const sinMiembro = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: citaMostrador });
+comprobar("G. Sin decir quién la apunta se rechaza (CT017)", sinMiembro.status === 400 && sinMiembro.datos?.codigo === "CT017", `HTTP ${sinMiembro.status} ${sinMiembro.datos?.codigo}`);
+const miembroFalso = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: { ...citaMostrador, miembro_id: 999999 } });
+comprobar("G. Con un miembro que no es del taller se rechaza (CT017)", miembroFalso.status === 400 && miembroFalso.datos?.codigo === "CT017", `HTTP ${miembroFalso.status} ${miembroFalso.datos?.codigo}`);
+
+const manual = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: { ...citaMostrador, miembro_id: MIEMBRO_A } });
 if (manual.datos?.reserva_id) creadas.push(manual.datos.reserva_id);
 comprobar("G. Cita manual sin teléfono a una hora llena: se crea igualmente", manual.status === 200 && manual.datos?.ok === true && !!manual.datos?.reserva_id, `HTTP ${manual.status} ${JSON.stringify(manual.datos).slice(0, 120)}`);
-const filaManual = await pedir(`/rest/v1/reservas?id=eq.${manual.datos?.reserva_id}&select=estado,creada_por,telefono,confirmada_en`, { token: TOKEN });
+const filaManual = await pedir(`/rest/v1/reservas?id=eq.${manual.datos?.reserva_id}&select=estado,creada_por,telefono,confirmada_en,miembro:miembros_taller!creada_por_miembro(nombre)`, { token: TOKEN });
 comprobar("G. Nace Confirmada, creada_por='taller', sin teléfono y con confirmada_en", filaManual.datos?.[0]?.estado === "Confirmada" && filaManual.datos?.[0]?.creada_por === "taller" && filaManual.datos?.[0]?.telefono === null && !!filaManual.datos?.[0]?.confirmada_en, JSON.stringify(filaManual.datos?.[0]));
+comprobar("G. Guarda quién la apuntó y el panel lo lee", filaManual.datos?.[0]?.miembro?.nombre === "Mecánico A", JSON.stringify(filaManual.datos?.[0]?.miembro));
 comprobar("G. Sin teléfono no se intenta WhatsApp", manual.datos?.notificaciones?.whatsapp?.enviado === false, JSON.stringify(manual.datos?.notificaciones?.whatsapp));
 
 const manualConTel = await pedir("/functions/v1/crear-reserva-taller", {
   token: TOKEN,
   metodo: "POST",
-  cuerpo: { taller_id: TALLER_E2E, nombre: "Cliente por teléfono", telefono: telefono(20), matricula: "MOSTR02", vehiculo: "Moto", servicio: "ITV", descripcion: "", dia: DIA_2, hora: "12:00", datos_extra: { kilometros: "55000" } },
+  cuerpo: { taller_id: TALLER_E2E, nombre: "Cliente por teléfono", telefono: telefono(20), matricula: "MOSTR02", vehiculo: "Moto", servicio: "ITV", descripcion: "", dia: DIA_2, hora: "12:00", datos_extra: { kilometros: "55000" }, miembro_id: MIEMBRO_A },
 });
 if (manualConTel.datos?.reserva_id) creadas.push(manualConTel.datos.reserva_id);
 comprobar("G. Cita manual con teléfono y campo extra", manualConTel.status === 200 && manualConTel.datos?.ok === true, `HTTP ${manualConTel.status}`);
 
-const manualMal = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: { taller_id: TALLER_E2E, nombre: "X", telefono: "", matricula: "12*", vehiculo: "V", servicio: "Frenos", dia: DIA, hora: "10:00" } });
+// El tope diario no bloquea al taller: en el día lleno de la sección A, la cita a mano entra.
+const manualDiaLleno = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: { ...citaMostrador, dia: DIA_3, hora: "12:00", miembro_id: MIEMBRO_A } });
+if (manualDiaLleno.datos?.reserva_id) creadas.push(manualDiaLleno.datos.reserva_id);
+comprobar("G. Cita manual en un día que ya llegó al tope: se crea igualmente", manualDiaLleno.status === 200 && manualDiaLleno.datos?.ok === true, `HTTP ${manualDiaLleno.status} ${manualDiaLleno.datos?.codigo ?? ""}`);
+if (manualDiaLleno.datos?.reserva_id) await cancelarComoTaller(manualDiaLleno.datos.reserva_id);
+
+const manualMal = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: { taller_id: TALLER_E2E, nombre: "X", telefono: "", matricula: "12*", vehiculo: "V", servicio: "Frenos", dia: DIA, hora: "10:00", miembro_id: MIEMBRO_A } });
 comprobar("G. Una matrícula inválida se rechaza con CT013", manualMal.status === 400 && manualMal.datos?.codigo === "CT013", `HTTP ${manualMal.status} ${manualMal.datos?.codigo}`);
 
 const manualAjeno = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: { taller_id: 2, nombre: "X", matricula: "1234ABC", vehiculo: "V", servicio: "Frenos", dia: DIA, hora: "10:00" } });
@@ -282,7 +317,7 @@ comprobar("H. Token mal formado → 404", malFormado.status === 404, `HTTP ${mal
 // H. A menos de 24 h no se puede: cita manual para hoy a última hora (el taller puede apuntarla,
 // no valida horario), el cliente ya no puede cancelarla.
 const hoyStr = hoyMadrid();
-const paraHoy = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: { taller_id: TALLER_E2E, nombre: "Cliente hoy", telefono: telefono(21), matricula: "HOY0001", vehiculo: "V", servicio: "Frenos", descripcion: "", dia: hoyStr, hora: "23:59", datos_extra: {} } });
+const paraHoy = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: { taller_id: TALLER_E2E, nombre: "Cliente hoy", telefono: telefono(21), matricula: "HOY0001", vehiculo: "V", servicio: "Frenos", descripcion: "", dia: hoyStr, hora: "23:59", datos_extra: {}, miembro_id: MIEMBRO_A } });
 if (paraHoy.datos?.reserva_id) creadas.push(paraHoy.datos.reserva_id);
 if (paraHoy.status === 200 && paraHoy.datos?.token_publico) {
   const consultaHoy = await pedir("/rest/v1/rpc/consultar_cita_cliente", { metodo: "POST", cuerpo: { p_token: paraHoy.datos.token_publico } });

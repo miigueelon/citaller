@@ -21,6 +21,9 @@ const POR_CODIGO: Record<string, string> = {
   CT011: "Ya no se puede cancelar por internet: faltan menos de 24 horas. Llama al taller.",
   CT012: "Esta cita ya estaba cancelada.",
   CT013: "La matrícula no es válida. Escríbela sin símbolos, por ejemplo 1234ABC.",
+  // CT014, CT015 y CT016 están reservados para la fase 5 (docs/plan.md).
+  CT017: "Elige quién apunta la cita.",
+  CT018: "El taller ya tiene el día completo. Elige otro día, por favor.",
 };
 
 const POR_TEXTO: Array<[RegExp, string]> = [

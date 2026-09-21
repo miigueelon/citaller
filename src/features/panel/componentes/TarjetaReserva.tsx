@@ -33,8 +33,8 @@ export function TarjetaReserva({ reserva, campos, ocupado = false, onConfirmar, 
           <Clock className="tarjeta-icon" size={18} />
           <span className="tarjeta-hora-texto">{reserva.hora ? horaCorta(reserva.hora) : "--:--"}</span>
           {reserva.creada_por === "taller" && (
-            <span className="tarjeta-origen" title="Cita apuntada desde el panel">
-              <Store size={14} /> Mostrador
+            <span className="tarjeta-origen" title={reserva.apuntada_por ? `Cita apuntada desde el panel por ${reserva.apuntada_por}` : "Cita apuntada desde el panel"}>
+              <Store size={14} /> Mostrador{reserva.apuntada_por ? ` · ${reserva.apuntada_por}` : ""}
             </span>
           )}
         </div>

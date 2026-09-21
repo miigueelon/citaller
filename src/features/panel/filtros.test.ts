@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { agruparPorDia, filtrarReservas, historial, porEstado, reservasFuturas, tituloGrupo, totalValidas } from "./filtros";
+import { agruparPorDia, filtrarReservas, historial, porEstado, resumenCabecera, reservasFuturas, textoResumen, tituloGrupo } from "./filtros";
 import type { ReservaPanel } from "./tipos";
 
 // Lunes 21 de septiembre de 2026, 10:00.
@@ -18,6 +18,7 @@ function reserva(parcial: Partial<ReservaPanel> & { id: number; dia: string }): 
     estado: "Pendiente",
     hora: "10:00:00",
     creada_por: "cliente",
+    apuntada_por: null,
     cancelada_por: null,
     cancelada_en: null,
     confirmada_en: null,
@@ -45,15 +46,41 @@ describe("futuras, estados e historial", () => {
     expect(reservasFuturas(lista, ahora).map((r) => r.id)).toEqual([2, 3, 4, 5]);
   });
 
-  it("separa por estado y cuenta las válidas sin las canceladas", () => {
+  it("separa por estado", () => {
     const futuras = reservasFuturas(lista, ahora);
     expect(porEstado(futuras, "Pendiente").map((r) => r.id)).toEqual([2]);
     expect(porEstado(futuras, "Confirmada").map((r) => r.id)).toEqual([3, 4]);
-    expect(totalValidas(lista)).toBe(4);
   });
 
-  it("el historial son las pasadas, de la más reciente a la más antigua", () => {
-    expect(historial(lista, ahora).map((r) => r.id)).toEqual([6, 1]);
+  it("el historial son las confirmadas pasadas, de la más reciente a la más antigua", () => {
+    const conMasPasadas = [
+      ...lista,
+      reserva({ id: 7, dia: "2026-09-17", estado: "Confirmada", creada_por: "taller" }), // a mano
+      reserva({ id: 8, dia: "2026-09-17", estado: "Pendiente" }), // nadie la respondió
+    ];
+    // La 6 (cancelada) y la 8 (pendiente) no salen.
+    expect(historial(conMasPasadas, ahora).map((r) => r.id)).toEqual([1, 7]);
+  });
+});
+
+describe("cabecera", () => {
+  it("cuenta las confirmadas de hoy y las pendientes de hoy en adelante", () => {
+    const conHoy = [
+      ...lista,
+      reserva({ id: 7, dia: "2026-09-21", estado: "Confirmada", hora: "12:00:00" }),
+      reserva({ id: 8, dia: "2026-09-21", estado: "Confirmada", creada_por: "taller" }),
+      reserva({ id: 9, dia: "2026-09-21", estado: "Cancelada" }),
+      reserva({ id: 10, dia: "2026-09-25", estado: "Pendiente" }),
+      reserva({ id: 11, dia: "2026-09-15", estado: "Pendiente" }), // pasada: ya no se puede responder
+    ];
+    expect(resumenCabecera(conHoy, ahora)).toEqual({ citasHoy: 2, porResponder: 2 });
+    expect(resumenCabecera([], ahora)).toEqual({ citasHoy: 0, porResponder: 0 });
+  });
+
+  it("lo dice en una línea", () => {
+    expect(textoResumen({ citasHoy: 3, porResponder: 2 })).toBe("Hoy: 3 citas · 2 por responder");
+    expect(textoResumen({ citasHoy: 1, porResponder: 0 })).toBe("Hoy: 1 cita · todo al día");
+    expect(textoResumen({ citasHoy: 0, porResponder: 1 })).toBe("Hoy: sin citas · 1 por responder");
   });
 });
 

@@ -6,6 +6,7 @@ import {
   festivoDelDia,
   horaSigueDisponible,
   horasDisponibles,
+  motivoCompleta,
   tallerAbre,
   type Horario,
 } from "./disponibilidad";
@@ -55,6 +56,26 @@ describe("ocupación", () => {
     expect(estaCompleta(ocupacion, "10:00", 6, "por_dia")).toBe(true);
     expect(estaCompleta(ocupacion, "10:00", 7, "por_dia")).toBe(false);
   });
+
+  it("por hora con tope diario: al llegar al tope se llena el día aunque la hora tenga sitio", () => {
+    // Rik and Roll: 2 por hora y 5 al día.
+    const cuatro = agruparOcupacion([
+      { hora: "09:00:00", total: 2 },
+      { hora: "10:00:00", total: 2 },
+    ]);
+    expect(motivoCompleta(cuatro, "11:00", 2, "por_hora", 5)).toBeNull();
+    expect(motivoCompleta(cuatro, "09:00", 2, "por_hora", 5)).toBe("hora");
+
+    const cinco = agruparOcupacion([
+      { hora: "09:00:00", total: 2 },
+      { hora: "10:00:00", total: 2 },
+      { hora: "11:00:00", total: 1 },
+    ]);
+    expect(motivoCompleta(cinco, "11:00", 2, "por_hora", 5)).toBe("dia");
+    expect(estaCompleta(cinco, "12:00", 2, "por_hora", 5)).toBe(true);
+    // Sin tope, la misma ocupación deja libres las 11 y las 12.
+    expect(estaCompleta(cinco, "11:00", 2, "por_hora")).toBe(false);
+  });
 });
 
 describe("horas disponibles", () => {
@@ -69,6 +90,13 @@ describe("horas disponibles", () => {
     const horas = horasDisponibles({ horarios, dia: "2026-09-25", ocupacion: { porHora: {}, total: 0 }, capacidad: 2, modo: "por_hora", ahora });
     expect(horas.map((h) => h.hora)).toEqual(["09:00", "10:00", "12:00"]);
     expect(horas.find((h) => h.hora === "12:00")?.aviso_tarde).toBe(true);
+  });
+
+  it("con el tope diario alcanzado no queda ninguna hora", () => {
+    const ocupacion = agruparOcupacion([{ hora: "09:00:00", total: 2 }, { hora: "10:00:00", total: 1 }]);
+    const parametros = { horarios, dia: "2026-09-25", ocupacion, capacidad: 2, modo: "por_hora" as const, ahora };
+    expect(horasDisponibles(parametros).map((h) => h.hora)).toEqual(["10:00", "12:00"]);
+    expect(horasDisponibles({ ...parametros, maxDia: 3 })).toEqual([]);
   });
 
   it("al cambiar de día (medianoche) las horas de mañana dejan de estar pasadas", () => {

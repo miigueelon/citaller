@@ -18,6 +18,8 @@ export interface ReservaPanel {
   /** "HH:MM:SS" */
   hora: string;
   creada_por: "cliente" | "taller";
+  /** Nombre del miembro del taller que la apuntó a mano, si el taller tiene miembros. */
+  apuntada_por: string | null;
   cancelada_por: "cliente" | "taller" | null;
   cancelada_en: string | null;
   confirmada_en: string | null;
@@ -28,6 +30,12 @@ export interface ReservaPanel {
   whatsapp_error: string | null;
   google_event_id: string | null;
   google_error: string | null;
+}
+
+/** Persona del taller que puede apuntar citas a mano (tabla `miembros_taller`, solo las activas). */
+export interface MiembroTaller {
+  id: number;
+  nombre: string;
 }
 
 export type FiltroEstado = EstadoReserva;

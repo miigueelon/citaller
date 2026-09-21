@@ -19,6 +19,19 @@ test.describe("Panel del taller", () => {
     await entrar(page);
     await expect(page.getByRole("button", { name: /conectar google calendar/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /nueva cita/i })).toBeVisible();
+    // Cabecera: citas de hoy y solicitudes por responder.
+    await expect(page.locator(".panel-subtitulo")).toHaveText(/^Hoy: .+ · (todo al día|\d+ por responder)$/);
+  });
+
+  test("el historial solo tiene buscador y cuenta las citas pasadas", async ({ page }) => {
+    await entrar(page);
+    await page.getByRole("button", { name: /ver historial/i }).click();
+    await expect(page.locator(".panel-subtitulo")).toHaveText(/^\d+ citas? pasadas?$/);
+    await expect(page.getByRole("button", { name: /^Pendientes/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^Próximos 7 días$/ })).toHaveCount(0);
+    await expect(page.getByLabel("Buscar reservas")).toBeVisible();
+    await page.getByLabel("Buscar reservas").fill("zzz-no-existe");
+    await expect(page.getByText(/no hay citas pasadas que coincidan/i)).toBeVisible();
   });
 
   test("con una contraseña incorrecta no entra", async ({ page }) => {
@@ -63,6 +76,8 @@ test.describe("Panel del taller", () => {
 
     const dialogo = page.getByRole("dialog");
     await expect(dialogo.getByRole("heading", { name: /apuntar una cita/i })).toBeVisible();
+    // El taller de pruebas tiene dos miembros: hay que decir quién la apunta.
+    await dialogo.locator('select[name="miembro_id"]').selectOption({ label: "Mecánico A" });
     await dialogo.locator('input[name="nombre"]').fill(nombre);
     await dialogo.locator('input[name="matricula"]').fill("9999ZZZ");
     await dialogo.locator('input[name="vehiculo"]').fill("Furgoneta");
@@ -76,7 +91,7 @@ test.describe("Panel del taller", () => {
     const tarjeta = page.locator(".tarjeta-reserva", { hasText: nombre }).first();
     await expect(tarjeta).toBeVisible();
     // La etiqueta de origen, no el nombre del cliente (que también dice "Mostrador").
-    await expect(tarjeta.locator(".tarjeta-origen")).toHaveText(/mostrador/i);
+    await expect(tarjeta.locator(".tarjeta-origen")).toHaveText(/mostrador · mecánico a/i);
     await expect(tarjeta.getByText(/sin teléfono/i)).toBeVisible();
 
     // Limpieza: se cancela para no dejar huecos ocupados en el taller de pruebas.

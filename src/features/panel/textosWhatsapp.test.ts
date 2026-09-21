@@ -16,6 +16,7 @@ const reserva: ReservaPanel = {
   dia: "2026-09-21",
   hora: "10:00:00",
   creada_por: "cliente",
+  apuntada_por: null,
   cancelada_por: null,
   cancelada_en: null,
   confirmada_en: null,

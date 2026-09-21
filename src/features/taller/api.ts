@@ -19,6 +19,8 @@ export interface Taller {
   modo_capacidad: ModoCapacidad;
   /** Elevadores/mecánicos a la vez (por hora) o citas al día (por día). */
   capacidad: number;
+  /** Tope de citas en todo el día además de la capacidad (Rik and Roll: 2 por hora y 5 al día). null = sin tope. */
+  max_citas_dia: number | null;
   texto_aviso_tarde: string | null;
   texto_confirmacion: string | null;
   whatsapp_modo: ModoWhatsapp;
@@ -56,7 +58,7 @@ export interface TallerConfig extends Taller {
 }
 
 const COLUMNAS_TALLER =
-  "id, slug, nombre, telefono, direccion, ciudad, horario_texto, valoracion, numero_resenas, modo_capacidad, capacidad, texto_aviso_tarde, texto_confirmacion, whatsapp_modo";
+  "id, slug, nombre, telefono, direccion, ciudad, horario_texto, valoracion, numero_resenas, modo_capacidad, capacidad, max_citas_dia, texto_aviso_tarde, texto_confirmacion, whatsapp_modo";
 
 type FilaTaller = {
   id: number | null;
@@ -70,6 +72,7 @@ type FilaTaller = {
   numero_resenas: number | null;
   modo_capacidad: string | null;
   capacidad: number | null;
+  max_citas_dia: number | null;
   texto_aviso_tarde: string | null;
   texto_confirmacion: string | null;
   whatsapp_modo: string | null;
@@ -89,6 +92,7 @@ function aTaller(fila: FilaTaller): Taller | null {
     numero_resenas: fila.numero_resenas,
     modo_capacidad: fila.modo_capacidad === "por_dia" ? "por_dia" : "por_hora",
     capacidad: fila.capacidad ?? 1,
+    max_citas_dia: fila.max_citas_dia ?? null,
     texto_aviso_tarde: fila.texto_aviso_tarde,
     texto_confirmacion: fila.texto_confirmacion,
     whatsapp_modo: fila.whatsapp_modo === "api" || fila.whatsapp_modo === "enlace" ? fila.whatsapp_modo : "ninguno",

@@ -229,6 +229,17 @@ Miguel ya tiene comprado **`citaller.es`** (21-sep). Mientras la app de Google s
 - [ ] Comprobar el efecto real reconectando el taller de pruebas: el permiso ya no caduca a los 7 días (los talleres verán "Google no ha verificado esta aplicación" al conectar; con el volumen actual sobra).
 - [ ] Las plantillas de Meta (cuando Rik and Roll tenga cuenta) se crean ya con el botón de URL apuntando a `citaller.es`: no se pueden editar después.
 
+### Pedidos del 21-sep — tope diario, festivos, quién apunta la cita y cabecera del panel
+
+Backup en `backups/2026-09-21_1651`; migraciones `20260921180000_tope_citas_dia` y `20260921180100_miembros_taller`, revisadas por un agente independiente antes del `db push` (de ahí CT018 propio para el tope diario, `on delete restrict` y nombres sin espacios sobrantes).
+
+- [x] **Tope diario** además del modo de capacidad: `talleres.max_citas_dia` (null = sin tope), en la vista pública y en el trigger `comprobar_capacidad` dentro del mismo bloqueo por taller y día (CT018, "elige otro día"). Las citas a mano cuentan pero no se bloquean. Frontend: `motivoCompleta` en `disponibilidad.ts`. Rik and Roll: 2 por hora y **5 al día** (seed); e2e: 7 para probarlo.
+- [x] **Festivos de 2027** (los 12 de Cataluña) en Speedbikes y Rik and Roll, en sus seeds y en la BD.
+- [ ] Festivos locales de Castelldefels de 2027, cuando el Ayuntamiento los publique (en 2026: 14-ago y 7-dic). Ver `docs/operaciones.md`, "Festivos de cada año".
+- [x] **"¿Quién la apunta?"** en "Nueva cita": tabla `miembros_taller` (nombre, activo, orden; solo la lee el panel de su taller), `reservas.creada_por_miembro` e `insertar_reserva_taller` con `p_miembro_id` (obligatorio si el taller tiene miembros, CT017). El móvil recuerda el último elegido; la tarjeta dice "Mostrador · Nombre". Solo al crear, no al confirmar ni cancelar (decisión de Miguel). Nombres reales fuera del repo (`docs/operaciones.md`).
+- [ ] Cargar los mecánicos de Speedbikes y Rik and Roll cuando Miguel pase los nombres.
+- [x] **Cabecera del panel** (M9): "Hoy: 3 citas · 2 por responder" (confirmadas de hoy · pendientes de hoy en adelante). **Historial**: solo citas confirmadas (de la web y a mano), agrupadas por día y con el buscador funcionando; los filtros de estado y de fecha se ocultan ahí.
+
 ### Fase 5 — Cerrar el ciclo taller ↔ cliente (lo elegido del plan v4)
 
 Diseño técnico detallado en `.claude/plans/instalar-claude-code-en-magical-peach.md` (sección "Diseño técnico"). Tres migraciones, en este orden, con backup y revisión independiente antes de cada `db push`.
@@ -243,7 +254,7 @@ Diseño técnico detallado en `.claude/plans/instalar-claude-code-en-magical-pea
 
 ### Fase 6 — Después
 
-- [ ] Multiusuario y auditoría: `miembros_taller (user_id, taller_id, rol, nombre, activo)` con backfill desde `talleres.user_id`; `es_miembro()`; políticas nuevas en OR con la vieja durante la transición; `reservas.confirmada_por_usuario`, `cancelada_por_usuario`, `creada_por_usuario`; las Edge Functions autorizan por `miembros_taller` (`_shared/autorizar.ts`); la tarjeta muestra quién hizo qué.
+- [ ] Multiusuario y auditoría: `miembros_taller` ya existe desde el 21-sep (nombre, activo, orden): gana `user_id` y `rol`, con backfill desde `talleres.user_id`; `es_miembro()`; políticas nuevas en OR con la vieja durante la transición; `reservas.confirmada_por_miembro` y `cancelada_por_miembro` (la de crear, `creada_por_miembro`, ya existe); las Edge Functions autorizan por `miembros_taller` (`_shared/autorizar.ts`); la tarjeta muestra quién hizo qué.
 - [ ] Aplazados del plan v4, si un taller los pide: duración por servicio (el evento de Calendar dura 60 min fijos, `_shared/calendario.ts:7`), plazo de cancelación por taller, nota interna, bloqueos de agenda con su pantalla, botones de Finalizada y No presentado, `whatsapp_estado`.
 - [ ] Roadmap sin fecha: ficha de cliente e historial por matrícula, facturación, Outlook, Turnstile, dominio propio.
 

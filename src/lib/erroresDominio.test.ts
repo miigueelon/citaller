@@ -5,6 +5,13 @@ describe("mensajeDeError", () => {
   it("traduce los códigos de dominio", () => {
     expect(mensajeDeError({ code: "CT001", message: "Sin hueco" })).toMatch(/acaba de llenarse/);
     expect(mensajeDeError({ code: "CT011" })).toMatch(/24 horas/);
+    expect(mensajeDeError({ code: "CT017" })).toMatch(/quién apunta/);
+  });
+
+  it("el tope diario pide otro día, no otra hora", () => {
+    expect(mensajeDeError({ code: "CT018", message: "Sin hueco: máximo de 5 citas ese día" })).toMatch(/otro día/);
+    // La web anterior no conoce CT018: la salva el texto.
+    expect(mensajeDeError({ code: "XX000", message: "Sin hueco: máximo de 5 citas ese día" })).toMatch(/otro día/);
   });
 
   it("reconoce el mensaje del trigger de aforo actual", () => {

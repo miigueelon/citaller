@@ -7,13 +7,14 @@
 -- ============================================================================
 
 -- 1. Taller
-insert into public.talleres (nombre, slug, telefono, direccion, ciudad, activo, capacidad_simultanea, horario_texto)
-select '<<Nombre del taller>>', '<<slug>>', '<<600000000>>', '<<Dirección>>', '<<Ciudad>>', true, 1, '<<Lunes a viernes, 9:00 a 18:00>>'
+insert into public.talleres (nombre, slug, telefono, direccion, ciudad, activo, horario_texto)
+select '<<Nombre del taller>>', '<<slug>>', '<<600000000>>', '<<Dirección>>', '<<Ciudad>>', true, '<<Lunes a viernes, 9:00 a 18:00>>'
 where not exists (select 1 from public.talleres where slug = '<<slug>>');
 
 update public.talleres
 set modo_capacidad    = 'por_hora',          -- 'por_hora' (elevadores a la vez) o 'por_dia' (citas al día)
     capacidad         = 1,
+    max_citas_dia     = null,                -- tope de citas en todo el día además del anterior, o null
     texto_aviso_tarde = null,                -- texto bajo la última hora del día, o null
     whatsapp_modo     = 'ninguno'            -- 'api', 'enlace' o 'ninguno'
 where slug = '<<slug>>';
@@ -55,3 +56,7 @@ on conflict (taller_id, nombre) do update
 -- insert into public.festivos_taller (taller_id, fecha, nombre)
 -- select t.id, f.fecha, f.nombre from public.talleres t cross join (values (date '2026-12-25', 'Navidad')) as f(fecha, nombre)
 -- where t.slug = '<<slug>>' on conflict (taller_id, fecha) do nothing;
+
+-- 6. Mecánicos que apuntan citas a mano (opcional). NO van aquí los nombres reales (son datos
+--    personales): se cargan en la base de datos con el SQL de docs/operaciones.md. Si el taller no
+--    tiene ninguno, el panel no pregunta quién apunta la cita.

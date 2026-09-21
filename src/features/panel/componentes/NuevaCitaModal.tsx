@@ -3,31 +3,39 @@ import { useTaller } from "@/app/providers/useTaller";
 import { Alerta } from "@/components/Alerta";
 import { Modal } from "@/components/Modal";
 import { camposDelServicio } from "@/features/taller/api";
-import { estaCompleta, festivoDelDia, tallerAbre } from "@/features/reservar/disponibilidad";
+import { festivoDelDia, motivoCompleta, tallerAbre } from "@/features/reservar/disponibilidad";
 import { CamposExtra } from "@/features/reservar/pasos/CamposExtra";
 import { useDisponibilidad } from "@/features/reservar/useDisponibilidad";
 import { campoValido, esMatriculaValida, esTelefonoValido, normalizarMatricula } from "@/features/reservar/validacion";
 import { diaSemana, hoy, sumarDias } from "@/lib/fechas";
+import { leerMiembroRecordado, recordarMiembro } from "../miembroRecordado";
+import type { MiembroTaller } from "../tipos";
 import type { DatosCitaManual, ResultadoAccion } from "../useReservasTaller";
 
 interface Props {
+  /** Miembros activos del taller. Si no hay ninguno, no se pregunta quién la apunta. */
+  miembros: MiembroTaller[];
   ocupado: boolean;
   onGuardar: (datos: DatosCitaManual) => Promise<ResultadoAccion>;
   onCerrar: () => void;
 }
 
-const VACIA: DatosCitaManual = { nombre: "", telefono: "", matricula: "", vehiculo: "", servicio: "", descripcion: "", dia: "", hora: "", datos_extra: {} };
+const VACIA: DatosCitaManual = { nombre: "", telefono: "", matricula: "", vehiculo: "", servicio: "", descripcion: "", dia: "", hora: "", datos_extra: {}, miembro_id: null };
 
 /**
  * Cita apuntada a mano desde el panel (cliente en el mostrador o por teléfono). Nace confirmada.
  * El teléfono es opcional; el taller puede elegir cualquier hora: si está fuera del horario o
- * llena, se avisa pero no se bloquea.
+ * llena, se avisa pero no se bloquea. Si el taller tiene miembros, hay que decir quién la apunta
+ * (se preselecciona el último que la apuntó desde este dispositivo).
  */
-export function NuevaCitaModal({ ocupado, onGuardar, onCerrar }: Props) {
+export function NuevaCitaModal({ miembros, ocupado, onGuardar, onCerrar }: Props) {
   const taller = useTaller();
   const [datos, setDatos] = useState<DatosCitaManual>(VACIA);
   const [error, setError] = useState<string | null>(null);
   const { horarios, festivos, ocupacion, cargandoOcupacion } = useDisponibilidad(taller.id, datos.dia);
+
+  const preguntarMiembro = miembros.length > 0;
+  const miembroId = preguntarMiembro ? (datos.miembro_id ?? leerMiembroRecordado(taller.id, miembros)) : null;
 
   const servicio = taller.servicios.find((s) => s.nombre === datos.servicio);
   const campos = camposDelServicio(taller.campos, servicio);
@@ -47,13 +55,16 @@ export function NuevaCitaModal({ ocupado, onGuardar, onCerrar }: Props) {
     if (festivo) lista.push(`Ese día el taller cierra (${festivo.nombre}).`);
     else if (!tallerAbre(horarios, datos.dia)) lista.push("Ese día el taller no abre según su horario.");
     if (datos.hora) {
-      if (!horasDelDia.includes(datos.hora)) lista.push("Esa hora está fuera del horario habitual de recepción.");
-      else if (!cargandoOcupacion && estaCompleta(ocupacion, datos.hora, taller.capacidad, taller.modo_capacidad)) {
-        lista.push(taller.modo_capacidad === "por_dia" ? "Ese día ya está completo." : "Esa hora ya está completa.");
+      const fueraDeHorario = !horasDelDia.includes(datos.hora);
+      if (fueraDeHorario) lista.push("Esa hora está fuera del horario habitual de recepción.");
+      if (!cargandoOcupacion) {
+        const motivo = motivoCompleta(ocupacion, datos.hora, taller.capacidad, taller.modo_capacidad, taller.max_citas_dia);
+        if (motivo === "dia") lista.push("Ese día ya está completo.");
+        else if (motivo === "hora" && !fueraDeHorario) lista.push("Esa hora ya está completa.");
       }
     }
     return lista;
-  }, [datos.dia, datos.hora, festivos, horarios, horasDelDia, ocupacion, cargandoOcupacion, taller.capacidad, taller.modo_capacidad]);
+  }, [datos.dia, datos.hora, festivos, horarios, horasDelDia, ocupacion, cargandoOcupacion, taller.capacidad, taller.modo_capacidad, taller.max_citas_dia]);
 
   const errores = {
     matricula: datos.matricula.trim() !== "" && !esMatriculaValida(datos.matricula) ? "Escribe la matrícula sin símbolos, por ejemplo 1234ABC." : undefined,
@@ -61,6 +72,7 @@ export function NuevaCitaModal({ ocupado, onGuardar, onCerrar }: Props) {
   };
 
   const completo =
+    (!preguntarMiembro || miembroId !== null) &&
     datos.nombre.trim() !== "" &&
     datos.matricula.trim() !== "" &&
     datos.vehiculo.trim() !== "" &&
@@ -83,6 +95,10 @@ export function NuevaCitaModal({ ocupado, onGuardar, onCerrar }: Props) {
       setDatos({ ...datos, dia: value, hora: "" });
       return;
     }
+    if (name === "miembro_id") {
+      setDatos({ ...datos, miembro_id: value ? Number(value) : null });
+      return;
+    }
     setDatos({ ...datos, [name]: value });
   }
 
@@ -96,8 +112,13 @@ export function NuevaCitaModal({ ocupado, onGuardar, onCerrar }: Props) {
       telefono: datos.telefono.trim(),
       vehiculo: datos.vehiculo.trim(),
       descripcion: datos.descripcion.trim(),
+      miembro_id: miembroId,
     });
-    if (!resultado.ok) setError(resultado.avisos[0] ?? "No se pudo guardar la cita.");
+    if (!resultado.ok) {
+      setError(resultado.avisos[0] ?? "No se pudo guardar la cita.");
+      return;
+    }
+    if (miembroId !== null) recordarMiembro(taller.id, miembroId);
     // Si se guardó, el panel cierra este modal y enseña el resultado de las notificaciones.
   }
 
@@ -111,6 +132,22 @@ export function NuevaCitaModal({ ocupado, onGuardar, onCerrar }: Props) {
         }}
       >
         <p className="nueva-cita-nota">La cita se guarda ya confirmada. Si el cliente tiene teléfono, se le avisa según el modo de WhatsApp del taller.</p>
+
+        {preguntarMiembro && (
+          <label>
+            ¿Quién la apunta?
+            <select name="miembro_id" value={miembroId ?? ""} onChange={cambiar} required>
+              <option value="" disabled>
+                Elige tu nombre
+              </option>
+              {miembros.map((miembro) => (
+                <option key={miembro.id} value={miembro.id}>
+                  {miembro.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <div className="nueva-cita-fila">
           <label>

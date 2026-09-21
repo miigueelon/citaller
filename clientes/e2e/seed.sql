@@ -9,18 +9,29 @@
 -- ============================================================================
 
 insert into public.talleres
-  (nombre, slug, telefono, direccion, ciudad, activo, capacidad_simultanea, horario_texto)
+  (nombre, slug, telefono, direccion, ciudad, activo, horario_texto)
 select
-  'Taller de pruebas e2e', 'e2e', '600000000', 'Calle de Prueba 1', 'Pruebas', true, 2,
+  'Taller de pruebas e2e', 'e2e', '600000000', 'Calle de Prueba 1', 'Pruebas', true,
   'Lunes a viernes, 9:00 a 13:00'
 where not exists (select 1 from public.talleres where slug = 'e2e');
 
+-- Tope de 7 al día: probar-cadena llega a 5 activas en su día principal, así que queda margen, y
+-- con 4 horas × 2 caben 8, de modo que la octava de un día comprueba el tope diario.
 update public.talleres
 set slug           = 'e2e',
     modo_capacidad = 'por_hora',
     capacidad      = 2,
+    max_citas_dia  = 7,
     whatsapp_modo  = 'ninguno'
 where nombre = 'Taller de pruebas e2e';
+
+-- Dos mecánicos ficticios, para probar "¿Quién la apunta?" en las citas a mano.
+insert into public.miembros_taller (taller_id, nombre, orden)
+select t.id, m.nombre, m.orden
+from public.talleres t
+cross join (values ('Mecánico A', 1), ('Mecánico B', 2)) as m(nombre, orden)
+where t.slug = 'e2e'
+on conflict (taller_id, nombre) do update set orden = excluded.orden, activo = true;
 
 -- Horario: de lunes a viernes, a las 9, 10, 11 y 12. La última hora lleva aviso de tarde
 -- para poder comprobar ese aviso en la pantalla de reserva.

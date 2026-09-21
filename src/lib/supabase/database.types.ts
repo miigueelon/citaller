@@ -274,12 +274,55 @@ export type Database = {
           },
         ]
       }
+      miembros_taller: {
+        Row: {
+          activo: boolean
+          created_at: string
+          id: number
+          nombre: string
+          orden: number
+          taller_id: number
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          id?: number
+          nombre: string
+          orden?: number
+          taller_id: number
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          id?: number
+          nombre?: string
+          orden?: number
+          taller_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "miembros_taller_taller_id_fkey"
+            columns: ["taller_id"]
+            isOneToOne: false
+            referencedRelation: "talleres"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "miembros_taller_taller_id_fkey"
+            columns: ["taller_id"]
+            isOneToOne: false
+            referencedRelation: "talleres_publicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reservas: {
         Row: {
           cancelada_en: string | null
           cancelada_por: string | null
           confirmada_en: string | null
           creada_por: string
+          creada_por_miembro: number | null
           created_at: string | null
           datos_extra: Json
           descripcion: string | null
@@ -312,6 +355,7 @@ export type Database = {
           cancelada_por?: string | null
           confirmada_en?: string | null
           creada_por?: string
+          creada_por_miembro?: number | null
           created_at?: string | null
           datos_extra?: Json
           descripcion?: string | null
@@ -344,6 +388,7 @@ export type Database = {
           cancelada_por?: string | null
           confirmada_en?: string | null
           creada_por?: string
+          creada_por_miembro?: number | null
           created_at?: string | null
           datos_extra?: Json
           descripcion?: string | null
@@ -372,6 +417,13 @@ export type Database = {
           whatsapp_recordatorio_fecha?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "reservas_creada_por_miembro_fkey"
+            columns: ["creada_por_miembro"]
+            isOneToOne: false
+            referencedRelation: "miembros_taller"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "reservas_servicio_id_fkey"
             columns: ["servicio_id"]
@@ -458,6 +510,7 @@ export type Database = {
           direccion: string | null
           horario_texto: string | null
           id: number
+          max_citas_dia: number | null
           modo_capacidad: string
           nombre: string
           numero_resenas: number | null
@@ -482,6 +535,7 @@ export type Database = {
           direccion?: string | null
           horario_texto?: string | null
           id?: number
+          max_citas_dia?: number | null
           modo_capacidad?: string
           nombre: string
           numero_resenas?: number | null
@@ -506,6 +560,7 @@ export type Database = {
           direccion?: string | null
           horario_texto?: string | null
           id?: number
+          max_citas_dia?: number | null
           modo_capacidad?: string
           nombre?: string
           numero_resenas?: number | null
@@ -533,6 +588,7 @@ export type Database = {
           direccion: string | null
           horario_texto: string | null
           id: number | null
+          max_citas_dia: number | null
           modo_capacidad: string | null
           nombre: string | null
           numero_resenas: number | null
@@ -549,6 +605,7 @@ export type Database = {
           direccion?: string | null
           horario_texto?: string | null
           id?: number | null
+          max_citas_dia?: number | null
           modo_capacidad?: string | null
           nombre?: string | null
           numero_resenas?: number | null
@@ -565,6 +622,7 @@ export type Database = {
           direccion?: string | null
           horario_texto?: string | null
           id?: number | null
+          max_citas_dia?: number | null
           modo_capacidad?: string | null
           nombre?: string | null
           numero_resenas?: number | null
@@ -641,6 +699,7 @@ export type Database = {
           p_dia: string
           p_hora: string
           p_matricula: string
+          p_miembro_id?: number
           p_nombre: string
           p_servicio: string
           p_taller_id: number

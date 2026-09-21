@@ -11,15 +11,36 @@ export function porEstado(reservas: ReservaPanel[], estado: EstadoReserva): Rese
   return reservas.filter((reserva) => reserva.estado === estado);
 }
 
-/** Total histórico de reservas válidas: todas menos las canceladas. */
-export function totalValidas(reservas: ReservaPanel[]): number {
-  return reservas.filter((reserva) => reserva.estado !== "Cancelada").length;
+/** Lo que dice la cabecera del panel: "Hoy: 3 citas · 2 por responder". */
+export interface ResumenCabecera {
+  /** Citas confirmadas para hoy (de la web y apuntadas a mano). */
+  citasHoy: number;
+  /** Solicitudes pendientes de hoy en adelante. */
+  porResponder: number;
 }
 
-/** Reservas anteriores a hoy, de la más reciente a la más antigua. */
+export function resumenCabecera(reservas: ReservaPanel[], ahora: Date = new Date()): ResumenCabecera {
+  const diaHoy = hoy(ahora);
+  return {
+    citasHoy: reservas.filter((reserva) => reserva.dia === diaHoy && reserva.estado === "Confirmada").length,
+    porResponder: reservasFuturas(reservas, ahora).filter((reserva) => reserva.estado === "Pendiente").length,
+  };
+}
+
+/** "Hoy: 3 citas · 2 por responder", "Hoy: 1 cita · todo al día", "Hoy: sin citas · 1 por responder". */
+export function textoResumen({ citasHoy, porResponder }: ResumenCabecera): string {
+  const citas = citasHoy === 0 ? "Hoy: sin citas" : `Hoy: ${citasHoy} ${citasHoy === 1 ? "cita" : "citas"}`;
+  return `${citas} · ${porResponder === 0 ? "todo al día" : `${porResponder} por responder`}`;
+}
+
+/**
+ * Historial: las citas confirmadas de días anteriores a hoy (de la web y apuntadas a mano), de la más
+ * reciente a la más antigua. Las canceladas y las que nadie respondió no cuentan (decisión de Miguel,
+ * 21-sep-2026).
+ */
 export function historial(reservas: ReservaPanel[], ahora: Date = new Date()): ReservaPanel[] {
   return reservas
-    .filter((reserva) => !!reserva.dia && esDiaPasado(reserva.dia, ahora))
+    .filter((reserva) => !!reserva.dia && esDiaPasado(reserva.dia, ahora) && reserva.estado === "Confirmada")
     .sort((a, b) => `${b.dia} ${b.hora ?? ""}`.localeCompare(`${a.dia} ${a.hora ?? ""}`));
 }
 

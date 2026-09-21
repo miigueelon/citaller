@@ -12,6 +12,7 @@ App de reserva de citas para talleres (SaaS multi-taller). React 19 + Vite en Ve
 - Trabaja en la rama `reestructuracion` (o una rama por tarea). **Nunca hagas push a `main`** ni despliegues a producción sin aprobación explícita.
 - **Todo cambio de esquema va en una migración** en `supabase/migrations/`. Nunca cambies el esquema desde el dashboard ni con `execute_sql` en el proyecto remoto.
 - **Nunca borres ni modifiques datos del proyecto remoto**, salvo los del taller de pruebas `e2e`.
+- **Todas las pruebas de funcionamiento se hacen con el taller de pruebas `e2e`** (id 3, `https://citaller.es/e2e`): Playwright, `npm run probar-cadena` y cualquier prueba a mano de un cambio o de algo nuevo. Speedbikes (id 1) y Rik and Roll (id 2) son clientes reales: en las pruebas solo se leen. Ficha, datos y cómo probar: `clientes/e2e/README.md`.
 - No commitees `.env.local` ni ningún secreto. Los secretos van en Supabase Secrets/Vault y en las variables de Vercel. Los seeds de `clientes/<slug>/` no contienen tokens ni IDs de WhatsApp.
 - Flujo Supabase **solo remoto, sin Docker**: migraciones escritas a mano y aplicadas con `db push`; verificar con `scripts/rls-test.sql` y los advisors.
 - Al terminar una fase de `docs/plan.md`: verificar la cadena end-to-end (Playwright + `docs/checklist-manual.md`), marcar casillas, tag `v0-faseN`, y **parar a pedir aprobación**.

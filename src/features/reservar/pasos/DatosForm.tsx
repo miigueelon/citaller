@@ -1,5 +1,6 @@
 import type { ChangeEvent } from "react";
 import { Clock, MapPin, Phone, Star } from "lucide-react";
+import logo from "@/assets/logo.png";
 import CampoInput from "@/components/CampoInput";
 import { FirmaCiTaller } from "@/components/FirmaCiTaller";
 import { useTaller } from "@/app/providers/useTaller";
@@ -48,6 +49,7 @@ export function DatosForm({ reserva, actualizar, continuar }: Props) {
   return (
     <div className="container">
       <div className="card">
+        <img src={logo} alt="CiTaller" className="logo-marca" width="110" height="73" />
         <p className="eyebrow">Reserva tu cita en</p>
 
         <h1>{taller.nombre}</h1>

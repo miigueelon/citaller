@@ -1,6 +1,14 @@
 /* Pantalla pública de reserva: formulario, calendario, horas y resumen. */
 
 /* Cabecera: el protagonista es el taller (nombre como título); CiTaller firma al pie. */
+/* Marca CiTaller, pequeña: el protagonista sigue siendo el nombre del taller. */
+.logo-marca {
+  display: block;
+  width: 110px;
+  height: auto;
+  margin: -10px auto 2px;
+}
+
 .eyebrow {
   margin: 0 0 6px;
   text-align: center;

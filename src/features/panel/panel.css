@@ -388,6 +388,17 @@
   word-break: break-word;
 }
 
+/* El teléfono llama al tocarlo, pero se ve como el resto de datos (sin azul ni subrayado). */
+.campo-valor a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.campo-valor a:hover,
+.campo-valor a:focus-visible {
+  text-decoration: underline;
+}
+
 .descripcion-reserva {
   margin-top: 18px;
   padding: 12px 14px;

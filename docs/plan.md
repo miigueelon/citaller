@@ -203,10 +203,10 @@ citaller/
 Decisiones del 21-sep que la enmarcan: sin dominio propio por ahora (se intenta publicar la app de Google con `citaller.vercel.app`); Rik and Roll pasa a `whatsapp_modo='enlace'` mientras espera a Meta; antes del merge se retocó el diseño (commit `24ea63a`: el taller como protagonista, una sola acción naranja por pantalla, filas del resumen que se pisaban en móvil, "23 De Septiembre", etiqueta duplicada de kilómetros).
 
 - [x] 4.1 *(Escrita el 21-sep-2026, revisada por un agente independiente antes de aplicarla.)* Migración `20260921120000_cierre_permisos_publicos`: anon deja de leer e insertar en `reservas` por REST (solo por las RPC); authenticated deja de insertar y actualizar (solo por Edge Functions) y conserva el SELECT; se recrea `talleres_publicos` sin `capacidad_simultanea` y se borran `talleres.{capacidad_simultanea, whatsapp_activo, calendar_provider, calendar_id}` y `reservas.{calendar_event_id, calendar_provider, calendar_sync_status}`. Se quedan a propósito `talleres.user_id` legible por authenticated (el `AuthProvider` filtra por él; la RLS ya limita al propio taller) y `reservas.kilometros` (las dos RPC aún la rellenan; se retira al recrearlas en la fase 5C). `probar-cadena`, `tests/e2e/preparar.ts` y `rls-test.sql` (57 comprobaciones) adaptados: nadie escribe en `reservas` por REST. **Se aplica después del merge.**
-- [ ] 4.2 Backup, merge de `reestructuracion` en `main` (producción), aplicar 4.1, `gen types`, `rls-test.sql` 57/57, `probar-cadena` y Playwright contra `citaller.vercel.app`. Comprobar a mano: `/speedbikes` y `/rikandroll` reservan, `?taller=1` redirige, un enlace `/rikandroll/cita/<token>` abre la cita.
+- [x] 4.2 *(Hecho el 21-sep-2026: backup en `backups/2026-09-21_1231`; `main` avanzado en fast-forward a `31317f3` y desplegado por Vercel; migración aplicada con `db push`; tipos regenerados sin las columnas retiradas; `rls-test.sql` **57/57**; `probar-cadena` **64/64** ya con los permisos cerrados; Playwright **13/13 contra `citaller.vercel.app`**; advisors sin avisos nuevos. A mano en producción: `/speedbikes` carga "Speedbikes Moto" con 7 servicios y el campo de kilómetros, `/rikandroll` carga "Rik and Roll" con 7 servicios y sin él, `?taller=1` → `/speedbikes`, `?taller=2&modo=taller` → `/rikandroll/panel`; la página de la cita, con un token real del taller e2e.)* 4.2 Backup, merge de `reestructuracion` en `main` (producción), aplicar 4.1, `gen types`, `rls-test.sql` 57/57, `probar-cadena` y Playwright contra `citaller.vercel.app`. Comprobar a mano: `/speedbikes` y `/rikandroll` reservan, `?taller=1` redirige, un enlace `/rikandroll/cita/<token>` abre la cita.
 - [ ] 4.3 Pasos manuales guiados (Miguel): borrar del dashboard los cinco slugs antiguos de Edge Functions (`hyper-processor`, `bright-processor`, `bright-service`, `dynamic-function`, `quick-worker`) y las tres retiradas en la fase 3 (`enviar-whatsapp-confirmacion`, `crear-evento-google`, `cancelar-evento-google`); rotar el secreto del cron; enlace de reserva en el perfil de Google Business de cada taller; imprimir los QR de `clientes/<slug>/assets/`; borrar a mano los 3 eventos huérfanos del calendario de Rik and Roll (22-sep 8:30, 23-sep 10:30, 19-oct 9:30).
-- [ ] 4.4 Rik and Roll a `whatsapp_modo='enlace'` (seed y BD). Speedbikes se queda en `enlace`.
-- **Cierre**: tag `v1`. Vigilancia la primera semana: `net._http_response` del cron, errores de WhatsApp y Google en el panel, y si el calendario de algún taller se desconecta.
+- [x] 4.4 *(Hecho el 21-sep-2026: seed y BD.)* 4.4 Rik and Roll a `whatsapp_modo='enlace'` (seed y BD). Speedbikes se queda en `enlace`.
+- **Cierre (21-sep-2026)**: tag `v1` con 4.1, 4.2 y 4.4 hechos; 4.3 son los pasos manuales de Miguel. Vigilancia la primera semana: `net._http_response` del cron, errores de WhatsApp y Google en el panel, y si el calendario de algún taller se desconecta.
 
 ### Paso previo a la fase 5 — Media hora con la dueña de Speedbikes (Miguel)
 
@@ -217,14 +217,16 @@ Después de producción (para que lo vea en la web de verdad) y **antes** de con
 - [ ] Si quiere, conectar allí mismo su Google Calendar (Speedbikes no lo tiene conectado; Rik and Roll sí, desde el 17-sep). Mientras la app de Google esté en "Prueba", su cuenta tiene que estar añadida antes como **usuario de prueba** en Google Cloud.
 - [ ] Anotar lo que salga en `docs/idea.md` y ajustar la fase 5 con eso.
 
-### En paralelo — Sacar la app de Google del modo "Prueba" sin comprar dominio
+### En paralelo — `citaller.es` y sacar la app de Google del modo "Prueba"
 
-Mientras la app siga en "Prueba", el permiso de Google de cada taller **caduca cada 7 días** (Rik and Roll: conectado el 17-sep, caduca el 24) y las citas dejan de entrar en su calendario sin avisar.
+Miguel ya tiene comprado **`citaller.es`** (21-sep). Mientras la app de Google siga en "Prueba", el permiso de cada taller **caduca cada 7 días** (Rik and Roll: conectado el 17-sep, caduca el 24) y las citas dejan de entrar en su calendario sin avisar. Con dominio propio el camino es el estándar.
 
-- [ ] Claude: página principal pública y política de privacidad (`/privacidad`) en el repo, y hueco para el fichero de verificación de Search Console.
-- [ ] Miguel: verificar `https://citaller.vercel.app/` en Google Search Console por prefijo de URL; en Google Cloud → pantalla de consentimiento, rellenar marca, enlaces de home y privacidad, dominio autorizado y **Publicar aplicación**.
+- [ ] Dominio en Vercel: añadir `citaller.es` (y `www.citaller.es` redirigiendo) al proyecto `citaller` y poner en el registrador los registros DNS que Vercel indique. `citaller.vercel.app` sigue funcionando (los enlaces y QR antiguos no se rompen).
+- [ ] Miguel: `npx supabase secrets set CITALLER_APP_URL=https://citaller.es` (lo lee `_shared/origenes.ts`: enlaces de la cita en WhatsApp y vueltas del OAuth). Claude: regenerar los QR con `CITALLER_APP_URL=https://citaller.es node scripts/qr.mjs` cuando el dominio resuelva, y `docs/operaciones.md`.
+- [ ] Claude: página principal pública en `/` y política de privacidad en `/privacidad` (borrador con los datos del responsable para que Miguel los revise).
+- [ ] Miguel: verificar `citaller.es` en Google Search Console (registro TXT en el DNS); en Google Cloud → pantalla de consentimiento: marca, enlaces de home y privacidad en `citaller.es`, dominio autorizado `citaller.es`, y **Publicar aplicación**.
 - [ ] Comprobar el efecto real reconectando el taller de pruebas: el permiso ya no caduca a los 7 días (los talleres verán "Google no ha verificado esta aplicación" al conectar; con el volumen actual sobra).
-- [ ] Si Google rechaza `citaller.vercel.app` como dominio autorizado: parar y decidir entre comprar un dominio (~12 €/año; además deja las plantillas de Meta atadas a él para siempre) o seguir reconectando cada 7 días con el aviso de 5D.
+- [ ] Las plantillas de Meta (cuando Rik and Roll tenga cuenta) se crean ya con el botón de URL apuntando a `citaller.es`: no se pueden editar después.
 
 ### Fase 5 — Cerrar el ciclo taller ↔ cliente (lo elegido del plan v4)
 

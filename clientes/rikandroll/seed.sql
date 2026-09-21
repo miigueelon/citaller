@@ -8,7 +8,7 @@
 update public.talleres
 set modo_capacidad = 'por_hora',
     capacidad      = 2,
-    whatsapp_modo  = case when whatsapp_modo = 'api' then 'api' else 'ninguno' end
+    whatsapp_modo  = case when whatsapp_modo = 'api' then 'api' else 'enlace' end
 where slug = 'rikandroll';
 
 insert into public.servicios_taller (taller_id, nombre, orden, descripcion_modo, descripcion_etiqueta, descripcion_placeholder, descripcion_ayuda, imagen_ayuda_url)

@@ -276,9 +276,6 @@ export type Database = {
       }
       reservas: {
         Row: {
-          calendar_event_id: string | null
-          calendar_provider: string | null
-          calendar_sync_status: string | null
           cancelada_en: string | null
           cancelada_por: string | null
           confirmada_en: string | null
@@ -311,9 +308,6 @@ export type Database = {
           whatsapp_recordatorio_fecha: string | null
         }
         Insert: {
-          calendar_event_id?: string | null
-          calendar_provider?: string | null
-          calendar_sync_status?: string | null
           cancelada_en?: string | null
           cancelada_por?: string | null
           confirmada_en?: string | null
@@ -346,9 +340,6 @@ export type Database = {
           whatsapp_recordatorio_fecha?: string | null
         }
         Update: {
-          calendar_event_id?: string | null
-          calendar_provider?: string | null
-          calendar_sync_status?: string | null
           cancelada_en?: string | null
           cancelada_por?: string | null
           confirmada_en?: string | null
@@ -461,10 +452,7 @@ export type Database = {
       talleres: {
         Row: {
           activo: boolean
-          calendar_id: string | null
-          calendar_provider: string | null
           capacidad: number
-          capacidad_simultanea: number
           ciudad: string | null
           created_at: string
           direccion: string | null
@@ -482,17 +470,13 @@ export type Database = {
           texto_whatsapp_recordatorio: string | null
           user_id: string | null
           valoracion: number | null
-          whatsapp_activo: boolean
           whatsapp_business_account_id: string | null
           whatsapp_modo: string
           whatsapp_phone_number_id: string | null
         }
         Insert: {
           activo?: boolean
-          calendar_id?: string | null
-          calendar_provider?: string | null
           capacidad?: number
-          capacidad_simultanea?: number
           ciudad?: string | null
           created_at?: string
           direccion?: string | null
@@ -510,17 +494,13 @@ export type Database = {
           texto_whatsapp_recordatorio?: string | null
           user_id?: string | null
           valoracion?: number | null
-          whatsapp_activo?: boolean
           whatsapp_business_account_id?: string | null
           whatsapp_modo?: string
           whatsapp_phone_number_id?: string | null
         }
         Update: {
           activo?: boolean
-          calendar_id?: string | null
-          calendar_provider?: string | null
           capacidad?: number
-          capacidad_simultanea?: number
           ciudad?: string | null
           created_at?: string
           direccion?: string | null
@@ -538,7 +518,6 @@ export type Database = {
           texto_whatsapp_recordatorio?: string | null
           user_id?: string | null
           valoracion?: number | null
-          whatsapp_activo?: boolean
           whatsapp_business_account_id?: string | null
           whatsapp_modo?: string
           whatsapp_phone_number_id?: string | null
@@ -550,7 +529,6 @@ export type Database = {
       talleres_publicos: {
         Row: {
           capacidad: number | null
-          capacidad_simultanea: number | null
           ciudad: string | null
           direccion: string | null
           horario_texto: string | null
@@ -567,7 +545,6 @@ export type Database = {
         }
         Insert: {
           capacidad?: number | null
-          capacidad_simultanea?: number | null
           ciudad?: string | null
           direccion?: string | null
           horario_texto?: string | null
@@ -584,7 +561,6 @@ export type Database = {
         }
         Update: {
           capacidad?: number | null
-          capacidad_simultanea?: number | null
           ciudad?: string | null
           direccion?: string | null
           horario_texto?: string | null

@@ -1,9 +1,11 @@
 # Antelación por servicio: Neumáticos en Rik and Roll
 
-> **Estado (23-sep-2026)**: pedido de Miguel por la mañana, el día de la instalación en los dos
-> talleres. Hecho en la rama `reestructuracion` y probado con el taller e2e; **producción pendiente
-> del "publica" de Miguel** (merge a `main` + `bloques_antelacion = 1` en Neumáticos de Rik and Roll).
-> Seguimiento con casillas en `docs/plan.md`, "Pedidos del 23-sep".
+> **Estado (23-sep-2026, 01:10)**: pedido de Miguel la madrugada del día de la instalación en los dos
+> talleres. Hecho, probado con el taller e2e y **publicado** con su "publica": `main` = `5b4e0e9`
+> (etiqueta `v1.6`), Vercel en producción y después el seed de Rik and Roll (`bloques_antelacion = 1`
+> en Neumáticos). Playwright 23/23 contra `citaller.es`; en `citaller.es/rikandroll` con Neumáticos, a
+> la 01:00, la pantalla de fecha dice "Primera hora disponible: miércoles, 23 de septiembre a las
+> 15:30" y solo ofrece 15:30, 16:30, 17:30 y 18:30. Seguimiento en `docs/plan.md`, "Pedidos del 23-sep".
 
 ## Lo que pidió Miguel
 

@@ -45,6 +45,8 @@ const frenos: ServicioTaller = {
   descripcion_placeholder: null,
   descripcion_ayuda: null,
   imagen_ayuda_url: null,
+  bloques_antelacion: 0,
+  antelacion_texto: null,
 };
 const neumaticos: ServicioTaller = { ...frenos, id: 2, nombre: "Neumáticos", descripcion_modo: "obligatoria" };
 const kilometros: CampoFormulario = { id: 1, servicio_id: null, clave: "kilometros", etiqueta: "Kilómetros", tipo: "numero", opciones: null, obligatorio: false, orden: 1, unidad: "km", ayuda: null };

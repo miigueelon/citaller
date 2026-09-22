@@ -184,6 +184,7 @@ export type Database = {
       horarios_taller: {
         Row: {
           aviso_tarde: boolean
+          bloque: number
           dia_semana: number
           hora: string
           id: number
@@ -191,6 +192,7 @@ export type Database = {
         }
         Insert: {
           aviso_tarde?: boolean
+          bloque?: number
           dia_semana: number
           hora: string
           id?: number
@@ -198,6 +200,7 @@ export type Database = {
         }
         Update: {
           aviso_tarde?: boolean
+          bloque?: number
           dia_semana?: number
           hora?: string
           id?: number
@@ -453,6 +456,8 @@ export type Database = {
       servicios_taller: {
         Row: {
           activo: boolean
+          antelacion_texto: string | null
+          bloques_antelacion: number
           descripcion_ayuda: string | null
           descripcion_etiqueta: string | null
           descripcion_modo: string
@@ -465,6 +470,8 @@ export type Database = {
         }
         Insert: {
           activo?: boolean
+          antelacion_texto?: string | null
+          bloques_antelacion?: number
           descripcion_ayuda?: string | null
           descripcion_etiqueta?: string | null
           descripcion_modo?: string
@@ -477,6 +484,8 @@ export type Database = {
         }
         Update: {
           activo?: boolean
+          antelacion_texto?: string | null
+          bloques_antelacion?: number
           descripcion_ayuda?: string | null
           descripcion_etiqueta?: string | null
           descripcion_modo?: string
@@ -643,6 +652,14 @@ export type Database = {
       }
     }
     Functions: {
+      antelacion_minima: {
+        Args: { p_servicio_id: number; p_taller_id: number }
+        Returns: string
+      }
+      antelacion_minima_en: {
+        Args: { p_ahora: string; p_servicio_id: number; p_taller_id: number }
+        Returns: string
+      }
       cancelar_reserva_cliente: {
         Args: { p_token: string }
         Returns: {

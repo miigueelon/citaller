@@ -6,6 +6,7 @@
 // Uso: node scripts/tarjeta-mostrador.mjs [slug ...]   (sin argumentos: todos los talleres salvo _plantilla y e2e)
 // Necesita el QR del taller (node scripts/qr.mjs) y lee su nombre de la vista pública de Supabase
 // (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY de .env.local); si no puede, usa el slug.
+/* global document */ // dentro de page.evaluate() el código corre en el navegador
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium } from "playwright";

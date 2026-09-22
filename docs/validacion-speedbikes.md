@@ -16,8 +16,9 @@ Regla de oro: **mirar, no enseñar**. Si se atasca, espera; si pregunta, devuél
 | Panel | `https://citaller.es/speedbikes/panel` | `https://citaller.es/rikandroll/panel` |
 | Huecos | 6 citas al día, a cualquier hora | 2 por hora y máximo 5 al día |
 | Campo extra | Kilómetros (opcional) | Neumáticos: cantidad y medidas, con imagen de ayuda |
+| Antelación | Ninguna | Neumáticos: medio día para recibirlos (solicitud por la noche → primera hora a las 15:30 del día siguiente; por la tarde → la mañana siguiente; por la mañana → esa tarde). Los demás servicios, sin antelación. Desde el panel, "Nueva cita" no tiene límite |
 | WhatsApp | Modo enlace: el panel abre WhatsApp con el mensaje escrito y ella lo envía desde su móvil | Igual (modo enlace), hasta que tenga WhatsApp Business |
-| Google Calendar | Sin conectar (opcional) | Conectado el 17-sep con la app de Google en "Prueba": **hay que reconectarlo mañana** (parte 2) |
+| Google Calendar | Sin conectar (opcional) | Sin conectar: **se conecta mañana con su Gmail** (parte 2) |
 | "Vehículo listo" | "Tu moto ya está lista…" | "Tu coche ya está listo…" |
 | QR | `clientes/speedbikes/assets/qr-reserva.png` | `clientes/rikandroll/assets/qr-reserva.png` |
 
@@ -70,10 +71,12 @@ Que entre en su panel y busque la solicitud que acaba de hacer (pestaña **Pendi
 - ¿Encuentra cómo **confirmar**? ¿Entiende el aviso que sale después, con el botón "Abrir WhatsApp con
   el mensaje"? Al pulsarlo se abre WhatsApp con el texto y la tarjeta queda "✓ Confirmación enviada a
   las HH:MM" en el sitio del botón (no se puede reenviar). ¿Le parece bien el mensaje? ¿Lo enviaría tal cual?
-- **Rik and Roll**: ahora, antes de seguir, que pulse "Conectar Google Calendar" (su conexión anterior
-  caduca el 24-sep). Google → Configuración avanzada → Ir a citaller.es → Permitir → vuelve al panel
-  con "Google Calendar conectado". (Speedbikes: solo si lo quiere.) La cita que ya confirmó no
-  aparecerá en el calendario —el evento se crea al confirmar—; las siguientes sí.
+- **Rik and Roll**: ahora, antes de seguir, que pulse "Conectar Google Calendar" **desde su móvil**
+  y elija **su Gmail** (no el tuyo). Google → Configuración avanzada → Ir a citaller.es → Permitir →
+  vuelve al panel con "Google Calendar conectado". (Speedbikes: solo si lo quiere.) El botón
+  "Conectar" sale siempre, esté conectado o no: la prueba de que quedó bien es que la cita de
+  mostrador de abajo aparezca en su calendario. La cita que ya confirmó no aparecerá —el evento se
+  crea al confirmar—; las siguientes sí.
 - Que apunte una cita a mano de alguien que "acaba de entrar por la puerta" (+ Nueva cita), **para
   hoy**. Nace confirmada, con la etiqueta "Mostrador". Si tiene calendario, que la vea aparecer en él.
 - **Vehículo listo**: en esa cita de hoy, que pulse "Vehículo listo: avisar por WhatsApp". Se abre
@@ -109,10 +112,8 @@ tenemos: que aparezca en su Google Calendar como "PENDIENTE", en rojo en el pane
 
 - [ ] En cada panel, las citas de prueba salen como canceladas (ni en Confirmadas ni en Finalizadas):
       si no, ocupan hueco y cuentan en el histórico.
-- [ ] Rik and Roll: la cita de mostrador apareció en su Google Calendar (= reconexión hecha; el token
-      ya está en Vault). Borrar a mano los 4 eventos huérfanos de su calendario (22-sep 8:30 y
-      12:30, 23-sep 10:30, 19-oct 9:30: sus citas ya no existen) y poner el enlace de reserva en su
-      Google Business (plan 4.3).
+- [ ] Rik and Roll: la cita de mostrador apareció en su Google Calendar (= conexión hecha; el token
+      ya está en Vault). Poner el enlace de reserva en su Google Business (plan 4.3).
 - [ ] Pasar las notas literales, sin resumir, a `docs/idea.md` (sección nueva "Validación con
       <taller>, <fecha>"). Con eso se decide el orden de la fase 5 de `docs/plan.md` y qué mejoras
       (M1–M10) se hacen.

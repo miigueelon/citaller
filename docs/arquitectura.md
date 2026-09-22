@@ -6,7 +6,7 @@
 - **Integraciones**: Google Calendar (OAuth por taller), WhatsApp Cloud API de Meta (plantillas). Ver `integraciones.md`.
 
 ## Flujos (cadena completa)
-1. **Reservar**: navegador → vista pública `talleres_publicos`, `horarios_taller`, `festivos_taller` y RPC `ocupacion_dia` (solo recuentos por hora, ningún dato personal) → RPC `crear_reserva_publica` (SECURITY DEFINER) → fila en `reservas` con `estado='Pendiente'`.
+1. **Reservar**: navegador → vista pública `talleres_publicos`, `horarios_taller`, `festivos_taller`, RPC `ocupacion_dia` (solo recuentos por hora, ningún dato personal) y, en los servicios con antelación, RPC `antelacion_minima` (primera hora reservable, calculada con la hora del servidor) → RPC `crear_reserva_publica` (SECURITY DEFINER) → fila en `reservas` con `estado='Pendiente'`.
 2. **Panel**: navegador → Supabase Auth → `reservas` del taller (política por pertenencia) → `update estado` (solo esa columna).
 2. **Panel**: navegador → Supabase Auth → `reservas` del taller (política por pertenencia; por REST solo lectura). Los cambios de estado pasan por Edge Functions; las marcas del panel ("Vehículo listo", avisos de WhatsApp) por las RPC `marcar_vehiculo_listo` y `marcar_aviso_whatsapp`.
 3. **Confirmar**: panel → Edge `confirmar-reserva` (una sola llamada: estado + WhatsApp según el modo del taller + evento en Google Calendar; idempotente).
@@ -16,7 +16,8 @@
 ## Modelo de datos (actual y objetivo)
 - `talleres`: config pública + integraciones. Objetivo: `slug`, `modo_capacidad`, `capacidad`, `tipo_vehiculo`, `zona_horaria`, `duracion_cita_min`, textos y marca.
 - `reservas`: `taller_id`, datos del cliente, `servicio`, `dia date`, `hora time`, `estado`, flags de WhatsApp y Calendar. Objetivo: `datos_extra jsonb`, `cliente_id`, `vehiculo_id`, `confirmada_por`, `cancelada_por`.
-- `horarios_taller` (`dia_semana` 0-6, `hora`, `aviso_tarde`), `festivos_taller` (`fecha`, `nombre`).
+- `horarios_taller` (`dia_semana` 0-6, `hora`, `aviso_tarde`, `bloque` 1 = mañana / 2 = tarde), `festivos_taller` (`fecha`, `nombre`).
+- `servicios_taller.bloques_antelacion` (+ `antelacion_texto`): bloques de apertura enteros que el taller necesita entre la solicitud y la cita (Neumáticos en Rik and Roll: 1). La regla vive en `antelacion_minima_en` (el bloque abierto en el momento de la solicitud, o el siguiente que abre, es para recibir el material; la cita, desde el bloque de después) y la aplican `validar_datos_reserva` (CT021, solo a clientes) y la web (RPC `antelacion_minima`).
 - `configuracion_taller` (`max_citas_dia`, `aviso_tarde` texto): se absorbe en `talleres`.
 - `integraciones_calendario` (`proveedor`, `calendar_id`, `refresh_token_secret_id` → secreto cifrado en Vault; `refresh_token` en claro solo en conexiones anteriores al 19-sep-2026, `conectado`), `google_oauth_states` (`state` de un solo uso, `user_id`, `volver_a`, `expires_at`).
 - Objetivo: `servicios_taller`, `campos_formulario_taller`, `miembros_taller`, `eventos_reserva`, `clientes`, `vehiculos`. Detalle en `docs/plan.md`, sección 6.

@@ -442,6 +442,18 @@
   font-weight: 600;
 }
 
+/* Servicio con antelación (p. ej. neumáticos): explica desde cuándo se puede reservar */
+.aviso-antelacion {
+  text-align: center;
+  color: var(--color-aviso-texto);
+  background: var(--color-aviso-fondo);
+  border: 1px solid var(--color-aviso-borde);
+  border-radius: var(--radio-s);
+  padding: 12px;
+  margin: 0 0 16px;
+  line-height: 1.45;
+}
+
 /* Resumen de la solicitud */
 .icono-exito {
   width: 74px;

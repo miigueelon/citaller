@@ -6,6 +6,8 @@
 // E conectar Google, G cita manual por `crear-reserva-taller`, H cancelación por el cliente por
 // `consultar_cita_cliente` + `cancelar-cita-cliente`. Desde el 21-sep: tope diario (e2e tiene
 // max_citas_dia = 7) y "¿quién la apunta?" (e2e tiene los miembros "Mecánico A" y "Mecánico B").
+// I "Vehículo listo" y avisos apuntados (22-sep). J antelación por servicio (23-sep: e2e tiene
+// "Neumáticos" con 1 bloque de apertura, como Rik and Roll, y abre 9-12 y 16-17).
 // Necesita E2E_TALLER_EMAIL/PASSWORD en
 // .env.local. Con SR_KEY (clave de servicio) borra al final lo creado; sin ella, lo deja cancelado.
 import { readFileSync } from "node:fs";
@@ -120,7 +122,7 @@ const campos = await pedir(`/rest/v1/campos_formulario_taller?taller_id=eq.${TAL
 comprobar("A. La web pública ve los campos extra", campos.status === 200 && campos.datos?.length === 2, `${campos.datos?.length} campos`);
 
 const horarios = await pedir(`/rest/v1/horarios_taller?taller_id=eq.${TALLER_E2E}&select=dia_semana,hora`);
-comprobar("A. La web pública ve sus horarios", horarios.status === 200 && horarios.datos?.length === 20, `${horarios.datos?.length} horas`);
+comprobar("A. La web pública ve sus horarios (6 horas × 5 días, en dos bloques)", horarios.status === 200 && horarios.datos?.length === 30, `${horarios.datos?.length} horas`);
 
 // A. Reserva pública por la RPC v2
 const crear = await reservar();
@@ -364,6 +366,79 @@ const avisoAjena = await avisar({ p_reserva_id: 1, p_tipo: "confirmacion" });
 comprobar("I. No puede marcar ni apuntar avisos en citas de otro taller (CT019 / CT020)", codigo(listoAjena) === "CT019" && codigo(avisoAjena) === "CT020", `${codigo(listoAjena)} / ${codigo(avisoAjena)}`);
 const listoCancelada = await marcar({ p_reserva_id: reserva.reserva_id, p_listo: true });
 comprobar("I. Una cita cancelada no se puede marcar como lista (CT019)", codigo(listoCancelada) === "CT019", `HTTP ${listoCancelada.status} ${codigo(listoCancelada)}`);
+
+// J. Antelación por servicio (23-sep). En e2e, "Neumáticos" necesita un bloque de apertura entero
+// entre la solicitud y la cita, como en Rik and Roll. La primera hora posible la dice la base de datos
+// (RPC pública `antelacion_minima`); aquí se recalcula aparte con el horario de e2e para contrastarla:
+// L-V 9, 10, 11 y 12 (bloque 1) y 16 y 17 (bloque 2); festivo el 25-dic.
+const HORAS_E2E = [["09:00", 1], ["10:00", 1], ["11:00", 1], ["12:00", 1], ["16:00", 2], ["17:00", 2]];
+function ahoraMadrid() {
+  const partes = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+      .formatToParts(new Date())
+      .map((p) => [p.type, p.value]),
+  );
+  return { dia: `${partes.year}-${partes.month}-${partes.day}`, hora: `${partes.hour}:${partes.minute}` };
+}
+function huecosE2E(desdeDia, dias = 30) {
+  const lista = [];
+  const fecha = new Date(`${desdeDia}T12:00:00`);
+  for (let i = 0; i < dias; i++) {
+    const dia = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, "0")}-${String(fecha.getDate()).padStart(2, "0")}`;
+    const laborable = fecha.getDay() >= 1 && fecha.getDay() <= 5 && !dia.endsWith("-12-25");
+    if (laborable) for (const [hora, bloque] of HORAS_E2E) lista.push({ dia, hora, bloque, instante: `${dia} ${hora}` });
+    fecha.setDate(fecha.getDate() + 1);
+  }
+  return lista;
+}
+/** La regla: el bloque abierto ahora (o el siguiente que abre) es para recibir el material; la cita, desde el bloque de después. */
+function primeraHoraEsperada({ dia, hora }) {
+  const bloques = [];
+  for (const h of huecosE2E(dia)) {
+    const ultimo = bloques[bloques.length - 1];
+    if (ultimo && ultimo.dia === h.dia && ultimo.bloque === h.bloque) ultimo.fin = h.instante;
+    else bloques.push({ dia: h.dia, bloque: h.bloque, inicio: h.instante, fin: h.instante });
+  }
+  const ahora = `${dia} ${hora}`;
+  let n = bloques.findIndex((b) => b.inicio <= ahora && ahora <= b.fin);
+  if (n < 0) n = bloques.findIndex((b) => b.inicio > ahora);
+  const objetivo = bloques[n + 1];
+  return objetivo ? `${objetivo.inicio.replace(" ", "T")}:00` : null;
+}
+
+const ahoraM = ahoraMadrid();
+const ID_NEUMATICOS = servicios.datos?.find((s) => s.nombre === "Neumáticos")?.id;
+const ID_FRENOS = servicios.datos?.find((s) => s.nombre === "Frenos")?.id;
+const minimoRpc = await pedir("/rest/v1/rpc/antelacion_minima", { metodo: "POST", cuerpo: { p_taller_id: TALLER_E2E, p_servicio_id: ID_NEUMATICOS } });
+const minimo = typeof minimoRpc.datos === "string" ? minimoRpc.datos : null;
+const esperado = primeraHoraEsperada(ahoraM);
+comprobar("J. La web lee la primera hora posible para Neumáticos y coincide con la regla del bloque siguiente", minimoRpc.status === 200 && minimo !== null && minimo === esperado, `RPC ${JSON.stringify(minimoRpc.datos)} · esperado ${esperado} (ahora ${ahoraM.dia} ${ahoraM.hora})`);
+const sinAntelacion = await pedir("/rest/v1/rpc/antelacion_minima", { metodo: "POST", cuerpo: { p_taller_id: TALLER_E2E, p_servicio_id: ID_FRENOS } });
+comprobar("J. Un servicio sin antelación no tiene primera hora (null)", sinAntelacion.status === 200 && sinAntelacion.datos === null, JSON.stringify(sinAntelacion.datos));
+const internaAnon = await pedir("/rest/v1/rpc/antelacion_minima_en", { metodo: "POST", cuerpo: { p_taller_id: TALLER_E2E, p_servicio_id: ID_NEUMATICOS, p_ahora: new Date().toISOString() } });
+comprobar("J. La función interna (con la hora como parámetro) no es invocable por el público", [401, 403, 404].includes(internaAnon.status), `HTTP ${internaAnon.status}`);
+
+const neumaticos = (extra) => reservar({ p_servicio: "Neumáticos", p_descripcion: "205/55 R16", p_datos_extra: { cantidad_neumaticos: "2" }, ...extra });
+if (minimo) {
+  const [diaMin, horaMin] = [minimo.slice(0, 10), minimo.slice(11, 16)];
+  // Último hueco entre la solicitud y la primera hora posible (a ciertas horas del día no queda ninguno).
+  const antes = huecosE2E(ahoraM.dia).filter((h) => h.instante > `${ahoraM.dia} ${ahoraM.hora}` && h.instante < `${diaMin} ${horaMin}`).pop();
+  if (antes) {
+    const rechazo = await neumaticos({ p_telefono: telefono(31), p_dia: antes.dia, p_hora: antes.hora });
+    comprobar(`J. Neumáticos antes de la primera hora posible (${antes.dia} ${antes.hora}) se rechaza (CT021)`, rechazo.status === 400 && codigo(rechazo) === "CT021", `HTTP ${rechazo.status} ${codigo(rechazo)} ${String(rechazo.datos?.message ?? "").slice(0, 90)}`);
+    const manualNeumaticos = await pedir("/functions/v1/crear-reserva-taller", {
+      token: TOKEN,
+      metodo: "POST",
+      cuerpo: { ...citaMostrador, servicio: "Neumáticos", descripcion: "205/55 R16", datos_extra: { cantidad_neumaticos: "2" }, dia: antes.dia, hora: antes.hora, miembro_id: MIEMBRO_A },
+    });
+    if (manualNeumaticos.datos?.reserva_id) creadas.push(manualNeumaticos.datos.reserva_id);
+    comprobar("J. Desde el panel no hay antelación: la cita a mano de Neumáticos a esa hora entra", manualNeumaticos.status === 200 && manualNeumaticos.datos?.ok === true, `HTTP ${manualNeumaticos.status} ${manualNeumaticos.datos?.codigo ?? ""}`);
+  } else {
+    console.log(`(J. a esta hora no queda ningún hueco entre la solicitud y ${minimo}: se omite el rechazo CT021)`);
+  }
+  const justo = await neumaticos({ p_telefono: telefono(32), p_dia: diaMin, p_hora: horaMin });
+  comprobar(`J. Neumáticos justo en la primera hora posible (${diaMin} ${horaMin}) entra`, justo.status === 200 && !!justo.fila?.reserva_id, `HTTP ${justo.status} ${codigo(justo)} ${String(justo.datos?.message ?? "").slice(0, 60)}`);
+}
 
 // E. Conectar Google: la función crea el state y devuelve una URL de Google
 const conectar = await pedir("/functions/v1/conectar-google-calendar", { token: TOKEN, metodo: "POST", cuerpo: { taller_id: TALLER_E2E, volver_a: `http://localhost:5173/${SLUG}/panel` } });

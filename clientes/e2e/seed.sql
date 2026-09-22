@@ -16,13 +16,14 @@ select
 where not exists (select 1 from public.talleres where slug = 'e2e');
 
 -- Tope de 7 al día: probar-cadena llega a 5 activas en su día principal, así que queda margen, y
--- con 4 horas × 2 caben 8, de modo que la octava de un día comprueba el tope diario.
+-- con 6 horas × 2 caben 12, de modo que la octava de un día comprueba el tope diario.
 update public.talleres
 set slug           = 'e2e',
     modo_capacidad = 'por_hora',
     capacidad      = 2,
     max_citas_dia  = 7,
-    whatsapp_modo  = 'ninguno'
+    whatsapp_modo  = 'ninguno',
+    horario_texto  = 'Lunes a viernes, 9:00 a 13:00 y 16:00 a 18:00'
 where nombre = 'Taller de pruebas e2e';
 
 -- Dos mecánicos ficticios, para probar "¿Quién la apunta?" en las citas a mano.
@@ -33,15 +34,16 @@ cross join (values ('Mecánico A', 1), ('Mecánico B', 2)) as m(nombre, orden)
 where t.slug = 'e2e'
 on conflict (taller_id, nombre) do update set orden = excluded.orden, activo = true;
 
--- Horario: de lunes a viernes, a las 9, 10, 11 y 12. La última hora lleva aviso de tarde
--- para poder comprobar ese aviso en la pantalla de reserva.
-insert into public.horarios_taller (taller_id, dia_semana, hora, aviso_tarde)
-select t.id, d.dia_semana, h.hora, (h.hora = time '12:00')
+-- Horario: de lunes a viernes, a las 9, 10, 11 y 12 (bloque 1, la mañana) y a las 16 y 17 (bloque 2,
+-- la tarde). Dos bloques al día para probar la antelación por servicio (Neumáticos, como en Rik and
+-- Roll). Las 12:00 llevan aviso de tarde para poder comprobar ese aviso en la pantalla de reserva.
+insert into public.horarios_taller (taller_id, dia_semana, hora, aviso_tarde, bloque)
+select t.id, d.dia_semana, h.hora, (h.hora = time '12:00'), h.bloque
 from public.talleres t
 cross join (values (1), (2), (3), (4), (5)) as d(dia_semana)
-cross join (values (time '09:00'), (time '10:00'), (time '11:00'), (time '12:00')) as h(hora)
+cross join (values (time '09:00', 1), (time '10:00', 1), (time '11:00', 1), (time '12:00', 1), (time '16:00', 2), (time '17:00', 2)) as h(hora, bloque)
 where t.slug = 'e2e'
-on conflict (taller_id, dia_semana, hora) do nothing;
+on conflict (taller_id, dia_semana, hora) do update set aviso_tarde = excluded.aviso_tarde, bloque = excluded.bloque;
 
 -- Un festivo fijo para comprobar que el calendario lo deshabilita.
 insert into public.festivos_taller (taller_id, fecha, nombre)
@@ -51,23 +53,25 @@ where t.slug = 'e2e'
 on conflict (taller_id, fecha) do nothing;
 
 -- Servicios: los siete habituales; "Neumáticos" con descripción obligatoria y "Otro" opcional,
--- para probar las tres variantes de descripción.
-insert into public.servicios_taller (taller_id, nombre, orden, descripcion_modo, descripcion_etiqueta, descripcion_placeholder, descripcion_ayuda)
-select t.id, s.nombre, s.orden, s.modo, s.etiqueta, s.placeholder, s.ayuda
+-- para probar las tres variantes de descripción. "Neumáticos" lleva además la antelación de Rik and
+-- Roll (1 bloque de apertura entero para recibir los neumáticos): así se prueba aquí antes.
+insert into public.servicios_taller (taller_id, nombre, orden, descripcion_modo, descripcion_etiqueta, descripcion_placeholder, descripcion_ayuda, bloques_antelacion, antelacion_texto)
+select t.id, s.nombre, s.orden, s.modo, s.etiqueta, s.placeholder, s.ayuda, s.bloques, s.antelacion
 from public.talleres t
 cross join (values
-  ('Revisión / mantenimiento', 1, 'oculta', null, null, null),
-  ('Cambio de aceite y filtros', 2, 'oculta', null, null, null),
-  ('Frenos', 3, 'oculta', null, null, null),
-  ('Neumáticos', 4, 'obligatoria', 'Medidas / observaciones', 'Ej.: 225/45 R17 91Y', 'ⓘ Indica la medida que aparece en el lateral del neumático.'),
-  ('ITV', 5, 'oculta', null, null, null),
-  ('Avería / luz de aviso', 6, 'opcional', 'Cuéntanos qué ocurre', 'Ej.: Se ha encendido una luz amarilla en el cuadro...', 'ⓘ Cuanta más información nos des, mejor podremos ayudarte.'),
-  ('Otro', 7, 'opcional', 'Cuéntanos qué necesitas', 'Ej.: Quiero revisar el aire acondicionado...', 'ⓘ Cuanta más información nos des, mejor podremos ayudarte.')
-) as s(nombre, orden, modo, etiqueta, placeholder, ayuda)
+  ('Revisión / mantenimiento', 1, 'oculta', null, null, null, 0, null),
+  ('Cambio de aceite y filtros', 2, 'oculta', null, null, null, 0, null),
+  ('Frenos', 3, 'oculta', null, null, null, 0, null),
+  ('Neumáticos', 4, 'obligatoria', 'Medidas / observaciones', 'Ej.: 225/45 R17 91Y', 'ⓘ Indica la medida que aparece en el lateral del neumático.', 1, 'Los neumáticos se piden al proveedor: necesitamos medio día para tenerlos en el taller.'),
+  ('ITV', 5, 'oculta', null, null, null, 0, null),
+  ('Avería / luz de aviso', 6, 'opcional', 'Cuéntanos qué ocurre', 'Ej.: Se ha encendido una luz amarilla en el cuadro...', 'ⓘ Cuanta más información nos des, mejor podremos ayudarte.', 0, null),
+  ('Otro', 7, 'opcional', 'Cuéntanos qué necesitas', 'Ej.: Quiero revisar el aire acondicionado...', 'ⓘ Cuanta más información nos des, mejor podremos ayudarte.', 0, null)
+) as s(nombre, orden, modo, etiqueta, placeholder, ayuda, bloques, antelacion)
 where t.slug = 'e2e'
 on conflict (taller_id, nombre) do update
   set orden = excluded.orden, descripcion_modo = excluded.descripcion_modo, descripcion_etiqueta = excluded.descripcion_etiqueta,
-      descripcion_placeholder = excluded.descripcion_placeholder, descripcion_ayuda = excluded.descripcion_ayuda;
+      descripcion_placeholder = excluded.descripcion_placeholder, descripcion_ayuda = excluded.descripcion_ayuda,
+      bloques_antelacion = excluded.bloques_antelacion, antelacion_texto = excluded.antelacion_texto;
 
 -- Campos extra: un número opcional para todos y un select obligatorio solo en Neumáticos.
 insert into public.campos_formulario_taller (taller_id, servicio_id, clave, etiqueta, tipo, obligatorio, orden, unidad)

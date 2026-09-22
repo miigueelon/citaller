@@ -126,7 +126,43 @@ with comprobaciones (orden, comprobacion, actual, esperado) as (
     (75, 'marcar_aviso_whatsapp tiene search_path fijo y filtra por auth.uid()', (
            select proconfig is not null and pg_get_functiondef(oid) ilike '%user_id = (select auth.uid())%'
            from pg_proc where oid = 'public.marcar_aviso_whatsapp(bigint,text)'::regprocedure), true),
-    (76, 'authenticated lee reservas.whatsapp_recordatorio_fecha (su panel)', has_column_privilege('authenticated', 'public.reservas', 'whatsapp_recordatorio_fecha', 'SELECT'), true)
+    (76, 'authenticated lee reservas.whatsapp_recordatorio_fecha (su panel)', has_column_privilege('authenticated', 'public.reservas', 'whatsapp_recordatorio_fecha', 'SELECT'), true),
+    -- 23-sep: antelación por servicio (Neumáticos de Rik and Roll). Los casos con fecha usan el taller
+    -- e2e (id 3): L-V 9-12 (bloque 1) y 16-17 (bloque 2), festivo el 25-dic, Neumáticos con 1 bloque.
+    (77, 'anon ejecuta antelacion_minima (la web)',        has_function_privilege('anon', 'public.antelacion_minima(bigint,bigint)', 'EXECUTE'), true),
+    (78, 'anon ejecuta antelacion_minima_en (interna, con la hora como parámetro)', has_function_privilege('anon', 'public.antelacion_minima_en(bigint,bigint,timestamptz)', 'EXECUTE'), false),
+    (79, 'antelacion_minima es SECURITY DEFINER con search_path fijo', (
+           select prosecdef and proconfig is not null from pg_proc where oid = 'public.antelacion_minima(bigint,bigint)'::regprocedure), true),
+    (80, 'anon lee horarios_taller.bloque',                has_column_privilege('anon', 'public.horarios_taller', 'bloque', 'SELECT'), true),
+    (81, 'anon lee servicios_taller.bloques_antelacion y antelacion_texto', has_column_privilege('anon', 'public.servicios_taller', 'bloques_antelacion', 'SELECT')
+           and has_column_privilege('anon', 'public.servicios_taller', 'antelacion_texto', 'SELECT'), true),
+    (82, 'validar_datos_reserva aplica la antelación solo a clientes (CT021)', (
+           select pg_get_functiondef('public.validar_datos_reserva(bigint,text,text,date,time,text,text,jsonb,boolean)'::regprocedure)
+                  ilike '%if not p_es_taller then%antelacion_minima_en%CT021%'), true),
+    (83, 'e2e: un servicio sin antelación no tiene primera hora (null)', (
+           select public.antelacion_minima_en(3, s.id, now()) is null from public.servicios_taller s where s.taller_id = 3 and s.nombre = 'Frenos'), true),
+    (84, 'e2e Neumáticos: solicitud lunes 22:00 → martes 16:00 (la mañana es para recibirlos)', (
+           select public.antelacion_minima_en(3, s.id, timestamp '2026-11-09 22:00' at time zone 'Europe/Madrid') = timestamp '2026-11-10 16:00'
+           from public.servicios_taller s where s.taller_id = 3 and s.nombre = 'Neumáticos'), true),
+    (85, 'e2e Neumáticos: solicitud martes 10:00 (mañana abierta) → martes 16:00', (
+           select public.antelacion_minima_en(3, s.id, timestamp '2026-11-10 10:00' at time zone 'Europe/Madrid') = timestamp '2026-11-10 16:00'
+           from public.servicios_taller s where s.taller_id = 3 and s.nombre = 'Neumáticos'), true),
+    (86, 'e2e Neumáticos: solicitud martes 16:30 (tarde abierta) → miércoles 09:00', (
+           select public.antelacion_minima_en(3, s.id, timestamp '2026-11-10 16:30' at time zone 'Europe/Madrid') = timestamp '2026-11-11 09:00'
+           from public.servicios_taller s where s.taller_id = 3 and s.nombre = 'Neumáticos'), true),
+    (87, 'e2e Neumáticos: solicitud martes 13:00 (entre bloques) → miércoles 09:00', (
+           select public.antelacion_minima_en(3, s.id, timestamp '2026-11-10 13:00' at time zone 'Europe/Madrid') = timestamp '2026-11-11 09:00'
+           from public.servicios_taller s where s.taller_id = 3 and s.nombre = 'Neumáticos'), true),
+    (88, 'e2e Neumáticos: solicitud viernes 16:30 → lunes 09:00', (
+           select public.antelacion_minima_en(3, s.id, timestamp '2026-11-13 16:30' at time zone 'Europe/Madrid') = timestamp '2026-11-16 09:00'
+           from public.servicios_taller s where s.taller_id = 3 and s.nombre = 'Neumáticos'), true),
+    (89, 'e2e Neumáticos: solicitud sábado → lunes 16:00', (
+           select public.antelacion_minima_en(3, s.id, timestamp '2026-11-14 11:00' at time zone 'Europe/Madrid') = timestamp '2026-11-16 16:00'
+           from public.servicios_taller s where s.taller_id = 3 and s.nombre = 'Neumáticos'), true),
+    (90, 'e2e Neumáticos: con festivo por medio (jueves 24-dic 22:00; el 25 cierra) → lunes 28-dic 16:00', (
+           select public.antelacion_minima_en(3, s.id, timestamp '2026-12-24 22:00' at time zone 'Europe/Madrid') = timestamp '2026-12-28 16:00'
+           from public.servicios_taller s where s.taller_id = 3 and s.nombre = 'Neumáticos'), true),
+    (91, 'antelacion_minima devuelve null para un taller inexistente', public.antelacion_minima(999, 1) is null, true)
 )
 select orden, comprobacion, actual, esperado, (actual = esperado) as ok
 from comprobaciones

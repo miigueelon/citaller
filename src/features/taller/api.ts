@@ -35,6 +35,14 @@ export interface ServicioTaller {
   descripcion_placeholder: string | null;
   descripcion_ayuda: string | null;
   imagen_ayuda_url: string | null;
+  /**
+   * Bloques de apertura (mañana/tarde) que el taller necesita entre la solicitud y la cita
+   * (Neumáticos en Rik and Roll: 1, para pedir y recibir los neumáticos). 0 = sin antelación.
+   * La primera hora posible la calcula la base de datos (RPC `antelacion_minima`).
+   */
+  bloques_antelacion: number;
+  /** Explicación para el cliente cuando el servicio tiene antelación; null = texto genérico. */
+  antelacion_texto: string | null;
 }
 
 export interface CampoFormulario {
@@ -117,7 +125,7 @@ export async function cargarTallerPorId(id: number): Promise<Taller | null> {
 export async function cargarServicios(tallerId: number): Promise<ServicioTaller[]> {
   const { data, error } = await supabasePublic
     .from("servicios_taller")
-    .select("id, nombre, orden, descripcion_modo, descripcion_etiqueta, descripcion_placeholder, descripcion_ayuda, imagen_ayuda_url")
+    .select("id, nombre, orden, descripcion_modo, descripcion_etiqueta, descripcion_placeholder, descripcion_ayuda, imagen_ayuda_url, bloques_antelacion, antelacion_texto")
     .eq("taller_id", tallerId)
     .eq("activo", true)
     .order("orden")
@@ -126,6 +134,8 @@ export async function cargarServicios(tallerId: number): Promise<ServicioTaller[
   return (data ?? []).map((fila) => ({
     ...fila,
     descripcion_modo: fila.descripcion_modo === "obligatoria" || fila.descripcion_modo === "opcional" ? fila.descripcion_modo : "oculta",
+    bloques_antelacion: Math.max(0, Number(fila.bloques_antelacion) || 0),
+    antelacion_texto: fila.antelacion_texto ?? null,
   }));
 }
 

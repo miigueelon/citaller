@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   agruparOcupacion,
   diaSeleccionable,
+  esAntesDelMinimo,
   estaCompleta,
   festivoDelDia,
   horaSigueDisponible,
   horasDisponibles,
   motivoCompleta,
+  parsearMinimo,
   tallerAbre,
   type Horario,
 } from "./disponibilidad";
@@ -109,5 +111,46 @@ describe("horas disponibles", () => {
     const parametros = { horarios, dia: "2026-09-22", ocupacion: { porHora: {}, total: 0 }, capacidad: 2, modo: "por_hora" as const };
     expect(horaSigueDisponible("09:00", { ...parametros, ahora: new Date(2026, 8, 21, 23, 59) })).toBe(true);
     expect(horaSigueDisponible("09:00", { ...parametros, ahora: new Date(2026, 8, 22, 9, 0) })).toBe(false);
+  });
+});
+
+describe("antelación por servicio (primera hora posible que dice la base de datos)", () => {
+  // Neumáticos en Rik and Roll: solicitud el lunes por la noche → los recibe el martes por la mañana →
+  // primera hora, el martes a las 15:30.
+  const minimo = { dia: "2026-09-22", hora: "15:30" };
+
+  it("lee el timestamp de la RPC sin pasar por Date", () => {
+    expect(parsearMinimo("2026-09-22T15:30:00")).toEqual(minimo);
+    expect(parsearMinimo("2026-09-22 15:30:00")).toEqual(minimo);
+    expect(parsearMinimo(null)).toBeNull();
+    expect(parsearMinimo("")).toBeNull();
+    expect(parsearMinimo("mañana")).toBeNull();
+  });
+
+  it("una hora es anterior al mínimo si es de un día anterior o del mismo día y más temprana", () => {
+    expect(esAntesDelMinimo("2026-09-21", "18:00", minimo)).toBe(true);
+    expect(esAntesDelMinimo("2026-09-22", "12:30", minimo)).toBe(true);
+    expect(esAntesDelMinimo("2026-09-22", "15:30", minimo)).toBe(false);
+    expect(esAntesDelMinimo("2026-09-22", "16:30:00", minimo)).toBe(false);
+    expect(esAntesDelMinimo("2026-09-23", "08:30", minimo)).toBe(false);
+    expect(esAntesDelMinimo("2026-09-21", "09:00", null)).toBe(false);
+  });
+
+  it("el calendario no deja elegir días anteriores al del mínimo (y el resto sigue igual)", () => {
+    expect(diaSeleccionable(horarios, festivos, "2026-09-21", minimo)).toBe(false);
+    expect(diaSeleccionable(horarios, festivos, "2026-09-22", minimo)).toBe(true);
+    expect(diaSeleccionable(horarios, festivos, "2026-09-23", minimo)).toBe(true);
+    expect(diaSeleccionable(horarios, festivos, "2026-09-24", minimo)).toBe(false); // festivo
+    expect(diaSeleccionable(horarios, festivos, "2026-09-26", minimo)).toBe(false); // sábado
+  });
+
+  it("el día del mínimo solo ofrece las horas desde esa hora; los días siguientes, todas", () => {
+    const conTarde: Horario[] = [...horarios, { dia_semana: 2, hora: "15:30:00", aviso_tarde: false }, { dia_semana: 2, hora: "16:30:00", aviso_tarde: true }];
+    const base = { horarios: conTarde, ocupacion: { porHora: {}, total: 0 }, capacidad: 2, modo: "por_hora" as const, ahora };
+    expect(horasDisponibles({ ...base, dia: "2026-09-22", minimo }).map((h) => h.hora)).toEqual(["15:30", "16:30"]);
+    expect(horasDisponibles({ ...base, dia: "2026-09-23", minimo }).map((h) => h.hora)).toEqual(["09:00", "10:00"]);
+    // Sin antelación (servicio normal) el martes ofrece también la mañana.
+    expect(horasDisponibles({ ...base, dia: "2026-09-22" }).map((h) => h.hora)).toEqual(["09:00", "10:00", "15:30", "16:30"]);
+    expect(horaSigueDisponible("10:00", { ...base, dia: "2026-09-22", minimo })).toBe(false);
   });
 });

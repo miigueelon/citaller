@@ -26,6 +26,7 @@ const POR_CODIGO: Record<string, string> = {
   CT018: "El taller ya tiene el día completo. Elige otro día, por favor.",
   CT019: "No se puede marcar como lista: la cita ya no está confirmada o todavía no es su día. Actualiza el panel.",
   CT020: "WhatsApp se ha abierto, pero no se pudo apuntar el aviso: la cita ha cambiado. Actualiza el panel.",
+  CT021: "Este servicio necesita más antelación y esa hora ya no es posible. Vuelve atrás y elige otra hora, por favor.",
 };
 
 const POR_TEXTO: Array<[RegExp, string]> = [

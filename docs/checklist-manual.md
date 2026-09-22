@@ -29,6 +29,7 @@ Después, con la app en local (`npm run dev`, `http://localhost:5173/?taller=2&m
 - [ ] "Avería / luz de aviso" y "Otro" tienen descripción opcional con contador; el resto no muestra descripción.
 - [ ] Sin rellenar todos los obligatorios, CONTINUAR está deshabilitado. Teléfono o matrícula mal escritos marcan error bajo el campo.
 - [ ] Calendario: fines de semana y festivos deshabilitados; días sin horario deshabilitados.
+- [ ] `/rikandroll` (y `/e2e`): con Neumáticos, la pantalla de fecha avisa "…necesitamos medio día… Primera hora disponible: …" y no ofrece ni días ni horas anteriores (solicitud por la noche → el día siguiente solo desde las 15:30; por la tarde → desde la mañana siguiente; por la mañana → desde esa tarde). Con otro servicio, todo igual que antes. Desde el panel, "Nueva cita" de Neumáticos a cualquier hora entra.
 - [ ] Al elegir un día se listan las horas; una hora ya ocupada (o el día completo en Speedbikes, por día) no aparece.
 - [ ] La última hora muestra el aviso de tarde (texto del taller si lo tiene).
 - [ ] Resumen con los campos extra; ENVIAR crea la reserva **una sola vez** aunque se pulse dos veces; la pantalla final aparece solo después de guardar.

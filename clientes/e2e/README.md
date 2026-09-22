@@ -16,8 +16,8 @@ solo se leen, nunca se reserva ni se entra en su panel.
 | Panel | https://citaller.es/e2e/panel |
 | Usuario del panel | `E2E_TALLER_EMAIL` y `E2E_TALLER_PASSWORD` de `.env.local` (nunca en el repo) |
 | Huecos | Por hora, 2 a la vez, **máximo 7 al día** (así se prueba también el tope diario) |
-| Horario | Lunes a viernes, 9:00, 10:00, 11:00 y 12:00; festivo el 25-dic |
-| Servicios | Los 7 habituales (Revisión, Aceite, Frenos, Neumáticos, ITV, Avería, Otro) |
+| Horario | Lunes a viernes, 9:00, 10:00, 11:00 y 12:00 (bloque de mañana) y 16:00 y 17:00 (bloque de tarde); festivo el 25-dic |
+| Servicios | Los 7 habituales (Revisión, Aceite, Frenos, Neumáticos, ITV, Avería, Otro). **Neumáticos tiene la antelación de Rik and Roll** (1 bloque de apertura entero: solicitud por la noche → primera hora a las 16:00 del día siguiente; por la tarde → a las 9:00 del día siguiente; por la mañana → a las 16:00) |
 | Campos extra | Kilómetros (opcional) y cantidad de neumáticos (obligatorio en Neumáticos): los de los dos talleres reales juntos |
 | Mecánicos | "Mecánico A" y "Mecánico B" (para probar "¿Quién la apunta?") |
 | WhatsApp | Modo `ninguno`: los botones de WhatsApp no salen y "Vehículo listo" solo termina la cita |

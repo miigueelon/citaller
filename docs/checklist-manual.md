@@ -43,7 +43,7 @@ Después, con la app en local (`npm run dev`, `http://localhost:5173/?taller=2&m
 - [ ] La tarjeta muestra teléfono (enlace `tel:`, sin el 34), los campos extra con su etiqueta y unidad, "Mostrador · Nombre" en las citas manuales y "Cancelada por el cliente" cuando toca.
 - [ ] "Vehículo listo" en una confirmada de hoy: en modo `enlace` abre WhatsApp con "ya puedes recogerlo"; la cita pasa a Finalizadas con "✓ Lista · avisado a las HH:MM", "Deshacer" la devuelve a Confirmadas; la cabecera resta una.
 - [ ] Finalizadas es el histórico: todas las hechas (también las confirmadas de días pasados sin marcar), el total en el botón, de la más reciente a la más antigua.
-- [ ] Al pulsar "Avisar por WhatsApp" (o el recordatorio de mañana) la tarjeta queda "✓ Confirmación avisada a las HH:MM" y el botón pasa a "Volver a avisar".
+- [ ] Al pulsar "Avisar por WhatsApp" (o el recordatorio de mañana) la marca "✓ Confirmación enviada a las HH:MM" ocupa el sitio del botón (no se puede reenviar).
 - [ ] Cerrar sesión vuelve al login.
 
 ## C. Confirmar

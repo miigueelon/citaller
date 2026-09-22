@@ -32,7 +32,7 @@ export function TarjetaReserva({ reserva, campos, ocupado = false, onConfirmar, 
   const avisaPorWhatsapp = !!onAvisarWhatsapp && !!reserva.telefono;
   // Se termina el día de la cita o después (la base de datos tampoco deja marcar una de mañana).
   const puedeTerminar = reserva.dia <= hoy();
-  // Avisos ya mandados: "✓ Confirmación avisada a las 12:30" (null si no).
+  // Avisos ya mandados: "✓ Confirmación enviada a las 12:30" (null si no).
   const confirmacionAvisada = marcaAviso(reserva, "confirmacion");
   const cancelacionAvisada = marcaAviso(reserva, "cancelacion");
   const extras = campos
@@ -165,11 +165,12 @@ export function TarjetaReserva({ reserva, campos, ocupado = false, onConfirmar, 
           {/* Terminada, ya no toca recordar la cita ni cancelarla (si fue un error, "Deshacer"). */}
           {!reserva.listo_en && (
             <>
+              {/* Confirmación ya enviada: la marca ocupa el sitio del botón (no hace falta reenviarla). */}
               {confirmacionAvisada && <div className="tarjeta-marca">{confirmacionAvisada}</div>}
               <div className="tarjeta-acciones">
-                {avisaPorWhatsapp && onAvisarWhatsapp && (
+                {avisaPorWhatsapp && onAvisarWhatsapp && !confirmacionAvisada && (
                   <button type="button" className="btn-whatsapp" onClick={() => onAvisarWhatsapp(reserva)} disabled={ocupado}>
-                    {confirmacionAvisada ? "Volver a avisar" : "Avisar por WhatsApp"}
+                    Avisar por WhatsApp
                   </button>
                 )}
                 <button type="button" className="btn-cancelar" onClick={() => onCancelar(reserva)} disabled={ocupado}>
@@ -184,10 +185,10 @@ export function TarjetaReserva({ reserva, campos, ocupado = false, onConfirmar, 
       {reserva.estado === "Cancelada" && reserva.cancelada_por === "taller" && (
         <>
           {cancelacionAvisada && <div className="tarjeta-marca">{cancelacionAvisada}</div>}
-          {avisaPorWhatsapp && onAvisarWhatsapp && (
+          {avisaPorWhatsapp && onAvisarWhatsapp && !cancelacionAvisada && (
             <div className="tarjeta-acciones">
               <button type="button" className="btn-whatsapp" onClick={() => onAvisarWhatsapp(reserva)} disabled={ocupado}>
-                {cancelacionAvisada ? "Volver a avisar de la cancelación" : "Avisar de la cancelación"}
+                Avisar de la cancelación
               </button>
             </div>
           )}

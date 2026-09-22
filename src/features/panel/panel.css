@@ -830,7 +830,7 @@
   filter: brightness(0.92);
 }
 
-/* Marca de hecho ("✓ Lista…", "✓ Confirmación avisada…"); la de lista lleva "Deshacer" por si se pulsó en la que no era. */
+/* Marca de hecho ("✓ Lista…", "✓ Confirmación enviada…"); la de lista lleva "Deshacer" por si se pulsó en la que no era. */
 .tarjeta-marca {
   display: flex;
   align-items: center;

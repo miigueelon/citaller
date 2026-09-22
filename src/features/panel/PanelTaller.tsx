@@ -10,7 +10,7 @@ import { CitasManana } from "./componentes/CitasManana";
 import { FiltrosReservas } from "./componentes/FiltrosReservas";
 import { ListaReservas } from "./componentes/ListaReservas";
 import { NuevaCitaModal } from "./componentes/NuevaCitaModal";
-import { agruparPorDia, filtrarReservas, porPestana, resumenCabecera, tituloGrupo, tituloHistorial } from "./filtros";
+import { agruparPorDia, filtrarReservas, marcaAviso, porPestana, resumenCabecera, tituloGrupo, tituloHistorial } from "./filtros";
 import { datosDeReserva, enlaceWhatsapp, TEXTOS_VACIOS, textoMensaje, tipoMensajeDeReserva, type TextosWhatsapp, type TipoMensaje } from "./textosWhatsapp";
 import type { FiltroEstado, FiltroFecha, MiembroTaller, ReservaPanel, TipoAviso } from "./tipos";
 import { useConexionGoogle } from "./useConexionGoogle";
@@ -107,7 +107,7 @@ export function PanelTaller() {
     window.open(enlaceWhatsapp(reserva.telefono, texto), "_blank", "noopener");
   }
 
-  /** Abre WhatsApp y apunta el aviso: la tarjeta pasa a "✓ Confirmación avisada a las 12:30". */
+  /** Abre WhatsApp y apunta el aviso: la tarjeta pasa a "✓ Confirmación enviada a las 12:30". */
   async function avisarWhatsapp(reserva: ReservaPanel, tipo: TipoAviso) {
     if (!reserva.telefono) return;
     abrirWhatsapp(reserva, tipo);
@@ -115,15 +115,17 @@ export function PanelTaller() {
     if (!res.ok) setResultado({ tipo: "error", lineas: res.avisos });
   }
 
+  // El aviso de resultado ofrece "Abrir WhatsApp" hasta que el mensaje se ha mandado; después, la marca.
+  const pendienteDeAviso = resultado?.whatsappPendiente;
+  const reservaPendiente = pendienteDeAviso ? (reservas.find((r) => r.id === pendienteDeAviso.reserva.id) ?? pendienteDeAviso.reserva) : null;
+  const avisoYaEnviado = pendienteDeAviso && reservaPendiente ? marcaAviso(reservaPendiente, pendienteDeAviso.tipo) : null;
+
   function mostrarResultado(res: ResultadoAccion, reserva: ReservaPanel | undefined, accion: "confirmar" | "cancelar") {
     const lineas = [...res.logros, ...res.avisos];
+    if (res.ok && lineas.length === 0) lineas.push(accion === "confirmar" ? "Cita confirmada." : "Cita cancelada.");
+    // Modo enlace: el aviso trae el botón de WhatsApp (y su frase) hasta que se manda; después, la marca.
     const tipoPendiente = modoEnlace && reserva ? tipoMensajeDeReserva(reserva) : null;
     const whatsappPendiente = res.ok && tipoPendiente && reserva ? { reserva, tipo: tipoPendiente } : undefined;
-    if (whatsappPendiente) {
-      lineas.push(accion === "confirmar" ? "Cita confirmada. Avisa al cliente por WhatsApp desde tu móvil:" : "Cita cancelada. Avisa al cliente por WhatsApp desde tu móvil:");
-    } else if (res.ok && lineas.length === 0) {
-      lineas.push(accion === "confirmar" ? "Cita confirmada." : "Cita cancelada.");
-    }
     setResultado({ tipo: !res.ok ? "error" : res.avisos.length > 0 ? "aviso" : "ok", lineas, whatsappPendiente });
   }
 
@@ -220,19 +222,19 @@ export function PanelTaller() {
             {resultado.lineas.map((linea) => (
               <p key={linea}>{linea}</p>
             ))}
-            {resultado.whatsappPendiente && (
-              <button
-                type="button"
-                className="btn-whatsapp"
-                onClick={() => {
-                  const { reserva, tipo } = resultado.whatsappPendiente!;
-                  const actual = reservas.find((r) => r.id === reserva.id) ?? reserva;
-                  void avisarWhatsapp(actual, tipo);
-                }}
-              >
-                Abrir WhatsApp con el mensaje
-              </button>
-            )}
+            {reservaPendiente &&
+              (avisoYaEnviado ? (
+                <p>
+                  <strong>{avisoYaEnviado}</strong>
+                </p>
+              ) : (
+                <>
+                  <p>Avisa al cliente por WhatsApp desde tu móvil:</p>
+                  <button type="button" className="btn-whatsapp" onClick={() => void avisarWhatsapp(reservaPendiente, resultado.whatsappPendiente!.tipo)}>
+                    Abrir WhatsApp con el mensaje
+                  </button>
+                </>
+              ))}
           </Alerta>
         )}
 

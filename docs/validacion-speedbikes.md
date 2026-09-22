@@ -68,8 +68,8 @@ Que entre en su panel y busque la solicitud que acaba de hacer (pestaña **Pendi
   su número), la línea bajo el nombre del taller ("Hoy: N por terminar · M por responder"), los botones
   Hoy / Mañana / Próximos 7 días y el buscador? (M8, M9)
 - ¿Encuentra cómo **confirmar**? ¿Entiende el aviso que sale después, con el botón "Abrir WhatsApp con
-  el mensaje"? Al pulsarlo se abre WhatsApp con el texto y la tarjeta queda "✓ Confirmación avisada a
-  las HH:MM" (el botón pasa a "Volver a avisar"). ¿Le parece bien el mensaje? ¿Lo enviaría tal cual?
+  el mensaje"? Al pulsarlo se abre WhatsApp con el texto y la tarjeta queda "✓ Confirmación enviada a
+  las HH:MM" en el sitio del botón (no se puede reenviar). ¿Le parece bien el mensaje? ¿Lo enviaría tal cual?
 - **Rik and Roll**: ahora, antes de seguir, que pulse "Conectar Google Calendar" (su conexión anterior
   caduca el 24-sep). Google → Configuración avanzada → Ir a citaller.es → Permitir → vuelve al panel
   con "Google Calendar conectado". (Speedbikes: solo si lo quiere.) La cita que ya confirmó no

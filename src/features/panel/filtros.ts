@@ -53,9 +53,10 @@ export function textoLista(listoEn: string, avisado: boolean, ahora: Date = new 
   return `✓ Lista${avisado ? " · avisado" : ""} ${cuandoFue(listoEn, ahora)}`;
 }
 
+// Un aviso se manda una vez: cuando ya está enviado, la marca sustituye al botón (Miguel, 22-sep).
 const AVISO_HECHO: Record<TipoAviso, string> = {
-  confirmacion: "✓ Confirmación avisada",
-  cancelacion: "✓ Cancelación avisada",
+  confirmacion: "✓ Confirmación enviada",
+  cancelacion: "✓ Cancelación enviada",
   recordatorio: "✓ Recordatorio enviado",
 };
 
@@ -65,7 +66,7 @@ function estadoAviso(reserva: ReservaPanel, tipo: TipoAviso): [enviado: boolean,
   return [reserva.whatsapp_recordatorio_enviado, reserva.whatsapp_recordatorio_fecha];
 }
 
-/** "✓ Confirmación avisada a las 12:30" si ese aviso ya se mandó; null si no. */
+/** "✓ Confirmación enviada a las 12:30" si ese aviso ya se mandó; null si no. */
 export function marcaAviso(reserva: ReservaPanel, tipo: TipoAviso, ahora: Date = new Date()): string | null {
   const [enviado, fecha] = estadoAviso(reserva, tipo);
   if (!enviado) return null;

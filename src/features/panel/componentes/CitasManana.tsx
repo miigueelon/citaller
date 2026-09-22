@@ -10,8 +10,8 @@ interface Props {
 
 /**
  * Modo enlace: las citas confirmadas de mañana con teléfono, con un botón por cita que abre
- * WhatsApp con el recordatorio ya escrito (en modo api las envía el cron solo). Cada una queda
- * marcada al pulsar, y el título cuenta las que faltan.
+ * WhatsApp con el recordatorio ya escrito (en modo api las envía el cron solo). Al pulsarlo, la
+ * marca "✓ Recordatorio enviado a las HH:MM" ocupa el sitio del botón; el título cuenta los que faltan.
  */
 export function CitasManana({ reservas, onRecordar }: Props) {
   if (reservas.length === 0) return null;
@@ -30,11 +30,14 @@ export function CitasManana({ reservas, onRecordar }: Props) {
             <li key={reserva.id} className="citas-manana-item">
               <span>
                 <strong>{horaCorta(reserva.hora)}</strong> · {reserva.nombre || "Sin nombre"} · {reserva.servicio || "-"}
-                {enviado && <span className="citas-manana-hecho">{enviado}</span>}
               </span>
-              <button type="button" className="btn-whatsapp" onClick={() => onRecordar(reserva)}>
-                <MessageCircle size={16} /> {enviado ? "Volver a enviar" : "Recordatorio"}
-              </button>
+              {enviado ? (
+                <span className="citas-manana-hecho">{enviado}</span>
+              ) : (
+                <button type="button" className="btn-whatsapp" onClick={() => onRecordar(reserva)}>
+                  <MessageCircle size={16} /> Recordatorio
+                </button>
+              )}
             </li>
           );
         })}

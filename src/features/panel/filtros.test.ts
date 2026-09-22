@@ -127,11 +127,11 @@ describe("marcas de hecho en la tarjeta", () => {
     const confirmada = reserva({ id: 1, dia: "2026-09-24", estado: "Confirmada" });
     expect(marcaAviso(confirmada, "confirmacion", ahora)).toBeNull();
     const avisada = conAviso(confirmada, "confirmacion", alas(21, 9, 40));
-    expect(marcaAviso(avisada, "confirmacion", ahora)).toBe("✓ Confirmación avisada a las 09:40");
+    expect(marcaAviso(avisada, "confirmacion", ahora)).toBe("✓ Confirmación enviada a las 09:40");
     expect(marcaAviso(avisada, "recordatorio", ahora)).toBeNull();
     expect(marcaAviso(conAviso(confirmada, "recordatorio", alas(20, 19, 5)), "recordatorio", ahora)).toBe("✓ Recordatorio enviado el 20/09 a las 19:05");
     // Mandado por la API antes de guardar la hora: sin hora.
-    expect(marcaAviso({ ...confirmada, estado: "Cancelada", whatsapp_cancelacion_enviada: true }, "cancelacion", ahora)).toBe("✓ Cancelación avisada");
+    expect(marcaAviso({ ...confirmada, estado: "Cancelada", whatsapp_cancelacion_enviada: true }, "cancelacion", ahora)).toBe("✓ Cancelación enviada");
   });
 });
 

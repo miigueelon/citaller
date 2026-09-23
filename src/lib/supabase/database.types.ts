@@ -706,6 +706,13 @@ export type Database = {
         }[]
       }
       es_telefono_valido: { Args: { p_telefono: string }; Returns: boolean }
+      estado_calendario: {
+        Args: { p_taller_id: number }
+        Returns: {
+          conectado: boolean
+          conectado_desde: string
+        }[]
+      }
       guardar_token_calendario: {
         Args: {
           p_proveedor: string

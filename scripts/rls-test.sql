@@ -162,7 +162,16 @@ with comprobaciones (orden, comprobacion, actual, esperado) as (
     (90, 'e2e Neumáticos: con festivo por medio (jueves 24-dic 22:00; el 25 cierra) → lunes 28-dic 16:00', (
            select public.antelacion_minima_en(3, s.id, timestamp '2026-12-24 22:00' at time zone 'Europe/Madrid') = timestamp '2026-12-28 16:00'
            from public.servicios_taller s where s.taller_id = 3 and s.nombre = 'Neumáticos'), true),
-    (91, 'antelacion_minima devuelve null para un taller inexistente', public.antelacion_minima(999, 1) is null, true)
+    (91, 'antelacion_minima devuelve null para un taller inexistente', public.antelacion_minima(999, 1) is null, true),
+    -- 23-sep: el panel sabe si Google Calendar está conectado, sin ver el token.
+    (92, 'anon ejecuta estado_calendario',                 has_function_privilege('anon', 'public.estado_calendario(bigint)', 'EXECUTE'), false),
+    (93, 'authenticated ejecuta estado_calendario (su panel)', has_function_privilege('authenticated', 'public.estado_calendario(bigint)', 'EXECUTE'), true),
+    (94, 'estado_calendario es SECURITY DEFINER, search_path fijo y filtra por auth.uid()', (
+           select prosecdef and proconfig is not null and pg_get_functiondef(oid) ilike '%user_id = (select auth.uid())%'
+           from pg_proc where oid = 'public.estado_calendario(bigint)'::regprocedure), true),
+    (95, 'estado_calendario no devuelve nada sin sesión (aunque el taller e2e esté conectado)', (
+           select count(*) = 0 from public.estado_calendario(3)), true),
+    (96, 'authenticated sigue sin leer integraciones_calendario', has_table_privilege('authenticated', 'public.integraciones_calendario', 'SELECT'), false)
 )
 select orden, comprobacion, actual, esperado, (actual = esperado) as ok
 from comprobaciones

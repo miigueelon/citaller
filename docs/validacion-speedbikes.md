@@ -73,8 +73,8 @@ Que entre en su panel y busque la solicitud que acaba de hacer (pestaña **Pendi
   las HH:MM" en el sitio del botón (no se puede reenviar). ¿Le parece bien el mensaje? ¿Lo enviaría tal cual?
 - **Rik and Roll**: ahora, antes de seguir, que pulse "Conectar Google Calendar" **desde su móvil**
   y elija **su Gmail** (no el tuyo). Google → Configuración avanzada → Ir a citaller.es → Permitir →
-  vuelve al panel con "Google Calendar conectado". (Speedbikes: solo si lo quiere.) El botón
-  "Conectar" sale siempre, esté conectado o no: la prueba de que quedó bien es que la cita de
+  vuelve al panel con "Google Calendar conectado". (Speedbikes: solo si lo quiere.) Desde la v1.8 el
+  botón pasa a "✓ Google Calendar conectado" (en verde); la prueba definitiva es que la cita de
   mostrador de abajo aparezca en su calendario. La cita que ya confirmó no aparecerá —el evento se
   crea al confirmar—; las siguientes sí.
 - Que apunte una cita a mano de alguien que "acaba de entrar por la puerta" (+ Nueva cita), **para

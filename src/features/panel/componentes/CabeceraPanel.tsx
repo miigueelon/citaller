@@ -1,10 +1,12 @@
-import { CalendarDays, LogOut, Plus, RefreshCw, Wrench } from "lucide-react";
+import { CalendarCheck, CalendarDays, LogOut, Plus, RefreshCw, Wrench } from "lucide-react";
 import { textoResumen, type ResumenCabecera } from "../filtros";
 
 interface Props {
   nombreTaller: string;
   resumen: ResumenCabecera;
   cargando: boolean;
+  /** null mientras se consulta. */
+  googleConectado: boolean | null;
   onActualizar: () => void;
   onNuevaCita: () => void;
   onConectarGoogle: () => void;
@@ -19,6 +21,7 @@ export function CabeceraPanel({
   nombreTaller,
   resumen,
   cargando,
+  googleConectado,
   onActualizar,
   onNuevaCita,
   onConectarGoogle,
@@ -56,11 +59,17 @@ export function CabeceraPanel({
             <RefreshCw className={`panel-btn-icon ${cargando ? "spin" : ""}`} />
             Actualizar
           </button>
-          {/* Disponible para cualquier taller: la conexión se guarda por taller. */}
-          <button type="button" className="panel-btn panel-btn-secundario" onClick={onConectarGoogle}>
-            <CalendarDays className="panel-btn-icon" />
-            Conectar Google Calendar
-          </button>
+          {googleConectado ? (
+            <button type="button" className="panel-btn panel-btn-secundario panel-btn-conectado" onClick={onConectarGoogle} title="Volver a conectar o cambiar de cuenta">
+              <CalendarCheck className="panel-btn-icon" />
+              Google Calendar conectado
+            </button>
+          ) : (
+            <button type="button" className="panel-btn panel-btn-secundario" onClick={onConectarGoogle} disabled={googleConectado === null}>
+              <CalendarDays className="panel-btn-icon" />
+              {googleConectado === null ? "Google Calendar" : "Conectar Google Calendar"}
+            </button>
+          )}
           <button type="button" className="panel-btn panel-btn-primario" onClick={onNuevaCita}>
             <Plus className="panel-btn-icon" />
             Nueva cita

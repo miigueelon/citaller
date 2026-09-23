@@ -55,12 +55,12 @@
 }
 
 /* Cabecera: el nombre del taller es el título; "Panel de reservas" va encima, pequeño. */
+/* Nombre arriba y botones debajo, siempre: así se ve igual con cualquier largo de nombre. */
 .panel-header {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  flex-direction: column;
   margin-bottom: 28px;
-  gap: 20px;
+  gap: 16px;
 }
 
 .panel-eyebrow {
@@ -88,8 +88,6 @@
 
 .panel-acciones {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
   gap: 10px;
 }
 
@@ -129,6 +127,15 @@
 .panel-btn-secundario:hover:not(:disabled) {
   border-color: var(--color-primario-borde);
   color: var(--color-primario-oscuro);
+}
+
+.panel-btn-conectado {
+  color: var(--color-ok-texto);
+  border-color: var(--color-ok-fondo);
+}
+
+.panel-btn-conectado .panel-btn-icon {
+  color: var(--color-ok-oscuro);
 }
 
 .panel-btn-texto {
@@ -565,15 +572,10 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .panel-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-
   /* En móvil: Nueva cita a todo el ancho y primero; los secundarios comparten una fila. */
   .panel-acciones {
     width: 100%;
+    flex-wrap: wrap;
   }
 
   .panel-btn-primario {
@@ -581,8 +583,12 @@
     order: -1;
   }
 
+  /* Cada secundario ocupa lo que pide su texto; si no caben, el largo parte en dos líneas. */
   .panel-btn-secundario {
-    flex: 1 1 calc(50% - 5px);
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 10px 12px;
+    white-space: normal;
   }
 
   .panel-titulo {

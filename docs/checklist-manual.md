@@ -76,6 +76,8 @@ Después, con la app en local (`npm run dev`, `http://localhost:5173/?taller=2&m
 
 ## E. Conectar Google Calendar
 - [ ] En el panel de Rik and Roll: "Conectar Google Calendar" lleva a Google, se acepta, y vuelve al panel con `calendar=connected`.
+- [ ] Con el calendario conectado, el botón dice "Google Calendar conectado" (en verde, también al recargar); pulsarlo pide confirmación ("Volver a conectar" / "No, volver") antes de ir a Google. Sin conectar dice "Conectar Google Calendar".
+- [ ] Cabecera: el nombre del taller arriba y los tres botones en una fila debajo, igual en todos los talleres; en móvil "Nueva cita" primero y a todo el ancho.
 - [ ] `integraciones_calendario.conectado=true` y `updated_at` reciente.
 
 ## F. Recordatorios

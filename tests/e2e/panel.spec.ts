@@ -17,10 +17,48 @@ test.describe("Panel del taller", () => {
 
   test("entra con las credenciales del taller de pruebas y ve su panel", async ({ page }) => {
     await entrar(page);
-    await expect(page.getByRole("button", { name: /conectar google calendar/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /nueva cita/i })).toBeVisible();
     // Cabecera: citas de hoy y solicitudes por responder.
     await expect(page.locator(".panel-subtitulo")).toHaveText(/^Hoy: .+ · (todo al día|\d+ por responder)$/);
+  });
+
+  test("con Google Calendar conectado el botón lo dice, y volver a conectar pide confirmación", async ({ page }) => {
+    // El taller e2e tiene Google conectado (integraciones_calendario).
+    await entrar(page);
+    const boton = page.getByRole("button", { name: "Google Calendar conectado" });
+    await expect(boton).toBeVisible();
+    await expect(page.getByRole("button", { name: /^conectar google calendar$/i })).toHaveCount(0);
+
+    await boton.click();
+    const dialogo = page.getByRole("dialog");
+    await expect(dialogo.getByRole("heading", { name: /ya está conectado/i })).toBeVisible();
+    await dialogo.getByRole("button", { name: "No, volver" }).click();
+    await expect(dialogo).toHaveCount(0);
+    // Sigue en el panel, sin ir a Google.
+    await expect(page).toHaveURL(new RegExp(`${URL_PANEL}$`));
+  });
+
+  test("los tres botones de la cabecera van en una sola fila en ordenador, sea cual sea el nombre del taller", async ({ page }) => {
+    for (const ancho of [1280, 1024]) {
+      await page.setViewportSize({ width: ancho, height: 800 });
+      if (ancho === 1280) await entrar(page);
+      const acciones = page.locator(".panel-acciones .panel-btn");
+      await expect(acciones).toHaveCount(3);
+      await expect(page.getByRole("button", { name: "Google Calendar conectado" })).toBeVisible();
+      const alturas = await acciones.evaluateAll((botones) => botones.map((b) => Math.round(b.getBoundingClientRect().top)));
+      expect(new Set(alturas).size, `ancho ${ancho}: ${alturas.join(", ")}`).toBe(1);
+    }
+  });
+
+  test("en móvil Nueva cita va primero a todo el ancho y nada se sale de la pantalla", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 780 });
+    await entrar(page);
+    await expect(page.getByRole("button", { name: "Google Calendar conectado" })).toBeVisible();
+    const nueva = await page.getByRole("button", { name: /nueva cita/i }).boundingBox();
+    const actualizar = await page.getByRole("button", { name: /actualizar/i }).boundingBox();
+    expect(nueva!.y).toBeLessThan(actualizar!.y);
+    const desborde = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(desborde).toBeLessThanOrEqual(0);
   });
 
   test("la pestaña Finalizadas es el histórico: total en el botón, buscador y sin filtros de fecha", async ({ page }) => {

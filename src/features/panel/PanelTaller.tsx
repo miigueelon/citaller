@@ -63,6 +63,7 @@ export function PanelTaller() {
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [pendienteDeCancelar, setPendienteDeCancelar] = useState<ReservaPanel | null>(null);
   const [nuevaCita, setNuevaCita] = useState(false);
+  const [reconectarGoogle, setReconectarGoogle] = useState(false);
   const [operando, setOperando] = useState(false);
 
   // "Hoy" se recalcula cada minuto, por si el panel queda abierto de un día para otro.
@@ -207,7 +208,8 @@ export function PanelTaller() {
           cargando={cargando}
           onActualizar={() => void recargar()}
           onNuevaCita={() => setNuevaCita(true)}
-          onConectarGoogle={() => void google.conectar()}
+          googleConectado={google.conectado}
+          onConectarGoogle={() => (google.conectado ? setReconectarGoogle(true) : void google.conectar())}
           onCerrarSesion={() => void cerrarSesion()}
         />
 
@@ -294,6 +296,21 @@ export function PanelTaller() {
               {pendienteDeCancelar.google_event_id ? ", se eliminará su evento de Google Calendar" : ""}
               {taller.whatsapp_modo === "api" && pendienteDeCancelar.telefono ? " y se avisará al cliente por WhatsApp" : ""}.
             </p>
+          </Modal>
+        )}
+
+        {reconectarGoogle && (
+          <Modal
+            titulo="Google Calendar ya está conectado"
+            textoConfirmar="Volver a conectar"
+            textoCancelar="No, volver"
+            onConfirmar={() => {
+              setReconectarGoogle(false);
+              void google.conectar();
+            }}
+            onCancelar={() => setReconectarGoogle(false)}
+          >
+            <p>Las citas confirmadas ya se apuntan en tu Google Calendar. Vuelve a conectarlo solo si quieres usar otra cuenta de Google o si el panel te avisa de que la conexión ha caducado.</p>
           </Modal>
         )}
 

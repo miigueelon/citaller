@@ -25,7 +25,7 @@ function mensajeDeVuelta(params: URLSearchParams): MensajePanel | null {
 }
 
 /**
- * Botón "Conectar Google Calendar" y la vuelta de Google (`?calendar=connected|error&motivo=…`).
+ * Estado de la conexión, botón "Conectar Google Calendar" y la vuelta de Google (`?calendar=connected|error&motivo=…`).
  * El mensaje de vuelta se muestra una vez y los parámetros se quitan de la URL.
  */
 export function useConexionGoogle(cliente: ClienteSupabase, tallerId: number, slug: string) {
@@ -33,6 +33,20 @@ export function useConexionGoogle(cliente: ClienteSupabase, tallerId: number, sl
   // El mensaje de vuelta de Google se lee una sola vez, al montar; después se quitan los parámetros
   // de la URL para que no se repita al recargar.
   const [mensaje, setMensaje] = useState<MensajePanel | null>(() => mensajeDeVuelta(params));
+  // null mientras se consulta: el botón no dice "Conectar" a un taller que ya lo está.
+  const [conectado, setConectado] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let vigente = true;
+    void cliente.rpc("estado_calendario", { p_taller_id: tallerId }).then(({ data, error }) => {
+      if (!vigente) return;
+      if (error) console.error("No se pudo saber si Google Calendar está conectado:", error);
+      setConectado(!error && !!data?.[0]?.conectado);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [cliente, tallerId]);
 
   useEffect(() => {
     if (!params.has("calendar")) return;
@@ -75,5 +89,5 @@ export function useConexionGoogle(cliente: ClienteSupabase, tallerId: number, sl
     }
   }, [cliente, tallerId, slug]);
 
-  return { conectar, mensaje, cerrarMensaje: () => setMensaje(null) };
+  return { conectado, conectar, mensaje, cerrarMensaje: () => setMensaje(null) };
 }

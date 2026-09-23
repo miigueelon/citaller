@@ -42,7 +42,7 @@ export function FiltrosReservas({ filtroEstado, onFiltroEstado, contadores, busq
           type="text"
           value={busqueda}
           onChange={(evento) => onBusqueda(evento.target.value)}
-          placeholder="Buscar por nombre, matrícula o vehículo..."
+          placeholder="Buscar por nombre, teléfono, matrícula o vehículo..."
           aria-label="Buscar reservas"
         />
         {busqueda && (

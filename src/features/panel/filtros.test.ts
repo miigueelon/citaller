@@ -40,7 +40,7 @@ function reserva(parcial: Partial<ReservaPanel> & { id: number; dia: string }): 
 const lista: ReservaPanel[] = [
   reserva({ id: 1, dia: "2026-09-18", estado: "Confirmada", hora: "09:00:00" }), // viernes pasado
   reserva({ id: 2, dia: "2026-09-21", nombre: "Ana López", matricula: "9999ZZZ" }), // hoy
-  reserva({ id: 3, dia: "2026-09-22", estado: "Confirmada", vehiculo: "Moto Yamaha" }), // mañana
+  reserva({ id: 3, dia: "2026-09-22", estado: "Confirmada", vehiculo: "Moto Yamaha", telefono: "34655444333" }), // mañana
   reserva({ id: 4, dia: "2026-09-26", estado: "Confirmada" }), // sábado futuro
   reserva({ id: 5, dia: "2026-09-29", estado: "Cancelada" }), // dentro de 8 días
   reserva({ id: 6, dia: "2026-09-19", estado: "Cancelada", hora: "12:00:00" }), // sábado pasado
@@ -142,6 +142,18 @@ describe("filtrar", () => {
     expect(filtrarReservas(futuras, { busqueda: "ana", filtroFecha: "todas" }, ahora).map((r) => r.id)).toEqual([2]);
     expect(filtrarReservas(futuras, { busqueda: "9999zzz", filtroFecha: "todas" }, ahora).map((r) => r.id)).toEqual([2]);
     expect(filtrarReservas(futuras, { busqueda: "yamaha", filtroFecha: "todas" }, ahora).map((r) => r.id)).toEqual([3]);
+  });
+
+  it("busca por teléfono tal como se escriba: con espacios, con +34 o solo el final", () => {
+    expect(filtrarReservas(futuras, { busqueda: "655 444 333", filtroFecha: "todas" }, ahora).map((r) => r.id)).toEqual([3]);
+    expect(filtrarReservas(futuras, { busqueda: "+34 655444333", filtroFecha: "todas" }, ahora).map((r) => r.id)).toEqual([3]);
+    expect(filtrarReservas(futuras, { busqueda: "444333", filtroFecha: "todas" }, ahora).map((r) => r.id)).toEqual([3]);
+    // Los demás tienen el 600 111 222 de la ficha base.
+    expect(filtrarReservas(futuras, { busqueda: "600111222", filtroFecha: "todas" }, ahora).map((r) => r.id)).toEqual([2, 4, 5]);
+  });
+
+  it("una búsqueda sin cifras ni letras no coincide con nada", () => {
+    expect(filtrarReservas(futuras, { busqueda: "+", filtroFecha: "todas" }, ahora)).toEqual([]);
   });
 
   it("filtra por hoy, mañana y próximos 7 días", () => {

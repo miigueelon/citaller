@@ -106,9 +106,11 @@ export interface CriteriosFiltro {
   filtroFecha: FiltroFecha;
 }
 
-/** Filtro de texto (nombre, matrícula, vehículo) y de fecha rápida (hoy, mañana, próximos 7 días). */
+/** Filtro de texto (nombre, teléfono, matrícula, vehículo) y de fecha rápida (hoy, mañana, próximos 7 días). */
 export function filtrarReservas(reservas: ReservaPanel[], { busqueda, filtroFecha }: CriteriosFiltro, ahora: Date = new Date()): ReservaPanel[] {
   const texto = busqueda.trim().toLowerCase();
+  // El teléfono se guarda solo con cifras (34600111222); se busca así aunque se escriba "+34 600 111 222".
+  const cifras = /^[\d\s+().-]+$/.test(texto) ? texto.replace(/\D/g, "") : "";
   const diaHoy = hoy(ahora);
   const diaManana = sumarDias(diaHoy, 1);
   const diaLimite = sumarDias(diaHoy, 7);
@@ -118,7 +120,8 @@ export function filtrarReservas(reservas: ReservaPanel[], { busqueda, filtroFech
       !texto ||
       (reserva.nombre ?? "").toLowerCase().includes(texto) ||
       (reserva.matricula ?? "").toLowerCase().includes(texto) ||
-      (reserva.vehiculo ?? "").toLowerCase().includes(texto);
+      (reserva.vehiculo ?? "").toLowerCase().includes(texto) ||
+      (cifras !== "" && (reserva.telefono ?? "").includes(cifras));
 
     let coincideFecha = true;
     if (filtroFecha === "hoy") coincideFecha = reserva.dia === diaHoy;

@@ -34,6 +34,28 @@ test.describe("Panel del taller", () => {
     await expect(page.getByText(/no hay citas finalizadas que coincidan/i)).toBeVisible();
   });
 
+  test("busca una solicitud por el teléfono del cliente, escrito con espacios", async ({ page }) => {
+    const creada = await crearReservaDePrueba({ nombre: "Cliente Teléfono", hora: "12:00" });
+    await entrar(page);
+    await expect(page.locator(".tarjeta-reserva", { hasText: "Cliente Teléfono" }).first()).toBeVisible();
+
+    // Como lo dicta el cliente: sin el 34 y con espacios.
+    const nacional = creada.telefono.slice(2);
+    const buscador = page.getByLabel("Buscar reservas");
+    await buscador.fill(`${nacional.slice(0, 3)} ${nacional.slice(3, 6)} ${nacional.slice(6)}`);
+    await expect(page.locator(".tarjeta-reserva")).toHaveCount(1);
+    await expect(page.locator(".tarjeta-reserva")).toContainText("Cliente Teléfono");
+
+    await buscador.fill("999 999 999");
+    await expect(page.getByText(/no hay reservas que coincidan/i)).toBeVisible();
+
+    // Limpieza: se cancela para no dejar el hueco ocupado (una pendiente se cancela sin preguntar).
+    await buscador.fill(nacional);
+    const tarjeta = page.locator(".tarjeta-reserva", { hasText: "Cliente Teléfono" }).first();
+    await tarjeta.getByRole("button", { name: /cancelar/i }).click();
+    await expect(page.getByText(/cita cancelada/i)).toBeVisible();
+  });
+
   test("con una contraseña incorrecta no entra", async ({ page }) => {
     await page.goto(URL_PANEL);
     await page.getByPlaceholder(/email|correo/i).fill(TALLER_E2E.email);

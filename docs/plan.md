@@ -275,7 +275,7 @@ Miguel, 23-sep-2026 (el día de la instalación): "cuando en Rik and Roll selecc
 Miguel, 23-sep-2026 (tras hablar con Speedbikes): "es bastante útil mirar por el cliente por el número de teléfono; el nombre puede ser bastante común y por teléfono sabes que no fallas". Para todos los talleres.
 
 - [x] **Buscador del panel por teléfono**: el filtro compara solo cifras contra el teléfono guardado (`34600111222`), así vale "600 111 222", "+34 600111222" o solo el final; nombre, matrícula y vehículo siguen igual. Placeholder "Buscar por nombre, teléfono, matrícula o vehículo...". Verificado el 23-sep, commit `707ec7b`: `tsc`, `eslint`, 80 unitarias (2 nuevas), `build`, Playwright **24/24 en local y en el preview** `citaller-g1r6yfejm-miigueelon.vercel.app` (prueba nueva: busca una solicitud por su teléfono escrito con espacios y la cancela).
-- [ ] **Producción v1.7**: con el "publica" de Miguel, merge a `main`, etiqueta `v1.7` y Playwright contra `citaller.es`.
+- [x] *(Hecho el 23-sep-2026: Miguel dijo "publica y versiónalo". `main` = `b83f147` (= `v1.7`, avance directo desde `reestructuracion`), Vercel en producción, Playwright **24/24 contra `citaller.es`**.)* **Producción v1.7**: merge a `main`, etiqueta `v1.7` y Playwright contra `citaller.es`.
 
 ### Fase 5 — Cerrar el ciclo taller ↔ cliente (lo elegido del plan v4)
 

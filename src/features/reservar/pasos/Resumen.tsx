@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import { Alerta } from "@/components/Alerta";
 import { useTaller } from "@/app/providers/useTaller";
 import { camposDelServicio } from "@/features/taller/api";
@@ -101,6 +102,13 @@ export function Resumen({ reserva, enviar, volver }: Props) {
         </div>
 
         {error && <Alerta tipo="error">{error}</Alerta>}
+
+        {/* Primera capa de información del RGPD: responsable (el taller), finalidad y derechos. */}
+        <p className="aviso-datos">
+          Tus datos los trata <strong>{taller.nombre}</strong> para gestionar tu cita, con CiTaller como proveedor.
+          No se usan para publicidad. Puedes acceder a ellos, corregirlos o borrarlos.{" "}
+          <Link to="/privacidad">Más información</Link>
+        </p>
 
         <button type="button" className="boton-principal" onClick={() => void confirmar()} disabled={enviando}>
           {enviando ? "ENVIANDO..." : "ENVIAR SOLICITUD"}

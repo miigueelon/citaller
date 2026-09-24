@@ -14,6 +14,9 @@ test("la raíz muestra la página principal con el enlace a privacidad", async (
 
 test("la política de privacidad explica Google Calendar y cómo pedir el borrado", async ({ page }) => {
   await page.goto("/privacidad");
+  // El taller decide sobre los datos de quien reserva; CiTaller tiene titular con nombre.
+  await expect(page.getByRole("heading", { name: /quién es quién/i })).toBeVisible();
+  await expect(page.getByText(/Miguel Ángel Rodríguez Sevilla/)).toBeVisible();
   await expect(page.getByRole("heading", { name: /google calendar/i })).toBeVisible();
   await expect(page.getByRole("link", { name: /política de datos de usuario/i })).toHaveAttribute(
     "href",

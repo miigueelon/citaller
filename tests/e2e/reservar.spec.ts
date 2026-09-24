@@ -64,6 +64,33 @@ test.describe("Pasos de la reserva", () => {
     await diasHabilitados.first().click();
     await expect(page.getByRole("heading", { name: /horas disponibles/i })).toBeVisible();
   });
+
+  test("antes de enviar, el resumen dice quién trata los datos y enlaza a privacidad", async ({ page }) => {
+    await page.goto(URL_RESERVA);
+    await page.locator('input[name="nombre"]').fill("Cliente de prueba");
+    await page.locator('input[name="matricula"]').fill("E2E1234");
+    await page.locator('input[name="vehiculo"]').fill("Coche de prueba");
+    await page.locator('input[name="telefono"]').fill("600111222");
+    await page.locator("#servicio").selectOption("Revisión / mantenimiento");
+    await page.getByRole("button", { name: /continuar/i }).click();
+
+    // El primer día con horas libres (un día puede estar lleno).
+    const dias = page.locator(".react-calendar__month-view__days button:not([disabled])");
+    const hora = page.locator(".horas-grid button.hora").first();
+    for (let i = 0; i < 10; i++) {
+      await dias.nth(i).click();
+      await expect(page.getByText(/comprobando disponibilidad/i)).toHaveCount(0);
+      if (await hora.isVisible()) break;
+    }
+    await hora.click();
+    await page.getByRole("button", { name: /continuar/i }).click();
+
+    // Primera capa del RGPD encima del botón; no se envía nada.
+    const aviso = page.locator(".aviso-datos");
+    await expect(aviso).toContainText(`Tus datos los trata ${TALLER_E2E.nombre}`);
+    await expect(aviso.getByRole("link", { name: /más información/i })).toHaveAttribute("href", "/privacidad");
+    await expect(page.getByRole("button", { name: /enviar solicitud/i })).toBeEnabled();
+  });
 });
 
 test.describe("Antelación por servicio", () => {

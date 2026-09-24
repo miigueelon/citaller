@@ -55,7 +55,8 @@ for (const taller of TALLERES) {
       await expect(page.getByText(/medida que aparece en el lateral/i)).toBeVisible();
       const imagen = page.getByRole("img", { name: /ayuda para neumáticos/i });
       await expect(imagen).toBeVisible();
-      expect(await imagen.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+      // Que cargue de verdad (no solo que esté en la página): contra un preview remoto tarda más que en local.
+      await expect.poll(() => imagen.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0), { timeout: 15_000 }).toBe(true);
 
       // Sin cantidad ni medidas no se puede continuar; con 2 y una medida, sí (no se envía nada).
       await page.locator('input[name="matricula"]').fill("0000AAA");

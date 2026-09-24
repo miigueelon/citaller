@@ -5,11 +5,14 @@
 -- configuración que antes estaba escrita en el código.
 -- ============================================================================
 
+-- Mostrador con todos los datos obligatorios (pedido de Miguel, 24-sep-2026, como en Rik and Roll):
+-- teléfono, nombre con primer apellido y la descripción en "Avería / luz de aviso" y "Otro".
 update public.talleres
 set modo_capacidad = 'por_dia',
     capacidad      = 6,
     max_citas_dia  = null,
-    whatsapp_modo  = 'enlace'
+    whatsapp_modo  = 'enlace',
+    mostrador_datos_obligatorios = true
 where slug = 'speedbikes';
 
 insert into public.servicios_taller (taller_id, nombre, orden, descripcion_modo, descripcion_etiqueta, descripcion_placeholder, descripcion_ayuda)

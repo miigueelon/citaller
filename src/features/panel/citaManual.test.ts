@@ -64,6 +64,16 @@ describe("datosQueFaltan", () => {
     expect(datosQueFaltan({ ...cita, datos_extra: { cantidad_neumaticos: "1", kilometros: "12a" } }, ctx)).toEqual(["Kilómetros"]);
   });
 
+  it("una hora de hoy que ya ha pasado no vale; una posterior sí; un día anterior a hoy tampoco", () => {
+    // Lunes 5-oct-2026 a las 10:30 (hora local del dispositivo).
+    const ahora = new Date(2026, 9, 5, 10, 30);
+    expect(datosQueFaltan({ ...completa, dia: "2026-10-05", hora: "09:00" }, contexto, ahora)).toEqual(["una hora posterior a la actual"]);
+    expect(datosQueFaltan({ ...completa, dia: "2026-10-05", hora: "10:30" }, contexto, ahora)).toEqual(["una hora posterior a la actual"]);
+    expect(datosQueFaltan({ ...completa, dia: "2026-10-05", hora: "10:31" }, contexto, ahora)).toEqual([]);
+    expect(datosQueFaltan({ ...completa, dia: "2026-10-06", hora: "09:00" }, contexto, ahora)).toEqual([]);
+    expect(datosQueFaltan({ ...completa, dia: "2026-10-04", hora: "23:00" }, contexto, ahora)).toEqual(["un día a partir de hoy"]);
+  });
+
   it("enumera todo lo que falta, en el orden del formulario", () => {
     const vacia: DatosCitaManual = { nombre: "", telefono: "", matricula: "", vehiculo: "", servicio: "", descripcion: "", dia: "", hora: "", datos_extra: {}, miembro_id: null };
     expect(datosQueFaltan(vacia, { ...contexto, miembroId: null, servicio: undefined })).toEqual(["quién la apunta", "el nombre", "el teléfono", "la matrícula", "el vehículo", "el servicio", "el día", "la hora"]);

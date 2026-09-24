@@ -4,7 +4,7 @@
 
 import { campoValido, esMatriculaValida, esTelefonoValido } from "@/features/reservar/validacion";
 import type { CampoFormulario, ServicioTaller } from "@/features/taller/api";
-import { diaSemana, esDiaValido, esHoraPasada } from "@/lib/fechas";
+import { diaSemana, esDiaPasado, esDiaValido, esHoraPasada } from "@/lib/fechas";
 import type { DatosCitaManual } from "./useReservasTaller";
 
 /** Nombre y, al menos, primer apellido: dos palabras. Misma regla que la base de datos (CT023). */
@@ -40,8 +40,11 @@ function etiquetaCampo(campo: CampoFormulario): string {
   return campo.etiqueta.replace(/\s*\(opcional\)/i, "").trim();
 }
 
-/** Qué falta (o está mal escrito) para poder guardar, en el orden del formulario. Vacío = se puede guardar. */
-export function datosQueFaltan(datos: DatosCitaManual, ctx: ContextoCitaManual): string[] {
+/**
+ * Qué falta (o está mal escrito) para poder guardar, en el orden del formulario. Vacío = se puede
+ * guardar. `ahora` decide si la hora ya ha pasado (la base de datos lo vuelve a comprobar: CT024).
+ */
+export function datosQueFaltan(datos: DatosCitaManual, ctx: ContextoCitaManual, ahora: Date = new Date()): string[] {
   const faltan: string[] = [];
   if (ctx.preguntarMiembro && ctx.miembroId === null) faltan.push("quién la apunta");
 
@@ -69,7 +72,12 @@ export function datosQueFaltan(datos: DatosCitaManual, ctx: ContextoCitaManual):
   }
 
   if (datos.dia === "") faltan.push("el día");
+  else if (esDiaValido(datos.dia) && esDiaPasado(datos.dia, ahora)) faltan.push("un día a partir de hoy");
   if (datos.hora === "") faltan.push("la hora");
+  // Una hora de hoy que ya ha pasado no se puede escoger (pedido del 24-sep); un día futuro nunca lo está.
+  else if (datos.dia !== "" && esDiaValido(datos.dia) && !esDiaPasado(datos.dia, ahora) && esHoraPasada(datos.dia, datos.hora, ahora)) {
+    faltan.push("una hora posterior a la actual");
+  }
   return faltan;
 }
 

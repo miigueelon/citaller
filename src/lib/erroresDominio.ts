@@ -29,6 +29,7 @@ const POR_CODIGO: Record<string, string> = {
   CT021: "Este servicio necesita más antelación y esa hora ya no es posible. Vuelve atrás y elige otra hora, por favor.",
   CT022: "En este taller la cita del mostrador necesita el teléfono del cliente.",
   CT023: "Escribe el nombre y el primer apellido del cliente.",
+  CT024: "Esa hora ya ha pasado. Elige una hora posterior a la actual.",
 };
 
 const POR_TEXTO: Array<[RegExp, string]> = [

@@ -60,10 +60,11 @@ Después, con la app en local (`npm run dev`, `http://localhost:5173/?taller=2&m
 - [ ] Si Google falla, la cita se cancela igualmente y el fallo queda en la tarjeta.
 
 ## G. Cita manual
-- [ ] "+ Nueva cita" abre el formulario dentro del panel: mismos campos que el público, servicio del taller, campos extra. Teléfono opcional, salvo en los talleres con `mostrador_datos_obligatorios` (Rik and Roll, e2e): ahí la nota dice "Todos los datos son obligatorios" y se exigen teléfono, nombre con primer apellido y la descripción de los servicios que la tienen (opcional para el público).
+- [ ] "+ Nueva cita" abre el formulario dentro del panel: mismos campos que el público, servicio del taller, campos extra. Teléfono opcional, salvo en los talleres con `mostrador_datos_obligatorios` (Speed Bikes, Rik and Roll, e2e): ahí la nota dice "Todos los datos son obligatorios" y se exigen teléfono, nombre con primer apellido y la descripción de los servicios que la tienen (opcional para el público).
+- [ ] Si el taller tiene mecánicos, "¿Quién la apunta?" sale en "Escoger mecánico" **siempre**, también en la siguiente cita: no se recuerda el anterior (pedido del 24-sep).
 - [ ] Pulsar "Guardar" con algo sin rellenar no se queda mudo: sale "Falta: …" con la lista (por ejemplo "Falta: el primer apellido, el teléfono.") y no se crea nada.
 - [ ] En Neumáticos el mostrador ofrece 1, 2, 3 o 4 (`opciones_panel`); el público, solo 2 o 4.
-- [ ] Día y hora libres: para hoy, el desplegable de horas ya no sugiere las que han pasado; una hora pasada, fuera del horario o ya llena muestra un aviso pero deja guardar. Un día festivo también avisa.
+- [ ] Día y hora libres: para hoy, el desplegable de horas no sugiere las que han pasado y **una hora ya pasada no se puede guardar** ("Falta: una hora posterior a la actual."; la base de datos la rechaza con CT024). Una hora fuera del horario o ya llena muestra un aviso pero deja guardar. Un día festivo también avisa.
 - [ ] Al guardar nace **Confirmada** con la etiqueta "Mostrador"; con teléfono se avisa según el modo; siempre va al calendario si está conectado.
 
 ## H. Cancelación por el cliente

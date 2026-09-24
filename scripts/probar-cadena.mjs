@@ -268,6 +268,9 @@ const sinApellido = await pedir("/functions/v1/crear-reserva-taller", { token: T
 comprobar("G. Sin primer apellido se rechaza (CT023)", sinApellido.status === 400 && sinApellido.datos?.codigo === "CT023", `HTTP ${sinApellido.status} ${sinApellido.datos?.codigo}`);
 const sinDescripcion = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: { ...citaCompleta, servicio: "Otro", descripcion: "" } });
 comprobar("G. La descripción opcional del servicio pasa a ser obligatoria (CT008)", sinDescripcion.status === 400 && sinDescripcion.datos?.codigo === "CT008", `HTTP ${sinDescripcion.status} ${sinDescripcion.datos?.codigo}`);
+// Una hora de hoy que ya ha pasado tampoco vale para el taller (las 00:00 siempre han pasado).
+const horaPasada = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: { ...citaCompleta, telefono: telefono(28), dia: hoyMadrid(), hora: "00:00" } });
+comprobar("G. Una hora de hoy ya pasada se rechaza (CT024)", horaPasada.status === 400 && horaPasada.datos?.codigo === "CT024", `HTTP ${horaPasada.status} ${horaPasada.datos?.codigo}`);
 
 const manual = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: citaCompleta });
 if (manual.datos?.reserva_id) creadas.push(manual.datos.reserva_id);

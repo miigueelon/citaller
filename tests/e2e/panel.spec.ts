@@ -157,8 +157,11 @@ test.describe("Panel del taller", () => {
     await dialogo.locator('input[name="dia"]').fill(proximoDiaLaborable(3));
     await expect(dialogo.locator("#horas-taller option")).toHaveCount(6);
 
-    // El taller de pruebas tiene dos miembros: hay que decir quién la apunta.
-    await dialogo.locator('select[name="miembro_id"]').selectOption({ label: "Mecánico A" });
+    // El taller de pruebas tiene dos miembros: hay que decir quién la apunta, y nadie viene preseleccionado.
+    const mecanico = dialogo.locator('select[name="miembro_id"]');
+    await expect(mecanico).toHaveValue("");
+    await expect(mecanico.locator("option[disabled]")).toHaveText(/escoger mecánico/i);
+    await mecanico.selectOption({ label: "Mecánico A" });
     await dialogo.locator('input[name="nombre"]').fill("Cliente");
     await dialogo.locator('input[name="matricula"]').fill("9999ZZZ");
     await dialogo.locator('input[name="vehiculo"]').fill("Furgoneta");
@@ -172,6 +175,16 @@ test.describe("Panel del taller", () => {
 
     await dialogo.locator('input[name="nombre"]').fill(nombre);
     await dialogo.locator('input[name="telefono"]').fill(telefono);
+
+    // Una hora de hoy que ya ha pasado no se puede guardar (las 00:00 siempre han pasado).
+    await dialogo.locator('input[name="dia"]').fill(hoyLocal());
+    await dialogo.locator('input[name="hora"]').fill("00:00");
+    await dialogo.getByRole("button", { name: /guardar cita confirmada/i }).click();
+    await expect(dialogo.getByText(/falta: una hora posterior a la actual\./i)).toBeVisible();
+    await expect(page.getByText(/cita confirmada y apuntada/i)).toHaveCount(0);
+
+    await dialogo.locator('input[name="dia"]').fill(proximoDiaLaborable(3));
+    await dialogo.locator('input[name="hora"]').fill("10:00");
     await dialogo.getByRole("button", { name: /guardar cita confirmada/i }).click();
 
     await expect(page.getByText(/cita confirmada/i)).toBeVisible();
@@ -182,6 +195,12 @@ test.describe("Panel del taller", () => {
     await expect(tarjeta.locator(".tarjeta-origen")).toHaveText(/mostrador · mecánico a/i);
     await expect(tarjeta.getByText(/sin teléfono/i)).toHaveCount(0);
     await expect(tarjeta).toContainText(telefono.slice(0, 3));
+
+    // La siguiente cita vuelve a pedir el mecánico: no se recuerda el anterior.
+    await page.getByRole("button", { name: /nueva cita/i }).click();
+    await expect(page.getByRole("dialog").locator('select[name="miembro_id"]')).toHaveValue("");
+    await page.getByRole("dialog").getByRole("button", { name: /^cerrar$/i }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
 
     // Limpieza: se cancela para no dejar huecos ocupados en el taller de pruebas.
     await tarjeta.getByRole("button", { name: /cancelar cita/i }).click();

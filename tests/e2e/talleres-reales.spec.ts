@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
 // campo extra, calendario y horas) y que su panel pide login. Vale contra cualquier entorno: la BD es
 // la misma.
 const TALLERES = [
-  { slug: "speedbikes", nombre: "Speedbikes", conKilometros: true },
+  { slug: "speedbikes", nombre: "Speed Bikes", conKilometros: true },
   { slug: "rikandroll", nombre: "Rik and Roll", conKilometros: false },
 ];
 

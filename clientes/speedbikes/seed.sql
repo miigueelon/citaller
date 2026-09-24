@@ -1,5 +1,5 @@
 -- ============================================================================
--- Speedbikes Moto: taller de motos. Capacidad por día (6 citas), pide kilómetros, WhatsApp en
+-- Speed Bikes (antes "Speedbikes Moto"): taller de motos. Capacidad por día (6 citas), pide kilómetros, WhatsApp en
 -- modo enlace (la dueña envía desde su número personal). Idempotente. Sin secretos.
 -- El taller, sus horarios y festivos ya existían en la base de datos; aquí solo se declara la
 -- configuración que antes estaba escrita en el código.
@@ -66,7 +66,11 @@ cross join (values
 where t.slug = 'speedbikes'
 on conflict (taller_id, fecha) do nothing;
 
--- Mensaje de "vehículo listo" (botón del panel, modo enlace): aquí se habla de "moto".
+-- Mensajes de WhatsApp (modo enlace). Pedido de Miguel del 24-sep-2026: en confirmación,
+-- recordatorio y "vehículo listo" el taller firma como SPEED BIKES, en mayúsculas (la web dice
+-- "Speed Bikes"). La cancelación usa el texto por defecto con {taller}. En "listo" se habla de "moto".
 update public.talleres
-set texto_whatsapp_listo = 'Hola {nombre}, te escribimos de {taller}. Tu moto ({vehiculo}, {matricula}) ya está lista: puedes pasar a recogerla cuando quieras. ¡Gracias!'
+set texto_whatsapp_confirmacion = 'Hola {nombre}, te escribimos de SPEED BIKES. Tu cita está confirmada para el {dia} a las {hora}: {servicio} ({vehiculo}, {matricula}). Si no puedes venir, puedes cancelarla hasta 24 horas antes desde este enlace: {enlace_cita}. ¡Gracias!',
+    texto_whatsapp_recordatorio = 'Hola {nombre}, te recordamos tu cita en SPEED BIKES mañana, {dia}, a las {hora}: {servicio} ({vehiculo}). ¡Te esperamos!',
+    texto_whatsapp_listo        = 'Hola {nombre}, te escribimos de SPEED BIKES. Tu moto ({vehiculo}, {matricula}) ya está lista: puedes pasar a recogerla cuando quieras. ¡Gracias!'
 where slug = 'speedbikes';

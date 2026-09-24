@@ -1,7 +1,23 @@
 import { describe, expect, it } from "vitest";
 import type { CampoFormulario, ServicioTaller } from "@/features/taller/api";
 import { reservaVacia } from "./tipos";
-import { campoValido, erroresDeFormato, esMatriculaValida, esTelefonoValido, formularioCompleto, normalizarMatricula, normalizarTelefono, formatearTelefono } from "./validacion";
+import { campoValido, erroresDeFormato, esMatriculaValida, esTelefonoValido, formularioCompleto, nombreConApellido, normalizarMatricula, normalizarTelefono, formatearTelefono } from "./validacion";
+
+describe("nombre y apellido", () => {
+  it("exige al menos dos palabras (nombre y primer apellido)", () => {
+    expect(nombreConApellido("Marta Bernat")).toBe(true);
+    expect(nombreConApellido("  Marta   Bernat Puig ")).toBe(true);
+    expect(nombreConApellido("Marta")).toBe(false);
+    expect(nombreConApellido("Marta ")).toBe(false);
+    expect(nombreConApellido("")).toBe(false);
+  });
+
+  it("avisa del apellido solo cuando ya se ha escrito algo", () => {
+    expect(erroresDeFormato({ nombre: "Marta", matricula: "", telefono: "" }).nombre).toBe("Escribe tu nombre y primer apellido.");
+    expect(erroresDeFormato({ nombre: "Marta Bernat", matricula: "", telefono: "" }).nombre).toBeUndefined();
+    expect(erroresDeFormato({ nombre: "", matricula: "", telefono: "" }).nombre).toBeUndefined();
+  });
+});
 
 describe("teléfono", () => {
   it("normaliza quitando espacios y guiones y anteponiendo el 34 a 9 cifras", () => {
@@ -64,12 +80,17 @@ describe("campos extra", () => {
 });
 
 describe("formulario", () => {
-  const base = { ...reservaVacia(3), matricula: "1234ABC", nombre: "Ana", telefono: "600123123", vehiculo: "Seat León", servicio: "Frenos" };
+  const base = { ...reservaVacia(3), matricula: "1234ABC", nombre: "Ana García", telefono: "600123123", vehiculo: "Seat León", servicio: "Frenos" };
+
+  it("el nombre necesita apellido para poder continuar", () => {
+    expect(formularioCompleto({ ...base, nombre: "Ana" }, { servicio: frenos, campos: [] })).toBe(false);
+    expect(formularioCompleto(base, { servicio: frenos, campos: [] })).toBe(true);
+  });
 
   it("solo avisa de formato cuando el campo tiene algo escrito", () => {
-    expect(erroresDeFormato({ matricula: "", telefono: "" })).toEqual({});
-    expect(erroresDeFormato({ matricula: "12*34", telefono: "600123123" }).matricula).toMatch(/matrícula/);
-    expect(erroresDeFormato({ matricula: "1234ABC", telefono: "12" }).telefono).toMatch(/9 cifras/);
+    expect(erroresDeFormato({ nombre: "", matricula: "", telefono: "" })).toEqual({});
+    expect(erroresDeFormato({ nombre: "", matricula: "12*34", telefono: "600123123" }).matricula).toMatch(/matrícula/);
+    expect(erroresDeFormato({ nombre: "", matricula: "1234ABC", telefono: "12" }).telefono).toMatch(/9 cifras/);
   });
 
   it("está completo con los obligatorios y formatos correctos", () => {

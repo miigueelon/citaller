@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CampoFormulario, ServicioTaller } from "@/features/taller/api";
-import { camposParaMostrador, datosQueFaltan, horasSugeridas, nombreConApellido } from "./citaManual";
+import { camposParaMostrador, datosQueFaltan, horasSugeridas } from "./citaManual";
 import type { DatosCitaManual } from "./useReservasTaller";
 
 const frenos: ServicioTaller = { id: 1, nombre: "Frenos", orden: 1, descripcion_modo: "oculta", descripcion_etiqueta: null, descripcion_placeholder: null, descripcion_ayuda: null, imagen_ayuda_url: null, bloques_antelacion: 0, antelacion_texto: null };
@@ -13,16 +13,7 @@ const kilometros: CampoFormulario = { id: 11, servicio_id: null, clave: "kilomet
 const completa: DatosCitaManual = { nombre: "Marta Bernat", telefono: "600123123", matricula: "1234ABC", vehiculo: "Seat León", servicio: "Frenos", descripcion: "", dia: "2026-10-05", hora: "09:00", datos_extra: {}, miembro_id: 5 };
 const contexto = { exigirTodo: true, preguntarMiembro: true, miembroId: 5, servicio: frenos, campos: [] as CampoFormulario[] };
 
-describe("nombreConApellido", () => {
-  it("exige al menos dos palabras", () => {
-    expect(nombreConApellido("Marta Bernat")).toBe(true);
-    expect(nombreConApellido("  Marta   Bernat Puig ")).toBe(true);
-    expect(nombreConApellido("Marta")).toBe(false);
-    expect(nombreConApellido("Marta ")).toBe(false);
-    expect(nombreConApellido("")).toBe(false);
-  });
-});
-
+// `nombreConApellido` se prueba en features/reservar/validacion.test.ts (misma regla para la web y el mostrador).
 describe("datosQueFaltan", () => {
   it("no falta nada con la cita completa", () => {
     expect(datosQueFaltan(completa, contexto)).toEqual([]);

@@ -24,8 +24,9 @@ cross join (values
   ('Frenos', 3, 'oculta', null, null, null),
   ('Neumáticos', 4, 'oculta', null, null, null),
   ('ITV', 5, 'oculta', null, null, null),
-  ('Avería / luz de aviso', 6, 'opcional', 'Cuéntanos qué ocurre', 'Ej.: Se ha encendido una luz amarilla en el cuadro...', 'ⓘ Cuanta más información nos des, mejor podremos ayudarte.'),
-  ('Otro', 7, 'opcional', 'Cuéntanos qué necesitas', 'Ej.: Quiero revisar el aire acondicionado...', 'ⓘ Cuanta más información nos des, mejor podremos ayudarte.')
+  -- Descripción obligatoria en Avería y Otro también para el cliente (pedido de Miguel, 24-sep-2026).
+  ('Avería / luz de aviso', 6, 'obligatoria', 'Cuéntanos qué ocurre', 'Ej.: Se ha encendido una luz amarilla en el cuadro...', 'ⓘ Cuanta más información nos des, mejor podremos ayudarte.'),
+  ('Otro', 7, 'obligatoria', 'Cuéntanos qué necesitas', 'Ej.: Quiero revisar el aire acondicionado...', 'ⓘ Cuanta más información nos des, mejor podremos ayudarte.')
 ) as s(nombre, orden, modo, etiqueta, placeholder, ayuda)
 where t.slug = 'speedbikes'
 on conflict (taller_id, nombre) do update

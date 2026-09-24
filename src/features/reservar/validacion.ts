@@ -31,14 +31,27 @@ export function esMatriculaValida(texto: string): boolean {
   return /^[A-Z0-9]{4,10}$/.test(normalizarMatricula(texto));
 }
 
+/**
+ * Nombre y, al menos, primer apellido: dos palabras (pedido de Miguel, 24-sep-2026, para la web y
+ * el mostrador). La base de datos aplica la misma regla (CT023) en `crear_reserva_publica` y, si el
+ * taller exige todos los datos, en `insertar_reserva_taller`.
+ */
+export function nombreConApellido(nombre: string): boolean {
+  return /\S\s+\S/.test(nombre.trim());
+}
+
 export interface ErroresReserva {
+  nombre?: string;
   matricula?: string;
   telefono?: string;
 }
 
 /** Mensajes de error de los campos con formato; vacío si todo está bien o aún no se ha escrito. */
-export function erroresDeFormato(reserva: Pick<ReservaEnCurso, "matricula" | "telefono">): ErroresReserva {
+export function erroresDeFormato(reserva: Pick<ReservaEnCurso, "nombre" | "matricula" | "telefono">): ErroresReserva {
   const errores: ErroresReserva = {};
+  if (reserva.nombre.trim() !== "" && !nombreConApellido(reserva.nombre)) {
+    errores.nombre = "Escribe tu nombre y primer apellido.";
+  }
   if (reserva.matricula.trim() !== "" && !esMatriculaValida(reserva.matricula)) {
     errores.matricula = "Escribe la matrícula sin símbolos, por ejemplo 1234ABC.";
   }
@@ -64,11 +77,11 @@ export function campoValido(campo: CampoFormulario, valor: string | undefined): 
   return texto.length <= 250;
 }
 
-/** ¿Se puede pasar al siguiente paso? Obligatorios rellenos, sin errores de formato y campos extra válidos. */
+/** ¿Se puede pasar al siguiente paso? Obligatorios rellenos (nombre con apellido), sin errores de formato y campos extra válidos. */
 export function formularioCompleto(reserva: ReservaEnCurso, { servicio, campos }: ContextoValidacion): boolean {
   const obligatorios =
     reserva.matricula.trim() !== "" &&
-    reserva.nombre.trim() !== "" &&
+    nombreConApellido(reserva.nombre) &&
     reserva.telefono.trim() !== "" &&
     reserva.vehiculo.trim() !== "" &&
     servicio !== undefined;

@@ -2,15 +2,10 @@
 // citaManual.test.ts. La base de datos aplica las mismas reglas en `insertar_reserva_taller`
 // (CT017 quién la apunta, CT022 teléfono, CT023 apellido, CT008 descripción y campos extra).
 
-import { campoValido, esMatriculaValida, esTelefonoValido } from "@/features/reservar/validacion";
+import { campoValido, esMatriculaValida, esTelefonoValido, nombreConApellido } from "@/features/reservar/validacion";
 import type { CampoFormulario, ServicioTaller } from "@/features/taller/api";
 import { diaSemana, esDiaPasado, esDiaValido, esHoraPasada } from "@/lib/fechas";
 import type { DatosCitaManual } from "./useReservasTaller";
-
-/** Nombre y, al menos, primer apellido: dos palabras. Misma regla que la base de datos (CT023). */
-export function nombreConApellido(nombre: string): boolean {
-  return /\S\s+\S/.test(nombre.trim());
-}
 
 /** En el mostrador un desplegable puede tener su propia lista (`opciones_panel`); si no, la del público. */
 export function camposParaMostrador(campos: CampoFormulario[]): CampoFormulario[] {

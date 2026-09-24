@@ -35,8 +35,9 @@ cross join (values
   ('Frenos', 3, 'oculta', null, null, null, null, 0, null),
   ('Neumáticos', 4, 'obligatoria', 'Medidas / observaciones', 'Ej.: 225/45 R17 91Y', 'ⓘ Indica la medida que aparece en el lateral del neumático.', '/clientes/rikandroll/guia_neumatico.png', 1, 'Los neumáticos se piden al proveedor: necesitamos medio día para tenerlos en el taller.'),
   ('ITV', 5, 'oculta', null, null, null, null, 0, null),
-  ('Avería / luz de aviso', 6, 'opcional', 'Cuéntanos qué ocurre', 'Ej.: Se ha encendido una luz amarilla en el cuadro...', 'ⓘ Cuanta más información nos des, mejor podremos ayudarte.', null, 0, null),
-  ('Otro', 7, 'opcional', 'Cuéntanos qué necesitas', 'Ej.: Quiero revisar el aire acondicionado...', 'ⓘ Cuanta más información nos des, mejor podremos ayudarte.', null, 0, null)
+  -- Descripción obligatoria en Avería y Otro también para el cliente (pedido de Miguel, 24-sep-2026).
+  ('Avería / luz de aviso', 6, 'obligatoria', 'Cuéntanos qué ocurre', 'Ej.: Se ha encendido una luz amarilla en el cuadro...', 'ⓘ Cuanta más información nos des, mejor podremos ayudarte.', null, 0, null),
+  ('Otro', 7, 'obligatoria', 'Cuéntanos qué necesitas', 'Ej.: Quiero revisar el aire acondicionado...', 'ⓘ Cuanta más información nos des, mejor podremos ayudarte.', null, 0, null)
 ) as s(nombre, orden, modo, etiqueta, placeholder, ayuda, imagen, bloques, antelacion)
 where t.slug = 'rikandroll'
 on conflict (taller_id, nombre) do update

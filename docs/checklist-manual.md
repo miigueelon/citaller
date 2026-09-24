@@ -24,6 +24,7 @@ Después, con la app en local (`npm run dev`, `http://localhost:5173/?taller=2&m
 
 ## A. Reservar (público)
 - [ ] `/speedbikes`: se ve nombre, dirección y horario del taller. Los servicios del desplegable son los del seed (7).
+- [ ] El campo "Nombre y apellido" exige dos palabras: con "Ana" sale "Escribe tu nombre y primer apellido." y Continuar queda desactivado; con "Ana García" se activa (la base de datos lo rechaza también, CT023). En Speed Bikes y Rik and Roll, "Avería / luz de aviso" y "Otro" piden la descripción como obligatoria (24-sep-2026).
 - [ ] Speedbikes: aparece el campo Kilómetros (opcional, solo dígitos) antes del servicio. Rik and Roll y e2e: no.
 - [ ] `/rikandroll` (y `/e2e`): al elegir Neumáticos aparecen cantidad (1-4, obligatoria), medidas obligatorias e imagen de ayuda; al cambiar de servicio se limpian.
 - [ ] "Avería / luz de aviso" y "Otro" tienen descripción opcional con contador; el resto no muestra descripción.

@@ -98,7 +98,7 @@ export function DatosForm({ reserva, actualizar, continuar }: Props) {
 
           <div className="fila">
             <div className="campo">
-              <CampoInput label="Nombre" name="nombre" value={reserva.nombre} onChange={alCambiar} autoComplete="name" />
+              <CampoInput label="Nombre y apellido" name="nombre" value={reserva.nombre} onChange={alCambiar} autoComplete="name" error={errores.nombre} />
             </div>
 
             <div className="campo">

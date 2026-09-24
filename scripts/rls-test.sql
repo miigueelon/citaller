@@ -178,7 +178,13 @@ with comprobaciones (orden, comprobacion, actual, esperado) as (
     (99, 'e2e: Neumáticos ofrece 2 y 4 al público y de 1 a 4 en el panel', (
            select c.opciones = '["2", "4"]'::jsonb and c.opciones_panel = '["1", "2", "3", "4"]'::jsonb
            from public.campos_formulario_taller c where c.taller_id = 3 and c.clave = 'cantidad_neumaticos'), true),
-    (100, 'insertar_reserva_taller sigue siendo solo de service_role', has_function_privilege('authenticated', 'public.insertar_reserva_taller(bigint,text,text,text,text,text,text,date,time,jsonb,bigint)', 'EXECUTE'), false)
+    (100, 'insertar_reserva_taller sigue siendo solo de service_role', has_function_privilege('authenticated', 'public.insertar_reserva_taller(bigint,text,text,text,text,text,text,date,time,jsonb,bigint)', 'EXECUTE'), false),
+    -- 24-sep (noche): la web exige nombre y apellido (CT023) y sigue siendo pública.
+    (101, 'crear_reserva_publica exige nombre con apellido (CT023)', (select pg_get_functiondef(oid) like '%CT023%' from pg_proc where oid = 'public.crear_reserva_publica(bigint,text,text,text,text,text,text,date,time,jsonb)'::regprocedure), true),
+    (102, 'anon sigue ejecutando crear_reserva_publica', has_function_privilege('anon', 'public.crear_reserva_publica(bigint,text,text,text,text,text,text,date,time,jsonb)', 'EXECUTE'), true),
+    (103, 'Speed Bikes y Rik and Roll: Avería y Otro con descripción obligatoria', (
+           select count(*) = 4 from public.servicios_taller s join public.talleres t on t.id = s.taller_id
+           where t.slug in ('speedbikes', 'rikandroll') and s.nombre in ('Avería / luz de aviso', 'Otro') and s.descripcion_modo = 'obligatoria'), true)
 )
 select orden, comprobacion, actual, esperado, (actual = esperado) as ok
 from comprobaciones

@@ -20,13 +20,17 @@ for (const taller of TALLERES) {
     // Campo extra "Kilómetros": Speedbikes sí, Rik and Roll no.
     await expect(page.locator("#campo-kilometros")).toHaveCount(taller.conKilometros ? 1 : 0);
 
-    // Hasta el calendario, sin enviar nada.
+    // Hasta el calendario, sin enviar nada. El nombre tiene que llevar apellido (24-sep-2026).
+    await expect(page.getByText("Nombre y apellido")).toBeVisible();
     await page.locator('input[name="matricula"]').fill("0000AAA");
     await page.locator('input[name="vehiculo"]').fill("Prueba");
     await page.locator('input[name="nombre"]').fill("Prueba");
     await page.locator('input[name="telefono"]').fill("600000000");
     await page.locator("#servicio").selectOption({ index: 1 });
     const continuar = page.getByRole("button", { name: /continuar/i });
+    await expect(page.getByText(/escribe tu nombre y primer apellido/i)).toBeVisible();
+    await expect(continuar).toBeDisabled();
+    await page.locator('input[name="nombre"]').fill("Prueba Playwright");
     await expect(continuar).toBeEnabled();
     await continuar.click();
 
@@ -61,7 +65,7 @@ for (const taller of TALLERES) {
       // Sin cantidad ni medidas no se puede continuar; con 2 y una medida, sí (no se envía nada).
       await page.locator('input[name="matricula"]').fill("0000AAA");
       await page.locator('input[name="vehiculo"]').fill("Prueba");
-      await page.locator('input[name="nombre"]').fill("Prueba");
+      await page.locator('input[name="nombre"]').fill("Prueba Playwright");
       await page.locator('input[name="telefono"]').fill("600000000");
       const continuar = page.getByRole("button", { name: /continuar/i });
       await expect(continuar).toBeDisabled();
@@ -71,6 +75,15 @@ for (const taller of TALLERES) {
       await expect(continuar).toBeEnabled();
     });
   }
+
+  test(`${taller.nombre}: Avería y Otro exigen descripción al cliente`, async ({ page }) => {
+    await page.goto(`/${taller.slug}`);
+    for (const servicio of ["Avería / luz de aviso", "Otro"]) {
+      await page.locator("#servicio").selectOption(servicio);
+      await expect(page.locator("#descripcion")).toHaveAttribute("required", "");
+      await expect(page.getByText(/obligatorio/i).first()).toBeVisible();
+    }
+  });
 
   test(`${taller.nombre}: su panel pide login`, async ({ page }) => {
     await page.goto(`/${taller.slug}/panel`);

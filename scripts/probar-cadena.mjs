@@ -145,6 +145,7 @@ const rechazos = [
   ["día pasado", { p_dia: "2020-01-01", p_telefono: telefono(4) }, "CT004"],
   ["más de 90 días", { p_dia: diaLaborable(120), p_telefono: telefono(5) }, "CT004"],
   ["teléfono inválido", { p_telefono: "12345" }, "CT005"],
+  ["nombre sin apellido", { p_nombre: "Ana", p_telefono: telefono(29) }, "CT023"],
   ["matrícula inválida", { p_matricula: "12*", p_telefono: telefono(6) }, "CT013"],
   ["servicio inexistente", { p_servicio: "Tuneo", p_telefono: telefono(7) }, "CT007"],
   ["Neumáticos sin cantidad", { p_servicio: "Neumáticos", p_descripcion: "205/55 R16", p_telefono: telefono(8) }, "CT008"],

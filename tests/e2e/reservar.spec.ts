@@ -44,11 +44,16 @@ test.describe("Pasos de la reserva", () => {
 
     await page.locator('input[name="matricula"]').fill("E2E1234");
     await page.locator('input[name="vehiculo"]').fill("Coche de prueba");
-    await page.locator('input[name="nombre"]').fill("Cliente de prueba");
     await page.locator('input[name="telefono"]').fill("600111222");
     await page.locator("#servicio").selectOption("Revisión / mantenimiento");
 
+    // "Nombre y apellido": con una sola palabra avisa y no deja continuar (24-sep-2026).
     const continuar = page.getByRole("button", { name: /continuar/i });
+    await page.locator('input[name="nombre"]').fill("Cliente");
+    await expect(page.getByText(/escribe tu nombre y primer apellido/i)).toBeVisible();
+    await expect(continuar).toBeDisabled();
+    await page.locator('input[name="nombre"]').fill("Cliente de prueba");
+    await expect(page.getByText(/escribe tu nombre y primer apellido/i)).toHaveCount(0);
     await expect(continuar).toBeEnabled();
     await continuar.click();
 

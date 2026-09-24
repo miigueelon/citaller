@@ -1,6 +1,6 @@
 -- ============================================================================
 -- Rik and Roll: taller de coches. Capacidad por hora (2 a la vez) y como mucho 5 citas al día
--- (pedido del 21-sep-2026); en Neumáticos pide cantidad y medidas con imagen de ayuda, y necesita
+-- (pedido del 21-sep-2026); en Neumáticos pide cantidad (2 o 4) y medidas con imagen de ayuda, y necesita
 -- **un bloque de apertura entero** (una mañana o una tarde) para pedir y recibir los neumáticos
 -- (pedido del 23-sep-2026): solicitud por la noche → primera hora a las 15:30 del día siguiente;
 -- por la tarde → la mañana siguiente; por la mañana → esa misma tarde. WhatsApp: modo 'enlace' (el
@@ -41,9 +41,11 @@ on conflict (taller_id, nombre) do update
       descripcion_placeholder = excluded.descripcion_placeholder, descripcion_ayuda = excluded.descripcion_ayuda, imagen_ayuda_url = excluded.imagen_ayuda_url,
       bloques_antelacion = excluded.bloques_antelacion, antelacion_texto = excluded.antelacion_texto;
 
--- Cantidad de neumáticos, obligatoria, solo en el servicio Neumáticos.
+-- Cantidad de neumáticos, obligatoria, solo en el servicio Neumáticos. Solo 2 o 4 (pedido del
+-- taller, 24-sep-2026: los cambian por ejes). Las medidas van en la descripción obligatoria del
+-- servicio, con la imagen de ayuda.
 insert into public.campos_formulario_taller (taller_id, servicio_id, clave, etiqueta, tipo, opciones, obligatorio, orden)
-select t.id, s.id, 'cantidad_neumaticos', '¿Cuántos neumáticos quieres cambiar?', 'select', '["1", "2", "3", "4"]'::jsonb, true, 1
+select t.id, s.id, 'cantidad_neumaticos', '¿Cuántos neumáticos quieres cambiar?', 'select', '["2", "4"]'::jsonb, true, 1
 from public.talleres t
 join public.servicios_taller s on s.taller_id = t.id and s.nombre = 'Neumáticos'
 where t.slug = 'rikandroll'

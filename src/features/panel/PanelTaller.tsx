@@ -4,7 +4,7 @@ import { useTaller } from "@/app/providers/useTaller";
 import { Alerta } from "@/components/Alerta";
 import { Modal } from "@/components/Modal";
 import { hoy, sumarDias } from "@/lib/fechas";
-import { cargarMiembros, cargarTextosWhatsapp } from "./api";
+import { cargarAjustesMostrador, cargarMiembros, cargarTextosWhatsapp } from "./api";
 import { CabeceraPanel } from "./componentes/CabeceraPanel";
 import { CitasManana } from "./componentes/CitasManana";
 import { FiltrosReservas } from "./componentes/FiltrosReservas";
@@ -45,12 +45,17 @@ export function PanelTaller() {
     };
   }, [cliente, taller.id, modoEnlace]);
 
-  // Quién puede apuntar citas a mano. Sin miembros, "Nueva cita" no pregunta quién la apunta.
+  // Quién puede apuntar citas a mano (sin miembros, "Nueva cita" no pregunta quién la apunta) y si
+  // el taller exige todos los datos en el mostrador.
   const [miembros, setMiembros] = useState<MiembroTaller[]>([]);
+  const [exigirTodo, setExigirTodo] = useState(false);
   useEffect(() => {
     let vigente = true;
     void cargarMiembros(cliente, taller.id).then((datos) => {
       if (vigente) setMiembros(datos);
+    });
+    void cargarAjustesMostrador(cliente, taller.id).then((ajustes) => {
+      if (vigente) setExigirTodo(ajustes.datosObligatorios);
     });
     return () => {
       vigente = false;
@@ -314,7 +319,7 @@ export function PanelTaller() {
           </Modal>
         )}
 
-        {nuevaCita && <NuevaCitaModal miembros={miembros} ocupado={operando} onGuardar={guardarCitaManual} onCerrar={() => setNuevaCita(false)} />}
+        {nuevaCita && <NuevaCitaModal miembros={miembros} exigirTodo={exigirTodo} ocupado={operando} onGuardar={guardarCitaManual} onCerrar={() => setNuevaCita(false)} />}
       </div>
     </div>
   );

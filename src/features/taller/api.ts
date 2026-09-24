@@ -53,6 +53,8 @@ export interface CampoFormulario {
   etiqueta: string;
   tipo: TipoCampo;
   opciones: string[] | null;
+  /** Opciones cuando la cita la apunta el taller desde el panel; null = las mismas que `opciones`. */
+  opciones_panel: string[] | null;
   obligatorio: boolean;
   orden: number;
   unidad: string | null;
@@ -143,7 +145,7 @@ export async function cargarServicios(tallerId: number): Promise<ServicioTaller[
 export async function cargarCampos(tallerId: number): Promise<CampoFormulario[]> {
   const { data, error } = await supabasePublic
     .from("campos_formulario_taller")
-    .select("id, servicio_id, clave, etiqueta, tipo, opciones, obligatorio, orden, unidad, ayuda")
+    .select("id, servicio_id, clave, etiqueta, tipo, opciones, opciones_panel, obligatorio, orden, unidad, ayuda")
     .eq("taller_id", tallerId)
     .order("orden");
   if (error) throw new Error(`No se pudieron cargar los campos del formulario: ${error.message}`);
@@ -151,6 +153,7 @@ export async function cargarCampos(tallerId: number): Promise<CampoFormulario[]>
     ...fila,
     tipo: fila.tipo === "numero" || fila.tipo === "select" ? fila.tipo : "texto",
     opciones: Array.isArray(fila.opciones) ? fila.opciones.map(String) : null,
+    opciones_panel: Array.isArray(fila.opciones_panel) ? fila.opciones_panel.map(String) : null,
   }));
 }
 

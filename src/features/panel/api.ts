@@ -71,6 +71,12 @@ export async function cargarMiembros(cliente: ClienteSupabase, tallerId: number)
   return data;
 }
 
+/** Ajustes del mostrador ("Nueva cita"). Solo los lee el propio taller. Si falla, la base de datos aplica la regla igualmente (CT022/CT023). */
+export async function cargarAjustesMostrador(cliente: ClienteSupabase, tallerId: number): Promise<{ datosObligatorios: boolean }> {
+  const { data } = await cliente.from("talleres").select("mostrador_datos_obligatorios").eq("id", tallerId).maybeSingle();
+  return { datosObligatorios: data?.mostrador_datos_obligatorios === true };
+}
+
 /** Textos propios de WhatsApp del taller (modo enlace). Solo los lee el propio taller. */
 export async function cargarTextosWhatsapp(cliente: ClienteSupabase, tallerId: number): Promise<TextosWhatsapp> {
   const { data, error } = await cliente

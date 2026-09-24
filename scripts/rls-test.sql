@@ -171,7 +171,14 @@ with comprobaciones (orden, comprobacion, actual, esperado) as (
            from pg_proc where oid = 'public.estado_calendario(bigint)'::regprocedure), true),
     (95, 'estado_calendario no devuelve nada sin sesión (aunque el taller e2e esté conectado)', (
            select count(*) = 0 from public.estado_calendario(3)), true),
-    (96, 'authenticated sigue sin leer integraciones_calendario', has_table_privilege('authenticated', 'public.integraciones_calendario', 'SELECT'), false)
+    (96, 'authenticated sigue sin leer integraciones_calendario', has_table_privilege('authenticated', 'public.integraciones_calendario', 'SELECT'), false),
+    -- 24-sep: datos obligatorios en el mostrador (por taller) y opciones propias del panel.
+    (97, 'anon lee talleres.mostrador_datos_obligatorios',  has_column_privilege('anon', 'public.talleres', 'mostrador_datos_obligatorios', 'SELECT'), false),
+    (98, 'authenticated lee talleres.mostrador_datos_obligatorios (su panel)', has_column_privilege('authenticated', 'public.talleres', 'mostrador_datos_obligatorios', 'SELECT'), true),
+    (99, 'e2e: Neumáticos ofrece 2 y 4 al público y de 1 a 4 en el panel', (
+           select c.opciones = '["2", "4"]'::jsonb and c.opciones_panel = '["1", "2", "3", "4"]'::jsonb
+           from public.campos_formulario_taller c where c.taller_id = 3 and c.clave = 'cantidad_neumaticos'), true),
+    (100, 'insertar_reserva_taller sigue siendo solo de service_role', has_function_privilege('authenticated', 'public.insertar_reserva_taller(bigint,text,text,text,text,text,text,date,time,jsonb,bigint)', 'EXECUTE'), false)
 )
 select orden, comprobacion, actual, esperado, (actual = esperado) as ok
 from comprobaciones

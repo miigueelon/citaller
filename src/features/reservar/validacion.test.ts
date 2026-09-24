@@ -49,8 +49,8 @@ const frenos: ServicioTaller = {
   antelacion_texto: null,
 };
 const neumaticos: ServicioTaller = { ...frenos, id: 2, nombre: "Neumáticos", descripcion_modo: "obligatoria" };
-const kilometros: CampoFormulario = { id: 1, servicio_id: null, clave: "kilometros", etiqueta: "Kilómetros", tipo: "numero", opciones: null, obligatorio: false, orden: 1, unidad: "km", ayuda: null };
-const cantidad: CampoFormulario = { id: 2, servicio_id: 2, clave: "cantidad_neumaticos", etiqueta: "¿Cuántos?", tipo: "select", opciones: ["1", "2", "3", "4"], obligatorio: true, orden: 1, unidad: null, ayuda: null };
+const kilometros: CampoFormulario = { id: 1, servicio_id: null, clave: "kilometros", etiqueta: "Kilómetros", tipo: "numero", opciones: null, opciones_panel: null, obligatorio: false, orden: 1, unidad: "km", ayuda: null };
+const cantidad: CampoFormulario = { id: 2, servicio_id: 2, clave: "cantidad_neumaticos", etiqueta: "¿Cuántos?", tipo: "select", opciones: ["1", "2", "3", "4"], opciones_panel: null, obligatorio: true, orden: 1, unidad: null, ayuda: null };
 
 describe("campos extra", () => {
   it("valida por tipo y obligatoriedad", () => {

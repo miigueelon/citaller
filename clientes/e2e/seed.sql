@@ -17,13 +17,16 @@ where not exists (select 1 from public.talleres where slug = 'e2e');
 
 -- Tope de 7 al día: probar-cadena llega a 5 activas en su día principal, así que queda margen, y
 -- con 6 horas × 2 caben 12, de modo que la octava de un día comprueba el tope diario.
+-- Mostrador con todos los datos obligatorios, como Rik and Roll (24-sep-2026): así Playwright y
+-- probar-cadena prueban CT022 (teléfono) y CT023 (apellido) aquí antes.
 update public.talleres
 set slug           = 'e2e',
     modo_capacidad = 'por_hora',
     capacidad      = 2,
     max_citas_dia  = 7,
     whatsapp_modo  = 'ninguno',
-    horario_texto  = 'Lunes a viernes, 9:00 a 13:00 y 16:00 a 18:00'
+    horario_texto  = 'Lunes a viernes, 9:00 a 13:00 y 16:00 a 18:00',
+    mostrador_datos_obligatorios = true
 where nombre = 'Taller de pruebas e2e';
 
 -- Dos mecánicos ficticios, para probar "¿Quién la apunta?" en las citas a mano.
@@ -81,13 +84,14 @@ where t.slug = 'e2e'
 on conflict (taller_id, servicio_id, clave) do update
   set etiqueta = excluded.etiqueta, tipo = excluded.tipo, obligatorio = excluded.obligatorio, orden = excluded.orden, unidad = excluded.unidad;
 
-insert into public.campos_formulario_taller (taller_id, servicio_id, clave, etiqueta, tipo, opciones, obligatorio, orden)
-select t.id, s.id, 'cantidad_neumaticos', '¿Cuántos neumáticos quieres cambiar?', 'select', '["1", "2", "3", "4"]'::jsonb, true, 1
+-- Como en Rik and Roll: el público elige 2 o 4; el mostrador, de 1 a 4 (opciones_panel).
+insert into public.campos_formulario_taller (taller_id, servicio_id, clave, etiqueta, tipo, opciones, opciones_panel, obligatorio, orden)
+select t.id, s.id, 'cantidad_neumaticos', '¿Cuántos neumáticos quieres cambiar?', 'select', '["2", "4"]'::jsonb, '["1", "2", "3", "4"]'::jsonb, true, 1
 from public.talleres t
 join public.servicios_taller s on s.taller_id = t.id and s.nombre = 'Neumáticos'
 where t.slug = 'e2e'
 on conflict (taller_id, servicio_id, clave) do update
-  set etiqueta = excluded.etiqueta, tipo = excluded.tipo, opciones = excluded.opciones, obligatorio = excluded.obligatorio, orden = excluded.orden;
+  set etiqueta = excluded.etiqueta, tipo = excluded.tipo, opciones = excluded.opciones, opciones_panel = excluded.opciones_panel, obligatorio = excluded.obligatorio, orden = excluded.orden;
 
 -- Dueño del taller de pruebas, si el usuario ya existe en Auth.
 update public.talleres t

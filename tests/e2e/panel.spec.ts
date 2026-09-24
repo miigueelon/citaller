@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { crearReservaDePrueba, proximoDiaLaborable, requiereCredenciales, TALLER_E2E } from "./entorno";
+import { crearReservaDePrueba, proximoDiaLaborable, requiereCredenciales, TALLER_E2E, telefonoAleatorio } from "./entorno";
 
 // Panel del taller de pruebas: login, reservas, confirmar/cancelar por Edge Functions y cita manual.
 const URL_PANEL = `/${TALLER_E2E.slug}/panel`;
@@ -127,32 +127,61 @@ test.describe("Panel del taller", () => {
     void creada;
   });
 
-  test("apunta una cita a mano sin teléfono y nace confirmada", async ({ page }) => {
+  test("apunta una cita a mano: dice qué falta, exige teléfono y apellido, y nace confirmada", async ({ page }) => {
     // Nombre distinto en cada ejecución: si una prueba anterior se cortó antes de limpiar, su
     // cita sigue en el panel y la tarjeta buscada tiene que ser la de ahora.
-    const nombre = `Cliente Mostrador ${String(Date.now()).slice(-5)}`;
+    const apellido = `Mostrador${String(Date.now()).slice(-5)}`;
+    const nombre = `Cliente ${apellido}`;
+    const telefono = telefonoAleatorio();
     await entrar(page);
     await page.getByRole("button", { name: /nueva cita/i }).click();
 
     const dialogo = page.getByRole("dialog");
     await expect(dialogo.getByRole("heading", { name: /apuntar una cita/i })).toBeVisible();
+    // El taller e2e exige todos los datos (mostrador_datos_obligatorios): el teléfono no es opcional.
+    await expect(dialogo.getByText(/todos los datos son obligatorios/i)).toBeVisible();
+    await expect(dialogo.locator('input[name="telefono"]')).toHaveAttribute("required", "");
+
+    // En el mostrador, Neumáticos ofrece de 1 a 4 (opciones_panel), aunque el público solo vea 2 y 4.
+    await dialogo.locator('select[name="servicio"]').selectOption("Neumáticos");
+    await expect(dialogo.locator('select[name="cantidad_neumaticos"] option:not([disabled])')).toHaveText(["1", "2", "3", "4"]);
+    await dialogo.locator('select[name="servicio"]').selectOption("Frenos");
+
+    // Para hoy, las horas sugeridas no incluyen las que ya han pasado; para otro día, todas las del horario.
+    await dialogo.locator('input[name="dia"]').fill(hoyLocal());
+    const ahora = new Date();
+    const horaActual = `${String(ahora.getHours()).padStart(2, "0")}:${String(ahora.getMinutes()).padStart(2, "0")}`;
+    for (const hora of await dialogo.locator("#horas-taller option").evaluateAll((opciones) => opciones.map((o) => (o as HTMLOptionElement).value))) {
+      expect(hora > horaActual, `la hora sugerida ${hora} ya ha pasado (son las ${horaActual})`).toBe(true);
+    }
+    await dialogo.locator('input[name="dia"]').fill(proximoDiaLaborable(3));
+    await expect(dialogo.locator("#horas-taller option")).toHaveCount(6);
+
     // El taller de pruebas tiene dos miembros: hay que decir quién la apunta.
     await dialogo.locator('select[name="miembro_id"]').selectOption({ label: "Mecánico A" });
-    await dialogo.locator('input[name="nombre"]').fill(nombre);
+    await dialogo.locator('input[name="nombre"]').fill("Cliente");
     await dialogo.locator('input[name="matricula"]').fill("9999ZZZ");
     await dialogo.locator('input[name="vehiculo"]').fill("Furgoneta");
-    await dialogo.locator('select[name="servicio"]').selectOption("Frenos");
-    await dialogo.locator('input[name="dia"]').fill(proximoDiaLaborable(3));
     await dialogo.locator('input[name="hora"]').fill("10:00");
+    // Sin apellido ni teléfono, guardar no se queda mudo: dice qué falta y no crea nada.
+    await dialogo.getByRole("button", { name: /guardar cita confirmada/i }).click();
+    await expect(dialogo.getByText(/falta: el primer apellido, el teléfono\./i)).toBeVisible();
+    // El formulario sigue abierto y no hay mensaje de éxito (el botón también dice "cita confirmada": se mira el aviso).
+    await expect(dialogo).toBeVisible();
+    await expect(page.getByText(/cita confirmada y apuntada/i)).toHaveCount(0);
+
+    await dialogo.locator('input[name="nombre"]').fill(nombre);
+    await dialogo.locator('input[name="telefono"]').fill(telefono);
     await dialogo.getByRole("button", { name: /guardar cita confirmada/i }).click();
 
     await expect(page.getByText(/cita confirmada/i)).toBeVisible();
     await page.getByRole("button", { name: /^Confirmadas/ }).click();
-    const tarjeta = page.locator(".tarjeta-reserva", { hasText: nombre }).first();
+    const tarjeta = page.locator(".tarjeta-reserva", { hasText: apellido }).first();
     await expect(tarjeta).toBeVisible();
     // La etiqueta de origen, no el nombre del cliente (que también dice "Mostrador").
     await expect(tarjeta.locator(".tarjeta-origen")).toHaveText(/mostrador · mecánico a/i);
-    await expect(tarjeta.getByText(/sin teléfono/i)).toBeVisible();
+    await expect(tarjeta.getByText(/sin teléfono/i)).toHaveCount(0);
+    await expect(tarjeta).toContainText(telefono.slice(0, 3));
 
     // Limpieza: se cancela para no dejar huecos ocupados en el taller de pruebas.
     await tarjeta.getByRole("button", { name: /cancelar cita/i }).click();
@@ -169,6 +198,7 @@ test.describe("Panel del taller", () => {
     const dialogo = page.getByRole("dialog");
     await dialogo.locator('select[name="miembro_id"]').selectOption({ label: "Mecánico A" });
     await dialogo.locator('input[name="nombre"]').fill(nombre);
+    await dialogo.locator('input[name="telefono"]').fill(telefonoAleatorio());
     await dialogo.locator('input[name="matricula"]').fill("9999ZZZ");
     await dialogo.locator('input[name="vehiculo"]').fill("Furgoneta");
     await dialogo.locator('select[name="servicio"]').selectOption("Frenos");

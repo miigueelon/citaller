@@ -36,6 +36,11 @@ Si en un taller varias personas usan el mismo panel, al pulsar "Nueva cita" se e
 - Dar de baja (las citas que apuntó siguen diciendo su nombre): `update public.miembros_taller set activo = false where nombre = 'Juan' and taller_id = (select id from public.talleres where slug = '<slug>');`
 - No se borran: un miembro con citas no se puede borrar (`on delete restrict`).
 
+## Mostrador con todos los datos obligatorios
+Por defecto, en "Nueva cita" el teléfono es opcional (y la descripción de un servicio "opcional" también). Si un taller quiere que sus mecánicos rellenen siempre teléfono, nombre con primer apellido y descripción (Rik and Roll desde el 24-sep-2026), se pone `mostrador_datos_obligatorios = true` en su `seed.sql` (bloque `update public.talleres`). La base de datos lo garantiza (`insertar_reserva_taller`: CT022 teléfono, CT023 apellido, CT008 descripción) y el panel lo enseña antes ("Falta: …"). Speed Bikes sigue con el teléfono opcional.
+
+Un desplegable de `campos_formulario_taller` puede ofrecer más opciones en el mostrador que al público: `opciones_panel` (Rik and Roll: Neumáticos 2 o 4 para el cliente, 1 a 4 para el mecánico). Null = las mismas.
+
 ## Festivos de cada año
 El cliente reserva hasta 90 días vista, así que **cada septiembre** hay que cargar los festivos del año siguiente de cada taller (en su `seed.sql`, con `on conflict (taller_id, fecha) do nothing`, y aplicados con `execute_sql`). Los de Cataluña los publica la Generalitat (treball.gencat.cat → calendario laboral); los 2 locales de cada municipio salen más tarde. 2027: cargados los 12 de Cataluña en Speedbikes y Rik and Roll; faltan los 2 locales de Castelldefels.
 

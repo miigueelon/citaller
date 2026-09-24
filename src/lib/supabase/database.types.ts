@@ -47,6 +47,7 @@ export type Database = {
           id: number
           obligatorio: boolean
           opciones: Json | null
+          opciones_panel: Json | null
           orden: number
           servicio_id: number | null
           taller_id: number
@@ -60,6 +61,7 @@ export type Database = {
           id?: number
           obligatorio?: boolean
           opciones?: Json | null
+          opciones_panel?: Json | null
           orden?: number
           servicio_id?: number | null
           taller_id: number
@@ -73,6 +75,7 @@ export type Database = {
           id?: number
           obligatorio?: boolean
           opciones?: Json | null
+          opciones_panel?: Json | null
           orden?: number
           servicio_id?: number | null
           taller_id?: number
@@ -524,6 +527,7 @@ export type Database = {
           id: number
           max_citas_dia: number | null
           modo_capacidad: string
+          mostrador_datos_obligatorios: boolean
           nombre: string
           numero_resenas: number | null
           slug: string
@@ -550,6 +554,7 @@ export type Database = {
           id?: number
           max_citas_dia?: number | null
           modo_capacidad?: string
+          mostrador_datos_obligatorios?: boolean
           nombre: string
           numero_resenas?: number | null
           slug: string
@@ -576,6 +581,7 @@ export type Database = {
           id?: number
           max_citas_dia?: number | null
           modo_capacidad?: string
+          mostrador_datos_obligatorios?: boolean
           nombre?: string
           numero_resenas?: number | null
           slug?: string

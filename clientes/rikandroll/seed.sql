@@ -9,11 +9,14 @@
 -- Idempotente. Sin secretos.
 -- ============================================================================
 
+-- Mostrador con todos los datos obligatorios (pedido del 24-sep-2026): teléfono, nombre con primer
+-- apellido y la descripción cuando el servicio la tiene.
 update public.talleres
 set modo_capacidad = 'por_hora',
     capacidad      = 2,
     max_citas_dia  = 5,
-    whatsapp_modo  = case when whatsapp_modo = 'api' then 'api' else 'enlace' end
+    whatsapp_modo  = case when whatsapp_modo = 'api' then 'api' else 'enlace' end,
+    mostrador_datos_obligatorios = true
 where slug = 'rikandroll';
 
 -- Bloques de apertura del horario (lo que cuenta la antelación): mañana 8:30-12:30 y tarde 15:30-18:30
@@ -41,16 +44,17 @@ on conflict (taller_id, nombre) do update
       descripcion_placeholder = excluded.descripcion_placeholder, descripcion_ayuda = excluded.descripcion_ayuda, imagen_ayuda_url = excluded.imagen_ayuda_url,
       bloques_antelacion = excluded.bloques_antelacion, antelacion_texto = excluded.antelacion_texto;
 
--- Cantidad de neumáticos, obligatoria, solo en el servicio Neumáticos. Solo 2 o 4 (pedido del
--- taller, 24-sep-2026: los cambian por ejes). Las medidas van en la descripción obligatoria del
--- servicio, con la imagen de ayuda.
-insert into public.campos_formulario_taller (taller_id, servicio_id, clave, etiqueta, tipo, opciones, obligatorio, orden)
-select t.id, s.id, 'cantidad_neumaticos', '¿Cuántos neumáticos quieres cambiar?', 'select', '["2", "4"]'::jsonb, true, 1
+-- Cantidad de neumáticos, obligatoria, solo en el servicio Neumáticos. Al cliente solo se le ofrecen
+-- 2 o 4 (pedido del taller, 24-sep-2026: los cambian por ejes); en el mostrador los mecánicos pueden
+-- elegir 1, 2, 3 o 4 (opciones_panel). Las medidas van en la descripción obligatoria del servicio,
+-- con la imagen de ayuda.
+insert into public.campos_formulario_taller (taller_id, servicio_id, clave, etiqueta, tipo, opciones, opciones_panel, obligatorio, orden)
+select t.id, s.id, 'cantidad_neumaticos', '¿Cuántos neumáticos quieres cambiar?', 'select', '["2", "4"]'::jsonb, '["1", "2", "3", "4"]'::jsonb, true, 1
 from public.talleres t
 join public.servicios_taller s on s.taller_id = t.id and s.nombre = 'Neumáticos'
 where t.slug = 'rikandroll'
 on conflict (taller_id, servicio_id, clave) do update
-  set etiqueta = excluded.etiqueta, tipo = excluded.tipo, opciones = excluded.opciones, obligatorio = excluded.obligatorio, orden = excluded.orden;
+  set etiqueta = excluded.etiqueta, tipo = excluded.tipo, opciones = excluded.opciones, opciones_panel = excluded.opciones_panel, obligatorio = excluded.obligatorio, orden = excluded.orden;
 
 update public.reservas r
 set servicio_id = s.id

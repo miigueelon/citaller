@@ -150,6 +150,7 @@ const rechazos = [
   ["Neumáticos sin cantidad", { p_servicio: "Neumáticos", p_descripcion: "205/55 R16", p_telefono: telefono(8) }, "CT008"],
   ["Neumáticos sin medidas", { p_servicio: "Neumáticos", p_descripcion: "", p_datos_extra: { cantidad_neumaticos: "2" }, p_telefono: telefono(9) }, "CT008"],
   ["opción fuera de la lista", { p_servicio: "Neumáticos", p_descripcion: "205/55 R16", p_datos_extra: { cantidad_neumaticos: "9" }, p_telefono: telefono(10) }, "CT008"],
+  ["opción solo del mostrador (1)", { p_servicio: "Neumáticos", p_descripcion: "205/55 R16", p_datos_extra: { cantidad_neumaticos: "1" }, p_telefono: telefono(23) }, "CT008"],
   ["kilómetros con letras", { p_datos_extra: { kilometros: "12a" }, p_telefono: telefono(11) }, "CT008"],
   ["taller inexistente", { p_taller_id: 999, p_telefono: telefono(12) }, "CT009"],
 ];
@@ -258,13 +259,28 @@ comprobar("G. Sin decir quién la apunta se rechaza (CT017)", sinMiembro.status 
 const miembroFalso = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: { ...citaMostrador, miembro_id: 999999 } });
 comprobar("G. Con un miembro que no es del taller se rechaza (CT017)", miembroFalso.status === 400 && miembroFalso.datos?.codigo === "CT017", `HTTP ${miembroFalso.status} ${miembroFalso.datos?.codigo}`);
 
-const manual = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: { ...citaMostrador, miembro_id: MIEMBRO_A } });
+// El taller e2e exige todos los datos en el mostrador (mostrador_datos_obligatorios, como Rik and Roll).
+const sinTelefono = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: { ...citaMostrador, miembro_id: MIEMBRO_A } });
+comprobar("G. Sin teléfono se rechaza (CT022)", sinTelefono.status === 400 && sinTelefono.datos?.codigo === "CT022", `HTTP ${sinTelefono.status} ${sinTelefono.datos?.codigo}`);
+const tManual = telefono(24);
+const citaCompleta = { ...citaMostrador, telefono: tManual, miembro_id: MIEMBRO_A };
+const sinApellido = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: { ...citaCompleta, nombre: "Cliente" } });
+comprobar("G. Sin primer apellido se rechaza (CT023)", sinApellido.status === 400 && sinApellido.datos?.codigo === "CT023", `HTTP ${sinApellido.status} ${sinApellido.datos?.codigo}`);
+const sinDescripcion = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: { ...citaCompleta, servicio: "Otro", descripcion: "" } });
+comprobar("G. La descripción opcional del servicio pasa a ser obligatoria (CT008)", sinDescripcion.status === 400 && sinDescripcion.datos?.codigo === "CT008", `HTTP ${sinDescripcion.status} ${sinDescripcion.datos?.codigo}`);
+
+const manual = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: citaCompleta });
 if (manual.datos?.reserva_id) creadas.push(manual.datos.reserva_id);
-comprobar("G. Cita manual sin teléfono a una hora llena: se crea igualmente", manual.status === 200 && manual.datos?.ok === true && !!manual.datos?.reserva_id, `HTTP ${manual.status} ${JSON.stringify(manual.datos).slice(0, 120)}`);
+comprobar("G. Cita manual completa a una hora llena: se crea igualmente", manual.status === 200 && manual.datos?.ok === true && !!manual.datos?.reserva_id, `HTTP ${manual.status} ${JSON.stringify(manual.datos).slice(0, 120)}`);
 const filaManual = await pedir(`/rest/v1/reservas?id=eq.${manual.datos?.reserva_id}&select=estado,creada_por,telefono,confirmada_en,miembro:miembros_taller!creada_por_miembro(nombre)`, { token: TOKEN });
-comprobar("G. Nace Confirmada, creada_por='taller', sin teléfono y con confirmada_en", filaManual.datos?.[0]?.estado === "Confirmada" && filaManual.datos?.[0]?.creada_por === "taller" && filaManual.datos?.[0]?.telefono === null && !!filaManual.datos?.[0]?.confirmada_en, JSON.stringify(filaManual.datos?.[0]));
+comprobar("G. Nace Confirmada, creada_por='taller', con teléfono normalizado y confirmada_en", filaManual.datos?.[0]?.estado === "Confirmada" && filaManual.datos?.[0]?.creada_por === "taller" && filaManual.datos?.[0]?.telefono === `34${tManual}` && !!filaManual.datos?.[0]?.confirmada_en, JSON.stringify(filaManual.datos?.[0]));
 comprobar("G. Guarda quién la apuntó y el panel lo lee", filaManual.datos?.[0]?.miembro?.nombre === "Mecánico A", JSON.stringify(filaManual.datos?.[0]?.miembro));
-comprobar("G. Sin teléfono no se intenta WhatsApp", manual.datos?.notificaciones?.whatsapp?.enviado === false, JSON.stringify(manual.datos?.notificaciones?.whatsapp));
+comprobar("G. En modo 'ninguno' no se manda WhatsApp", manual.datos?.notificaciones?.whatsapp?.enviado === false, JSON.stringify(manual.datos?.notificaciones?.whatsapp));
+
+// En el mostrador, Neumáticos admite 1 (opciones_panel), aunque al público solo se le ofrezcan 2 y 4 (sección A).
+const neumaticoSuelto = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: { ...citaCompleta, telefono: telefono(25), matricula: "MOSTR03", servicio: "Neumáticos", descripcion: "205/55 R16", datos_extra: { cantidad_neumaticos: "1" }, dia: DIA_2, hora: "11:00" } });
+if (neumaticoSuelto.datos?.reserva_id) creadas.push(neumaticoSuelto.datos.reserva_id);
+comprobar("G. Neumáticos con cantidad 1 desde el mostrador: se crea (opciones del panel)", neumaticoSuelto.status === 200 && neumaticoSuelto.datos?.ok === true, `HTTP ${neumaticoSuelto.status} ${neumaticoSuelto.datos?.codigo ?? ""}`);
 
 const manualConTel = await pedir("/functions/v1/crear-reserva-taller", {
   token: TOKEN,
@@ -275,7 +291,7 @@ if (manualConTel.datos?.reserva_id) creadas.push(manualConTel.datos.reserva_id);
 comprobar("G. Cita manual con teléfono y campo extra", manualConTel.status === 200 && manualConTel.datos?.ok === true, `HTTP ${manualConTel.status}`);
 
 // El tope diario no bloquea al taller: en el día lleno de la sección A, la cita a mano entra.
-const manualDiaLleno = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: { ...citaMostrador, dia: DIA_3, hora: "12:00", miembro_id: MIEMBRO_A } });
+const manualDiaLleno = await pedir("/functions/v1/crear-reserva-taller", { token: TOKEN, metodo: "POST", cuerpo: { ...citaCompleta, telefono: telefono(26), dia: DIA_3, hora: "12:00" } });
 if (manualDiaLleno.datos?.reserva_id) creadas.push(manualDiaLleno.datos.reserva_id);
 comprobar("G. Cita manual en un día que ya llegó al tope: se crea igualmente", manualDiaLleno.status === 200 && manualDiaLleno.datos?.ok === true, `HTTP ${manualDiaLleno.status} ${manualDiaLleno.datos?.codigo ?? ""}`);
 if (manualDiaLleno.datos?.reserva_id) await cancelarComoTaller(manualDiaLleno.datos.reserva_id);
@@ -429,7 +445,7 @@ if (minimo) {
     const manualNeumaticos = await pedir("/functions/v1/crear-reserva-taller", {
       token: TOKEN,
       metodo: "POST",
-      cuerpo: { ...citaMostrador, servicio: "Neumáticos", descripcion: "205/55 R16", datos_extra: { cantidad_neumaticos: "2" }, dia: antes.dia, hora: antes.hora, miembro_id: MIEMBRO_A },
+      cuerpo: { ...citaCompleta, telefono: telefono(27), servicio: "Neumáticos", descripcion: "205/55 R16", datos_extra: { cantidad_neumaticos: "2" }, dia: antes.dia, hora: antes.hora },
     });
     if (manualNeumaticos.datos?.reserva_id) creadas.push(manualNeumaticos.datos.reserva_id);
     comprobar("J. Desde el panel no hay antelación: la cita a mano de Neumáticos a esa hora entra", manualNeumaticos.status === 200 && manualNeumaticos.datos?.ok === true, `HTTP ${manualNeumaticos.status} ${manualNeumaticos.datos?.codigo ?? ""}`);

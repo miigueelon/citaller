@@ -52,7 +52,11 @@ on conflict (taller_id, nombre) do update
       descripcion_placeholder = excluded.descripcion_placeholder, descripcion_ayuda = excluded.descripcion_ayuda,
       bloques_antelacion = excluded.bloques_antelacion, antelacion_texto = excluded.antelacion_texto;
 
--- 4. Campos extra (opcional). Ejemplo: un número para todos los servicios.
+-- 4. Campos extra (opcional). Ejemplo: un número para todos los servicios. Un desplegable (tipo
+--    'select') lleva `opciones` (lo que ve el cliente) y, si el mostrador puede elegir más, `opciones_panel`
+--    (ver clientes/rikandroll: Neumáticos 2 o 4 al público, 1 a 4 en el panel).
+--    Si el taller quiere que "Nueva cita" exija teléfono, nombre con apellido y descripción:
+--    `mostrador_datos_obligatorios = true` en el update de talleres del punto 1.
 -- insert into public.campos_formulario_taller (taller_id, servicio_id, clave, etiqueta, tipo, obligatorio, orden, unidad)
 -- select t.id, null, 'kilometros', 'Kilómetros (opcional)', 'numero', false, 1, 'km'
 -- from public.talleres t where t.slug = '<<slug>>'

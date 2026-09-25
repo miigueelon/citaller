@@ -85,7 +85,7 @@ export async function borrarEventoDeReserva(admin: SupabaseClient, reserva: Rese
   }
 }
 
-function mensajeDeGoogle(fallo: unknown): string {
+export function mensajeDeGoogle(fallo: unknown): string {
   if (fallo instanceof ErrorGoogle) {
     return fallo.conexionCaducada ? "La conexión con Google Calendar ha caducado. Vuelve a conectarla desde el panel." : fallo.message;
   }

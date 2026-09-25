@@ -452,3 +452,9 @@ verify_jwt = false
 [functions.enviar-whatsapp-recordatorios]
 entrypoint = "./functions/enviar-whatsapp-recordatorios/index.ts"
 verify_jwt = false
+
+# Dias de cierre (festivos y vacaciones) en el Google Calendar de cada taller. La llama pg_cron cada
+# noche con x-cron-secret (sin JWT).
+[functions.sincronizar-cierres-calendario]
+entrypoint = "./functions/sincronizar-cierres-calendario/index.ts"
+verify_jwt = false

@@ -5,11 +5,16 @@
 // o ?calendar=error&motivo=...
 
 import { puedeGestionarTaller } from "../_shared/autorizar.ts";
+import { sincronizarCierresTaller } from "../_shared/calendarioCierres.ts";
+import { hoyEnMadrid } from "../_shared/cierres.ts";
 import { cambiarCodigoPorTokens, ErrorGoogle } from "../_shared/google.ts";
 import { redirigir } from "../_shared/http.ts";
 import { conParametros, urlDeVuelta } from "../_shared/origenes.ts";
 import { crearClienteAdmin } from "../_shared/supabaseAdmin.ts";
 import { guardarRefreshTokenGoogle, leerIntegracionGoogle } from "../_shared/tokensCalendario.ts";
+
+// Runtime de Supabase Edge Functions: deja terminar una tarea después de responder.
+declare const EdgeRuntime: { waitUntil(promesa: Promise<unknown>): void } | undefined;
 
 function textoPlano(mensaje: string, status: number): Response {
   return new Response(mensaje, { status, headers: { "Content-Type": "text/plain; charset=utf-8" } });
@@ -67,6 +72,12 @@ Deno.serve(async (req) => {
     if (!token) return volverConError("sin_refresh_token");
 
     await guardarRefreshTokenGoogle(admin, fila.taller_id, token, scope);
+
+    // Los días de cierre, en segundo plano: la vuelta al panel no espera y un fallo no la estropea
+    // (la sincronización de cada noche lo vuelve a intentar).
+    const cierres = sincronizarCierresTaller(admin, fila.taller_id, hoyEnMadrid()).catch((fallo) => console.error("google-calendar-callback: cierres:", fallo));
+    if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(cierres);
+
     return redirigir(conParametros(volverA, { calendar: "connected" }));
   } catch (error) {
     console.error("google-calendar-callback:", error instanceof ErrorGoogle ? error.detalle : error);

@@ -42,6 +42,10 @@ Por defecto, en "Nueva cita" el teléfono es opcional (y la descripción de un s
 Un desplegable de `campos_formulario_taller` puede ofrecer más opciones en el mostrador que al público: `opciones_panel` (Rik and Roll: Neumáticos 2 o 4 para el cliente, 1 a 4 para el mecánico). Null = las mismas.
 
 ## Festivos de cada año
+Los días de cierre (festivos y vacaciones) viven en `festivos_taller` y bloquean el día en la web, en "Nueva cita" y en la BD (CT003). Desde el 26-sep-2026 también salen en el **Google Calendar** del taller como "🔒 Taller cerrado · <nombre>": la función `sincronizar-cierres-calendario` los pone cada noche (y al conectar Google), así que tras cargar festivos o vacaciones aparecen solos al día siguiente; para verlos al momento, lanzarla con `{ "taller_id": N }`.
+
+**Vacaciones de un taller**: una fila por día cerrado, fines de semana incluidos si son seguidos (así Google enseña un solo bloque), todas con el mismo nombre ("Vacaciones de verano"). **Antes** de cargarlas, listar las citas Pendientes o Confirmadas de esos días y avisar al taller: no se cancelan solas.
+
 El cliente reserva hasta 90 días vista, así que **cada septiembre** hay que cargar los festivos del año siguiente de cada taller (en su `seed.sql`, con `on conflict (taller_id, fecha) do nothing`, y aplicados con `execute_sql`). Los de Cataluña los publica la Generalitat (treball.gencat.cat → calendario laboral); los 2 locales de cada municipio salen más tarde. 2027: cargados los 12 de Cataluña en Speedbikes y Rik and Roll; faltan los 2 locales de Castelldefels.
 
 ## Promoción: Google Business Profile y QR

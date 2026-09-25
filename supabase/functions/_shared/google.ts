@@ -150,3 +150,71 @@ export async function borrarEvento(
   const detalle = await respuesta.text().catch(() => "");
   throw new ErrorGoogle("Google Calendar no pudo eliminar el evento", respuesta.status, detalle);
 }
+
+// ---- Días de cierre (eventos de día completo marcados como de CiTaller) ----
+
+/** Propiedad privada que marca los eventos de cierre creados por CiTaller. */
+export const PROPIEDAD_CIERRE = { clave: "citaller", valor: "cierre" } as const;
+
+/** Eventos de cierre de CiTaller que tocan el rango [desde, hasta) ("YYYY-MM-DD"), con su clave. */
+export async function listarEventosCierre(
+  accessToken: string,
+  calendarId: string,
+  desde: string,
+  hasta: string,
+): Promise<Array<{ id: string; clave: string | null }>> {
+  const eventos: Array<{ id: string; clave: string | null }> = [];
+  let pagina: string | undefined;
+  do {
+    const params = new URLSearchParams({
+      privateExtendedProperty: `${PROPIEDAD_CIERRE.clave}=${PROPIEDAD_CIERRE.valor}`,
+      timeMin: `${desde}T00:00:00Z`,
+      timeMax: `${hasta}T00:00:00Z`,
+      singleEvents: "true",
+      showDeleted: "false",
+      maxResults: "250",
+      fields: "items(id,extendedProperties),nextPageToken",
+    });
+    if (pagina) params.set("pageToken", pagina);
+    const respuesta = await fetch(`${urlEventos(calendarId)}?${params}`, { headers: { Authorization: `Bearer ${accessToken}` } });
+    const datos = await respuesta.json().catch(() => ({}));
+    if (!respuesta.ok) throw new ErrorGoogle("Google Calendar no dejó leer los días de cierre", respuesta.status, datos);
+    for (const item of (datos.items ?? []) as Array<{ id: string; extendedProperties?: { private?: Record<string, string> } }>) {
+      eventos.push({ id: item.id, clave: item.extendedProperties?.private?.citaller_clave ?? null });
+    }
+    pagina = typeof datos.nextPageToken === "string" ? datos.nextPageToken : undefined;
+  } while (pagina);
+  return eventos;
+}
+
+export interface EventoCierre {
+  resumen: string;
+  descripcion: string;
+  /** "YYYY-MM-DD" */
+  inicio: string;
+  /** "YYYY-MM-DD", exclusivo. */
+  finExclusivo: string;
+  clave: string;
+}
+
+/** Evento de día completo, ocupado y sin avisos, marcado como cierre de CiTaller. */
+export async function crearEventoCierre(accessToken: string, calendarId: string, evento: EventoCierre): Promise<string> {
+  const respuesta = await fetch(urlEventos(calendarId), {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      summary: evento.resumen,
+      description: evento.descripcion,
+      start: { date: evento.inicio },
+      end: { date: evento.finExclusivo },
+      transparency: "opaque",
+      reminders: { useDefault: false, overrides: [] },
+      extendedProperties: { private: { [PROPIEDAD_CIERRE.clave]: PROPIEDAD_CIERRE.valor, citaller_clave: evento.clave } },
+    }),
+  });
+  const datos = await respuesta.json().catch(() => ({}));
+  if (!respuesta.ok || typeof datos.id !== "string") {
+    throw new ErrorGoogle("Google Calendar rechazó el día de cierre", respuesta.status, datos);
+  }
+  return datos.id;
+}

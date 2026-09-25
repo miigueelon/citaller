@@ -65,7 +65,7 @@ test.describe("Pasos de la reserva", () => {
     await expect(page.getByRole("heading", { name: /horas disponibles/i })).toBeVisible();
   });
 
-  test("antes de enviar, el resumen dice quién trata los datos y enlaza a privacidad", async ({ page }) => {
+  test("antes de enviar, el resumen dice para qué son los datos y enlaza a privacidad", async ({ page }) => {
     await page.goto(URL_RESERVA);
     await page.locator('input[name="nombre"]').fill("Cliente de prueba");
     await page.locator('input[name="matricula"]').fill("E2E1234");
@@ -87,8 +87,8 @@ test.describe("Pasos de la reserva", () => {
 
     // Primera capa del RGPD encima del botón; no se envía nada.
     const aviso = page.locator(".aviso-datos");
-    await expect(aviso).toContainText(`Tus datos los trata ${TALLER_E2E.nombre}`);
-    await expect(aviso.getByRole("link", { name: /más información/i })).toHaveAttribute("href", "/privacidad");
+    await expect(aviso).toContainText("Solo usamos tus datos para gestionar tu cita");
+    await expect(aviso.getByRole("link", { name: /privacidad/i })).toHaveAttribute("href", "/privacidad");
     await expect(page.getByRole("button", { name: /enviar solicitud/i })).toBeEnabled();
   });
 });

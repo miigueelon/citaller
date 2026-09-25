@@ -120,8 +120,12 @@ Si cambiamos algo, lo publicaremos aquí con la fecha de la revisión.
 
 Una línea pequeña justo encima del botón de enviar, en la web pública y no en el mostrador del panel:
 
-> Tus datos los trata **[nombre del taller]** para gestionar tu cita, con CiTaller como proveedor. No
-> se usan para publicidad. Puedes acceder a ellos, corregirlos o borrarlos. [Más información](/privacidad)
+> Solo usamos tus datos para gestionar tu cita. [Privacidad](/privacidad)
+
+Corta a propósito (Miguel, 25-sep-2026: que la reserva sea simple y no asuste). El responsable ya se
+ve arriba ("Reserva tu cita en [taller]") y el resto de la información básica (derechos, proveedores)
+está en `/privacidad`, a un clic. Una primera versión más larga, con el nombre del taller y los
+derechos, se descartó por demasiado texto.
 
 Sin casilla de "acepto": no hace falta, porque los datos se usan solo para la cita que el cliente pide.
 Si algún día se quieren usar para otra cosa (por ejemplo, avisar de la ITV), entonces sí haría falta

@@ -103,11 +103,10 @@ export function Resumen({ reserva, enviar, volver }: Props) {
 
         {error && <Alerta tipo="error">{error}</Alerta>}
 
-        {/* Primera capa de información del RGPD: responsable (el taller), finalidad y derechos. */}
+        {/* Primera capa del RGPD, corta a propósito (pedido de Miguel, 25-sep-2026): el responsable ya se ve
+            arriba ("Reserva tu cita en <taller>") y el detalle está en /privacidad. */}
         <p className="aviso-datos">
-          Tus datos los trata <strong>{taller.nombre}</strong> para gestionar tu cita, con CiTaller como proveedor.
-          No se usan para publicidad. Puedes acceder a ellos, corregirlos o borrarlos.{" "}
-          <Link to="/privacidad">Más información</Link>
+          Solo usamos tus datos para gestionar tu cita. <Link to="/privacidad">Privacidad</Link>
         </p>
 
         <button type="button" className="boton-principal" onClick={() => void confirmar()} disabled={enviando}>

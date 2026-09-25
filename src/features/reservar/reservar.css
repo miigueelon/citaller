@@ -522,12 +522,12 @@
 /* Primera capa de privacidad, encima del botón de enviar la solicitud. */
 .aviso-datos {
   margin: 20px 0 0;
+  text-align: center;
   color: var(--color-texto-suave);
   font-size: 13px;
   line-height: 1.5;
 }
 
-.aviso-datos strong,
 .aviso-datos a {
   color: inherit;
 }
